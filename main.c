@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -14,7 +15,46 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 
+char *read_file(char *file_path) {
+    FILE *file = fopen(file_path, "r");
+    if (!file) {
+        fprintf(stderr, "Failed to read input\n");
+        exit(1);
+    }
+
+    fseek(file, 0, SEEK_END);
+    int file_size = ftell(file);
+    rewind(file);
+
+    char *data = malloc(sizeof(char) * file_size);
+    if(fread(data, sizeof(char), file_size, file) != file_size) {
+        fprintf(stderr, "There was an error reading input");
+        free(data);
+        fclose(file);
+        exit(1);
+    }
+
+    return data;
+}
+
+void load_shaders() {
+    char* vertex_shader = read_file("shaders/vertex_shader.glsl");
+    char* fragment_shader = read_file("shaders/fragment_shader.glsl");
+
+    printf("VERTEX SHADER:\n");
+    printf("%s\n", vertex_shader);
+
+    printf("FRAGMENT SHADER:\n");
+    printf("%s\n", fragment_shader);
+}
+
+
 int main() {
+    load_shaders();
+    return 0;
+}
+
+int main1() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -37,6 +77,7 @@ int main() {
         printf("Failed to initialize GLAD\n");
         return -1;
     }    
+
 
     while (!glfwWindowShouldClose(window)) {
         process_input(window);
