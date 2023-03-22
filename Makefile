@@ -6,14 +6,14 @@ BIN = build
 PROG = $(BIN)/win
 
 
-.PHONY: clean dev run
+.PHONY: clean dev
 
 
-$(PROG): main.c
-	gcc -o $@ $(CFLAGS) $(INCLUDES) main.c $(LIBS)
+$(PROG): main.c shader.c
+	gcc -o $@ $(CFLAGS) $(INCLUDES) shader.c main.c $(LIBS)
 
-dev: 
+dev:
 	apt install libglfw3 libglfw3-dev
-  
-clean: 
+
+clean:
 	rm $(BIN)/*
