@@ -132,17 +132,11 @@ int graphics_init(GraphicsContext *ctx) {
 
 void graphics_render_rect(GraphicsContext *ctx, G_Object *object) {
     glBindVertexArray(object->vao);
-    glBindBuffer(GL_ARRAY_BUFFER, object->vbo);
+    // glBindBuffer(GL_ARRAY_BUFFER, object->vbo);
     glUseProgram(object->shader_program_id);
-
-
-    int uniform_location = glGetUniformLocation(object->shader_program_id, "u_MVP");
-    glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &object->camera_controler[0][0]);
-    printf("RENDER DEBUG\n");
-    printf("uniform_location: %d\n", uniform_location);
-
-
     glDrawElements(GL_TRIANGLES, 2, GL_UNSIGNED_INT, 0);
+    glUseProgram(0);
+    glBindVertexArray(0);
 }
 
 G_Object *graphics_new_rect(
@@ -153,32 +147,6 @@ G_Object *graphics_new_rect(
     G_Object *new_object = (G_Object*) malloc(sizeof(G_Object));
     memset(new_object, 0, sizeof(G_Object));
 
-    float top = 1.0;
-    float right = 1.0;
-    float bottom = -1.0;
-    float left = -1.0;
-    float near = -1.0;
-    float far = 1.0;
-
-    new_object->camera_controler[0][0] = (2*near)/ (right - left);
-    new_object->camera_controler[0][1] = 0;
-    new_object->camera_controler[0][2] = (right + left)/(right - left);
-    new_object->camera_controler[0][3] = 0;
-
-    new_object->camera_controler[1][0] = 0;
-    new_object->camera_controler[1][1] = (2*near)/(top - bottom);
-    new_object->camera_controler[1][2] = (top + bottom)/(top - bottom);
-    new_object->camera_controler[1][3] = 0;
-
-    new_object->camera_controler[2][0] = 0;
-    new_object->camera_controler[2][1] = 0;
-    new_object->camera_controler[2][2] = -(far + near)/(far - near);
-    new_object->camera_controler[2][3] = -(2*far*near)/(far - near);
-
-    new_object->camera_controler[3][0] = 0;
-    new_object->camera_controler[3][1] = 0;
-    new_object->camera_controler[3][2] = -1;
-    new_object->camera_controler[3][3] = 1;
 
     printf("RENDER DEBUG\n");
     printf("x: %f, y: %f, z: %f\n", topright->x, topright->y, topright->z);
@@ -195,7 +163,7 @@ G_Object *graphics_new_rect(
         2, 3, 0
     };
 
-    new_object->shader_program_id = shader_get_program();
+    new_object->shader_program_id = shader_get_program_2d();
 
     // glCreateVertexArrays(1, &new_object->vao);
     glGenVertexArrays(1, &new_object->vao);
@@ -203,7 +171,7 @@ G_Object *graphics_new_rect(
 
     glGenBuffers(1, &new_object->vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, new_object->vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 
     glGenBuffers(1, &new_object->ibo);

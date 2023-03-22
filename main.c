@@ -168,9 +168,11 @@ int main() {
         }
         glDrawElements(GL_TRIANGLES, sizeof(indices)/3, GL_UNSIGNED_INT, 0);
 
+        glUseProgram(0);
+        glBindVertexArray(0);
+
 
         graphics_render_rect(&ctx, rect);
-
 
 
         glfwSwapBuffers(ctx.window);
@@ -178,6 +180,7 @@ int main() {
     }
 
     graphics_free_object(cube);
+    graphics_free_object(rect);
 
     glfwTerminate();
     return 0;

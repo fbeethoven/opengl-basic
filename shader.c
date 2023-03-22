@@ -46,7 +46,8 @@ static unsigned int compile_shaders(GLenum shader_type, const char *shader_sourc
 }
 
 
-unsigned int shader_get_program() {
+
+static unsigned int shader_get_program_general(char *vertex_shader_path, char* fragment_shader_path) {
 	unsigned int shader_program_id = glCreateProgram();
 
     char* vertex_shader = read_file("shaders/vertex_shader.glsl");
@@ -68,3 +69,16 @@ unsigned int shader_get_program() {
 
     return shader_program_id;
 }
+
+
+unsigned int shader_get_program_2d() {
+
+    return shader_get_program_general("shaders/vertex_2d.glsl", "shaders/fragment_2d.glsl");
+}
+
+
+unsigned int shader_get_program() {
+
+    return shader_get_program_general("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+}
+
