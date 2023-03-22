@@ -2,7 +2,7 @@
 #define GLAD_GL_IMPLEMENTATION
 
 #include "common.h"
-#include "shader.h"
+#include "graphics.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -169,47 +169,48 @@ int main() {
         1, 4, 5,
         1, 5, 2
     };
-    unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glBindVertexArray(VAO);
+//    unsigned int VBO, VAO, EBO;
+//    glGenVertexArrays(1, &VAO);
+//    glGenBuffers(1, &VBO);
+//    glGenBuffers(1, &EBO);
+//    glBindVertexArray(VAO);
+//
+//	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), 0, GL_DYNAMIC_DRAW);
+//
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+//
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+//    glEnableVertexAttribArray(0);
+//
+//    glBindBuffer(GL_ARRAY_BUFFER, 0);
+//    glBindVertexArray(0);
+//
+//
+//    unsigned int shader_program_id = shader_get_program();
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), 0, GL_DYNAMIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-
-    unsigned int shader_program_id = shader_get_program();
-
+    G_Object* cube = graphics_new_object();
     int triangles = 0;
     while (!glfwWindowShouldClose(window)) {
         process_input(window, vertices, &triangles);
 
-        glDepthFunc(GL_LESS);
-        glEnable(GL_DEPTH_TEST);
+//        glDepthFunc(GL_LESS);
+//        glEnable(GL_DEPTH_TEST);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, cube->vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 
-        glUseProgram(shader_program_id);
+        glUseProgram(cube->shader_program_id);
 
 
-        int uniform_location = glGetUniformLocation(shader_program_id, "u_MVP");
+        int uniform_location = glGetUniformLocation(cube->shader_program_id, "u_MVP");
         glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &mat_ortho[0][0]);
         printf("uniform_location: %d\n", uniform_location);
 
-		glBindVertexArray(VAO);
+		glBindVertexArray(cube->vao);
 
         if ( (triangles & 1) == 0) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -224,10 +225,11 @@ int main() {
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteProgram(shader_program_id);
+//    glDeleteVertexArrays(1, &VAO);
+//    glDeleteBuffers(1, &VBO);
+//    glDeleteBuffers(1, &EBO);
+//    glDeleteProgram(shader_program_id);
+    graphics_free_object(cube);
 
     glfwTerminate();
     return 0;
