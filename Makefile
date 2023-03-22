@@ -3,7 +3,7 @@ LIBS = -lglfw -ldl
 
 INCLUDES = -I external
 BIN = build
-OBJ = shader.c graphics.c
+OBJ = shader.c graphics.c common.c
 PROG = $(BIN)/win
 
 

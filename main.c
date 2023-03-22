@@ -5,11 +5,6 @@
 #include "graphics.h"
 
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-}
-
-
 void move_cube(float vertices[], int n, Vec3 *dir) {
     for (int i=0; i<n; i++) {
         vertices[i*3 + 0] += dir->x;
@@ -22,6 +17,9 @@ void move_cube(float vertices[], int n, Vec3 *dir) {
 void process_input(GLFWwindow *window, float vertices[], int *triangles){
     double xpos, ypos;
     float speed = 0.05;
+
+    printf("DEBUG VERTICES\n");
+    printf("x: %f, y: %f z: %f\n", vertices[0], vertices[1], vertices[2]);
 
     glfwGetCursorPos(window, &xpos, &ypos);
     printf("x: %f, y: %f\n", xpos, ypos);
@@ -104,46 +102,11 @@ void process_input(GLFWwindow *window, float vertices[], int *triangles){
 }
 
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-
-
 int main() {
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL) {
-        printf("Failed to create GLFW window\n");
-        glfwTerminate();
+    GraphicsContext ctx;
+    if(graphics_init(&ctx) != 0) {
         return -1;
     }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
-        printf("Failed to initialize GLAD\n");
-        return -1;
-    }
-
-    float top = 1.0;
-    float right = 1.0;
-    float bottom = -1.0;
-    float left = -1.0;
-    float near = -1.0;
-    float far = 1.0;
-    float mat_ortho[][4] = {
-        {-(2*near)/ (right - left),      0                , (right + left)/(right - left),            0},
-        {            0           ,-(2*near)/(top - bottom), (top + bottom)/(top - bottom),            0},
-        {            0           ,      0                , (far + near)/(far - near)   ,-(2*far*near)/(far - near)},
-        {            0           ,      0                ,             0.0              ,            1}
-    };
 
     float vertices[] = {
         -0.5f, -0.5f, 0.0f,  // bottom left
@@ -169,37 +132,23 @@ int main() {
         1, 4, 5,
         1, 5, 2
     };
-//    unsigned int VBO, VAO, EBO;
-//    glGenVertexArrays(1, &VAO);
-//    glGenBuffers(1, &VBO);
-//    glGenBuffers(1, &EBO);
-//    glBindVertexArray(VAO);
-//
-//	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), 0, GL_DYNAMIC_DRAW);
-//
-//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-//
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-//    glEnableVertexAttribArray(0);
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, 0);
-//    glBindVertexArray(0);
-//
-//
-//    unsigned int shader_program_id = shader_get_program();
 
     G_Object* cube = graphics_new_object();
-    int triangles = 0;
-    while (!glfwWindowShouldClose(window)) {
-        process_input(window, vertices, &triangles);
 
-//        glDepthFunc(GL_LESS);
-//        glEnable(GL_DEPTH_TEST);
+    Vec3 a = newVec3(-0.75, -0.75, 0.0);
+    Vec3 b = newVec3(-0.80, -0.75, 0.0);
+    Vec3 c = newVec3(-0.80, -0.80, 0.0);
+    Vec3 d = newVec3(-0.75, -0.80, 0.0);
+
+    G_Object *rect = graphics_new_rect(&ctx, &a, &b, &c, &d);
+    int triangles = 0;
+    while (!glfwWindowShouldClose(ctx.window)) {
+        process_input(ctx.window, vertices, &triangles);
+
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
 
+		glBindVertexArray(cube->vao);
         glBindBuffer(GL_ARRAY_BUFFER, cube->vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 
@@ -207,10 +156,9 @@ int main() {
 
 
         int uniform_location = glGetUniformLocation(cube->shader_program_id, "u_MVP");
-        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &mat_ortho[0][0]);
+        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &cube->camera_controler[0][0]);
         printf("uniform_location: %d\n", uniform_location);
 
-		glBindVertexArray(cube->vao);
 
         if ( (triangles & 1) == 0) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -221,14 +169,14 @@ int main() {
         glDrawElements(GL_TRIANGLES, sizeof(indices)/3, GL_UNSIGNED_INT, 0);
 
 
-        glfwSwapBuffers(window);
+        graphics_render_rect(&ctx, rect);
+
+
+
+        glfwSwapBuffers(ctx.window);
         glfwPollEvents();
     }
 
-//    glDeleteVertexArrays(1, &VAO);
-//    glDeleteBuffers(1, &VBO);
-//    glDeleteBuffers(1, &EBO);
-//    glDeleteProgram(shader_program_id);
     graphics_free_object(cube);
 
     glfwTerminate();

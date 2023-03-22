@@ -25,4 +25,6 @@ typedef struct Vec4 {
 } Vec4;
 
 
+Vec3 newVec3(float x, float y, float z);
+
 #endif  // COMMON_H
