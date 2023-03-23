@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include "shader.h"
+#include "image.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -16,7 +17,7 @@ G_Object *graphics_new_object() {
     float right = 1.0;
     float bottom = -1.0;
     float left = -1.0;
-    float near = 0.1;
+    float near = -1.0;
     float far = 1.0;
 
     new_object->camera_controler[0][0] = (2*near)/ (right - left);
@@ -41,24 +42,24 @@ G_Object *graphics_new_object() {
 
 
     float vertices[] = {
-    -0.5f,  0.5f, 0.0f,  // top left
-    -0.5f, -0.5f, 0.0f,  // bottom left
-    0.5f, -0.5f, 0.0f,  // bottom right
-    0.5f,  0.5f, 0.0f,  // top right
+    -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,  // top left
+    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,  // bottom left
+    0.5f, -0.5f, 0.0f,  1.0f, 0.0f,  // bottom right
+    0.5f,  0.5f, 0.0f,  1.0f, 1.0f,  // top right
 
-    -0.5f,  0.5f, 0.5f,  // top left
-    -0.5f, -0.5f, 0.5f,  // bottom left
-    0.5f, -0.5f, 0.5f,  // bottom right
-    0.5f,  0.5f, 0.5f  // top right
+    -0.5f,  0.5f, 0.5f, 0.0f, 1.0f,  // top left
+    -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom left
+    0.5f, -0.5f, 0.5f,  1.0f, 0.0f,  // bottom right
+    0.5f,  0.5f, 0.5f,  1.0f, 1.0f  // top right
     };
 
     unsigned int indices[] = {
     0, 1, 2,
     2, 3, 0
 
-//    1, 4, 7,
-//    7, 1, 0,
-//
+//    2, 6, 7,
+//    7, 3, 2
+
 //    3, 2, 5,
 //    3, 5, 6,
 //
@@ -85,9 +86,28 @@ G_Object *graphics_new_object() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+
+
+    glGenTextures(1, &new_object->texture_id);
+    glBindTexture(GL_TEXTURE_2D, new_object->texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//    char *image_path = "texture920x613.png";
+    char *image_path = "wall.jpg";
+    Image *test = image_load(image_path);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test->width, test->height, 0, GL_RGB, GL_UNSIGNED_BYTE, test->data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    image_free(test);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-
     return new_object;
 }
 

@@ -16,6 +16,8 @@ typedef struct G_Object {
 	unsigned int vbo;
 	unsigned int ibo;
 
+	unsigned int texture_id;
+
 	float camera_controler[4][4];
 
     Vec3 color;

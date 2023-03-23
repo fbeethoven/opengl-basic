@@ -1,9 +1,9 @@
 CFLAGS = -Wall -g
-LIBS = -lglfw -ldl
+LIBS = -lglfw -ldl -lm
 
 INCLUDES = -I external
 BIN = build
-OBJ = shader.c graphics.c common.c
+OBJ = shader.c graphics.c common.c image.c
 PROG = $(BIN)/win
 
 

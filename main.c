@@ -5,18 +5,24 @@
 #include "common.h"
 #include "graphics.h"
 
+#define BAD_COORDS 1
 
 void move_cube(float vertices[], int n, Vec3 *dir, Mat4 *cube_mat) {
-//    for (int i=0; i<n; i++) {
-//        vertices[i*3 + 0] += dir->x;
-//        vertices[i*3 + 1] += dir->y;
-//        vertices[i*3 + 2] += dir->z;
-//    }
-    Mat4 transpose = Mat4I();
-    Mat4Translate(&transpose, dir);
-    Mat4 new_transform = Mat4Mult(&transpose, cube_mat);
 
-    Mat4Copy(cube_mat, &new_transform);
+    if (BAD_COORDS) {
+        for (int i=0; i<4; i++) {
+            vertices[i*3 + 0] += dir->x;
+            vertices[i*3 + 1] += dir->y;
+            vertices[i*3 + 2] += dir->z;
+        }
+    }
+    else {
+        Mat4 transpose = Mat4I();
+        Mat4Translate(&transpose, dir);
+        Mat4 new_transform = Mat4Mult(&transpose, cube_mat);
+
+        Mat4Copy(cube_mat, &new_transform);
+    }
 }
 
 
@@ -205,10 +211,13 @@ int main() {
         else {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
-        glDrawElements(GL_TRIANGLES, sizeof(indices)/3, GL_UNSIGNED_INT, 0);
 
-        glUseProgram(0);
+        glBindTexture(GL_TEXTURE_2D, cube->texture_id);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
+        glUseProgram(0);
 
 
         glfwSwapBuffers(ctx.window);
