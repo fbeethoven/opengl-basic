@@ -5,24 +5,36 @@
 #include "graphics.h"
 
 
-void move_cube(float vertices[], int n, Vec3 *dir) {
-    for (int i=0; i<n; i++) {
-        vertices[i*3 + 0] += dir->x;
-        vertices[i*3 + 1] += dir->y;
-        vertices[i*3 + 2] += dir->z;
-    }
+void move_cube(float vertices[], int n, Vec3 *dir, Mat4 *cube_mat) {
+//    for (int i=0; i<n; i++) {
+//        vertices[i*3 + 0] += dir->x;
+//        vertices[i*3 + 1] += dir->y;
+//        vertices[i*3 + 2] += dir->z;
+//    }
+    Mat4 transpose = Mat4I();
+    Mat4Translate(&transpose, dir);
+    Mat4 new_transform = Mat4Mult(&transpose, cube_mat);
+
+    Mat4Copy(cube_mat, &new_transform);
 }
 
 
-void process_input(GLFWwindow *window, float vertices[], int *triangles){
+void process_input(GLFWwindow *window, float vertices[], int *triangles, Mat4 *cube_mat){
     double xpos, ypos;
     float speed = 0.05;
 
-    printf("DEBUG VERTICES\n");
-    printf("x: %f, y: %f z: %f\n", vertices[0], vertices[1], vertices[2]);
+//    printf("DEBUG VERTICES\n");
+//    printf("x: %f, y: %f z: %f\n", vertices[0], vertices[1], vertices[2]);
+//
+//    glfwGetCursorPos(window, &xpos, &ypos);
+//    printf("x: %f, y: %f\n", xpos, ypos);
 
-    glfwGetCursorPos(window, &xpos, &ypos);
-    printf("x: %f, y: %f\n", xpos, ypos);
+//    printf("DEBUG CUBE CAMERA\n");
+//    printf("%f %f %f %f\n", cube->camera_controler[0][0], cube->camera_controler[0][1], cube->camera_controler[0][2], cube->camera_controler[0][3]);
+//    printf("%f %f %f %f\n", cube->camera_controler[1][0], cube->camera_controler[1][1], cube->camera_controler[1][2], cube->camera_controler[1][3]);
+//    printf("%f %f %f %f\n", cube->camera_controler[2][0], cube->camera_controler[2][1], cube->camera_controler[2][2], cube->camera_controler[2][3]);
+//    printf("%f %f %f %f\n", cube->camera_controler[3][0], cube->camera_controler[3][1], cube->camera_controler[3][2], cube->camera_controler[3][3]);
+
     int shift = 0;
 
     if(
@@ -48,7 +60,7 @@ void process_input(GLFWwindow *window, float vertices[], int *triangles){
     ){
         printf("Going BACKWARDS!\n");
         Vec3 dir = { .x = 0.0, .y = 0.0, .z= -speed };
-        move_cube(vertices, 36, &dir);
+        move_cube(vertices, 36, &dir, cube_mat);
         shift = 1;
     } else {
         shift = 0;
@@ -60,7 +72,7 @@ void process_input(GLFWwindow *window, float vertices[], int *triangles){
     ){
         printf("Pressing UP\n");
         Vec3 dir = { .x = 0.0, .y = +speed, .z=0.0 };
-        move_cube(vertices, 36, &dir);
+        move_cube(vertices, 36, &dir, cube_mat);
     }
     if (
         shift == 0 &&
@@ -68,7 +80,7 @@ void process_input(GLFWwindow *window, float vertices[], int *triangles){
     ){
         printf("Going FORWARD!\n");
         Vec3 dir = { .x = 0.0, .y = 0.0, .z= speed };
-        move_cube(vertices, 36, &dir);
+        move_cube(vertices, 36, &dir, cube_mat);
     }
 
     if (
@@ -78,7 +90,7 @@ void process_input(GLFWwindow *window, float vertices[], int *triangles){
     ){
         printf("Pressing DOWN\n");
         Vec3 dir = { .x = 0.0, .y = -speed, .z=0.0 };
-        move_cube(vertices, 36, &dir);
+        move_cube(vertices, 36, &dir, cube_mat);
     }
     if (
         glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS ||
@@ -87,7 +99,7 @@ void process_input(GLFWwindow *window, float vertices[], int *triangles){
     ){
         printf("Pressing RIGHT\n");
         Vec3 dir = { .x = speed, .y = 0.0, .z=0.0 };
-        move_cube(vertices, 36, &dir);
+        move_cube(vertices, 36, &dir, cube_mat);
     }
     if (
         glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS ||
@@ -96,7 +108,7 @@ void process_input(GLFWwindow *window, float vertices[], int *triangles){
     ){
         printf("Pressing LEFT\n");
         Vec3 dir = { .x = -speed, .y = 0.0, .z=0.0 };
-        move_cube(vertices, 36, &dir);
+        move_cube(vertices, 36, &dir, cube_mat);
     }
 
 }
@@ -146,15 +158,10 @@ int main() {
     G_Object *rect = graphics_new_rect(&ctx, &a, &b, &c, &d);
     int triangles = 0;
     while (!glfwWindowShouldClose(ctx.window)) {
-        process_input(ctx.window, vertices, &triangles);
+        process_input(ctx.window, vertices, &triangles, &cube_mat);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
-
-        printf("CUBE MATRIX\n");
-        printf("%f, %f, %f, %f\n", cube_mat.T[0][0], cube_mat.T[0][1], cube_mat.T[0][2], cube_mat.T[0][3]);
-        printf("%f, %f, %f, %f\n", cube_mat.T[1][0], cube_mat.T[1][1], cube_mat.T[2][2], cube_mat.T[2][3]);
-        printf("%f, %f, %f, %f\n", cube_mat.T[2][0], cube_mat.T[2][1], cube_mat.T[3][2], cube_mat.T[3][3]);
 
         graphics_render_rect(&ctx, rect);
 
@@ -164,10 +171,31 @@ int main() {
 
         glUseProgram(cube->shader_program_id);
 
+        Mat4 transform = Mat4Mult((Mat4 *)cube->camera_controler, &cube_mat);
+
+        printf("TRANSFORM MATRIX\n");
+        printf("%f, %f, %f, %f\n", transform.T[0][0], transform.T[0][1], transform.T[0][2], transform.T[0][3]);
+        printf("%f, %f, %f, %f\n", transform.T[1][0], transform.T[1][1], transform.T[1][2], transform.T[1][3]);
+        printf("%f, %f, %f, %f\n", transform.T[2][0], transform.T[2][1], transform.T[2][2], transform.T[2][3]);
+        printf("%f, %f, %f, %f\n", transform.T[3][0], transform.T[3][1], transform.T[3][2], transform.T[3][3]);
+
 
         int uniform_location = glGetUniformLocation(cube->shader_program_id, "u_MVP");
         glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &cube->camera_controler[0][0]);
-        printf("uniform_location: %d\n", uniform_location);
+//        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &transform.T[0][0]);
+        assert(uniform_location >= 0);
+
+
+        uniform_location = glGetUniformLocation(cube->shader_program_id, "u_transform");
+        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &cube_mat.T[0][0]);
+        assert(uniform_location >= 0);
+
+        float u_color[] = {1.0, 0.0, 0.0, 1.0};
+
+        uniform_location = glGetUniformLocation(cube->shader_program_id, "u_color");
+        glUniform4fv(uniform_location, 1, &u_color[0]);
+        assert(uniform_location >= 0);
+        printf("Uniform color location: %d\n", uniform_location);
 
 
         if ( (triangles & 1) == 0) {
@@ -180,8 +208,6 @@ int main() {
 
         glUseProgram(0);
         glBindVertexArray(0);
-
-
 
 
         glfwSwapBuffers(ctx.window);

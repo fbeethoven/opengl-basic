@@ -29,8 +29,8 @@ void graphics_free_object(G_Object *object);
 int graphics_init(GraphicsContext *ctx);
 
 G_Object *graphics_new_rect(
-    GraphicsContext *ctx, 
-    Vec3 *topright, Vec3 *topleft, Vec3 *botleft, Vec3 *botright 
+    GraphicsContext *ctx,
+    Vec3 *topright, Vec3 *topleft, Vec3 *botleft, Vec3 *botright
 );
 
 void graphics_render_rect(GraphicsContext *ctx, G_Object *object);

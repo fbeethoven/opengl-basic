@@ -16,7 +16,7 @@ G_Object *graphics_new_object() {
     float right = 1.0;
     float bottom = -1.0;
     float left = -1.0;
-    float near = -1.0;
+    float near = 0.1;
     float far = 1.0;
 
     new_object->camera_controler[0][0] = (2*near)/ (right - left);

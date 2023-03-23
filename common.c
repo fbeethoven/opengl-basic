@@ -37,7 +37,7 @@ Mat4 Mat4Mult(Mat4 *A, Mat4 *B) {
     Mat4 C = {0};
 
     for (int i=0; i<4; i++) {
-        for (int j=0; i<4; i++) {
+        for (int j=0; j<4; j++) {
             for (int k=0; k<4; k++) {
                 C.T[i][j] += A->T[i][k] * B->T[k][j];
             }
@@ -46,21 +46,39 @@ Mat4 Mat4Mult(Mat4 *A, Mat4 *B) {
     return C;
 }
 
+void Mat4Copy(Mat4 *A, Mat4 *B) {
+    for (int i=0; i<4; i++) {
+        for (int j=0; j<4; j++) {
+            A->T[i][j] =  B->T[i][j];
+        }
+    }
+}
+
 Mat4 Mat4Add(Mat4 *A, Mat4 *B) {
     Mat4 C = {0};
 
     for (int i=0; i<4; i++) {
-        for (int j=0; i<4; i++) {
+        for (int j=0; j<4; j++) {
             C.T[i][j] += A->T[i][j] + B->T[i][j];
         }
     }
     return C;
 }
 
-void Mat4Trans(Mat4 *A, Vec3 *dir) {
+void Mat4Translate(Mat4 *A, Vec3 *dir) {
     A->T[0][3] += dir->x;
     A->T[1][3] += dir->y;
     A->T[2][3] += dir->z;
+}
+
+Mat4 Mat4Transpose(Mat4 *A) {
+    Mat4 C = {0};
+    for (int i=0; i<4; i++) {
+        for (int j=0; j<4; j++) {
+            C.T[i][j] = A->T[j][i];
+        }
+    }
+    return C;
 }
 
 void Mat4Scale(Mat4 *A, float c) {
