@@ -109,10 +109,10 @@ int main() {
     }
 
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,  // bottom left
         -0.5f,  0.5f, 0.0f,  // top left
-         0.5f,  0.5f, 0.0f,  // top right
+        -0.5f, -0.5f, 0.0f,  // bottom left
          0.5f, -0.5f, 0.0f,  // bottom right
+         0.5f,  0.5f, 0.0f,  // top right
 
         -0.5f,  0.5f, 0.5f,  // top left
          0.5f,  0.5f, 0.5f,  // top right
@@ -133,7 +133,10 @@ int main() {
         1, 5, 2
     };
 
+
     G_Object* cube = graphics_new_object();
+    Mat4 cube_mat = Mat4I();
+
 
     Vec3 a = newVec3(-0.75, -0.75, 0.0);
     Vec3 b = newVec3(-0.80, -0.75, 0.0);
@@ -147,6 +150,13 @@ int main() {
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
+
+        printf("CUBE MATRIX\n");
+        printf("%f, %f, %f, %f\n", cube_mat.T[0][0], cube_mat.T[0][1], cube_mat.T[0][2], cube_mat.T[0][3]);
+        printf("%f, %f, %f, %f\n", cube_mat.T[1][0], cube_mat.T[1][1], cube_mat.T[2][2], cube_mat.T[2][3]);
+        printf("%f, %f, %f, %f\n", cube_mat.T[2][0], cube_mat.T[2][1], cube_mat.T[3][2], cube_mat.T[3][3]);
+
+        graphics_render_rect(&ctx, rect);
 
 		glBindVertexArray(cube->vao);
         glBindBuffer(GL_ARRAY_BUFFER, cube->vbo);
@@ -172,7 +182,6 @@ int main() {
         glBindVertexArray(0);
 
 
-        graphics_render_rect(&ctx, rect);
 
 
         glfwSwapBuffers(ctx.window);

@@ -41,29 +41,29 @@ G_Object *graphics_new_object() {
 
 
     float vertices[] = {
-    -0.5f, -0.5f, 0.0f,  // bottom left
     -0.5f,  0.5f, 0.0f,  // top left
-    0.5f,  0.5f, 0.0f,  // top right
+    -0.5f, -0.5f, 0.0f,  // bottom left
     0.5f, -0.5f, 0.0f,  // bottom right
+    0.5f,  0.5f, 0.0f,  // top right
 
     -0.5f,  0.5f, 0.5f,  // top left
-    0.5f,  0.5f, 0.5f,  // top right
+    -0.5f, -0.5f, 0.5f,  // bottom left
     0.5f, -0.5f, 0.5f,  // bottom right
-    -0.5f, -0.5f, 0.5f  // bottom left
+    0.5f,  0.5f, 0.5f  // top right
     };
 
     unsigned int indices[] = {
     0, 1, 2,
-    2, 3, 0,
+    2, 3, 0
 
-    1, 4, 7,
-    7, 1, 0,
-
-    3, 2, 5,
-    3, 5, 6,
-
-    1, 4, 5,
-    1, 5, 2
+//    1, 4, 7,
+//    7, 1, 0,
+//
+//    3, 2, 5,
+//    3, 5, 6,
+//
+//    1, 4, 5,
+//    1, 5, 2
     };
 
     new_object->shader_program_id = shader_get_program();
@@ -90,6 +90,11 @@ G_Object *graphics_new_object() {
 
     return new_object;
 }
+
+void graphics_render_cube(G_Object *object) {
+
+}
+
 
 
 void graphics_free_object(G_Object *object){
@@ -140,8 +145,8 @@ void graphics_render_rect(GraphicsContext *ctx, G_Object *object) {
 }
 
 G_Object *graphics_new_rect(
-    GraphicsContext *ctx, 
-    Vec3 *topright, Vec3 *topleft, Vec3 *botleft, Vec3 *botright 
+    GraphicsContext *ctx,
+    Vec3 *topright, Vec3 *topleft, Vec3 *botleft, Vec3 *botright
 ) {
     glEnable(GL_DEPTH_TEST);
     G_Object *new_object = (G_Object*) malloc(sizeof(G_Object));

@@ -24,6 +24,16 @@ typedef struct Vec4 {
     float w;
 } Vec4;
 
+typedef struct Mat4 {
+    float T[4][4];
+} Mat4;
+
+Mat4 Mat4Diag(float x, float y, float z, float w);
+Mat4 Mat4I();
+Mat4 Mat4Add(Mat4 *A, Mat4 *B);
+Mat4 Mat4Mult(Mat4 *A, Mat4 *B);
+void Mat4Scale(Mat4 *A, float c);
+void Mat4Trans(Mat4 *A, Vec3 *dir);
 
 Vec3 newVec3(float x, float y, float z);
 
