@@ -1,5 +1,6 @@
 /* Modified from: https://learnopengl.com/Getting-started/Hello-Window */
 #define GLAD_GL_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 
 #include "common.h"
 #include "graphics.h"

@@ -11,6 +11,7 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+#include "stb_image.h"
 
 
 typedef struct Vec3 {
