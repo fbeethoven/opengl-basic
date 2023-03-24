@@ -82,3 +82,20 @@ unsigned int shader_get_program() {
     return shader_get_program_general("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 }
 
+unsigned int shader_load_matrix(
+    unsigned int shader_program_id,
+    char *location,
+    Mat4 *matrix
+) {
+    uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s",
+            shader_program_id,
+            location
+        );
+    }
+    glUniformMatrix4fv(uniform_location, 1, matrix);
+}

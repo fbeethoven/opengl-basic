@@ -10,7 +10,7 @@ Vec3 newVec3(float x, float y, float z) {
     return result;
 }
 
-Vec3 Vec3Add(Vec3 *a, Vec3 *b) {
+Vec3 Vec3_add(Vec3 *a, Vec3 *b) {
     Vec3 result = {0};
     result.x = a->x + b->x;
     result.y = a->y + b->y;
@@ -20,41 +20,45 @@ Vec3 Vec3Add(Vec3 *a, Vec3 *b) {
 }
 
 
-Mat4 Mat4Diag(float x, float y, float z, float w) {
+Mat4 mat4_diag(float x, float y, float z, float w) {
     Mat4 C = {0};
-    C.T[0][0] = x;
-    C.T[1][1] = y;
-    C.T[2][2] = z;
-    C.T[3][3] = w;
+    C.m00 = x;
+    C.m11 = y;
+    C.m22 = z;
+    C.m33 = w;
     return C;
 }
 
 Mat4 Mat4I() {
-    return Mat4Diag(1.0, 1.0, 1.0, 1.0);
+    return Mat4_diag(1.0, 1.0, 1.0, 1.0);
 }
 
-Mat4 Mat4Mult(Mat4 *A, Mat4 *B) {
+Mat4 mat4_multiply(Mat4 *A, Mat4 *B) {
     Mat4 C = {0};
 
-    for (int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            for (int k=0; k<4; k++) {
-                C.T[i][j] += A->T[i][k] * B->T[k][j];
-            }
-        }
-    }
-    return C;
+    C.m00 = A->m00*B->m00 + A->m01*B->m10 + A->m02*B->m20+ A->m03*B->m30;
+    C.m01 = A->m00*B->m01 + A->m01*B->m11 + A->m02*B->m21+ A->m03*B->m31;
+    C.m02 = A->m00*B->m02 + A->m01*B->m12 + A->m02*B->m22+ A->m03*B->m32;
+    C.m03 = A->m00*B->m03 + A->m01*B->m13 + A->m02*B->m23+ A->m03*B->m33;
+
+    C.m10 = A->m10*B->m01 + A->m11*B->m10 + A->m12*B->m21+ A->m13*B->m31;
+    C.m11 = A->m10*B->m01 + A->m11*B->m11 + A->m12*B->m21+ A->m13*B->m31;
+    C.m12 = A->m10*B->m02 + A->m11*B->m12 + A->m12*B->m22+ A->m13*B->m32;
+    C.m13 = A->m10*B->m03 + A->m11*B->m13 + A->m12*B->m23+ A->m13*B->m33;
+
+    C.m20 = A->m20*B->m00 + A->m21*B->m10 + A->m22*B->m20+ A->m23*B->m30;
+    C.m21 = A->m20*B->m01 + A->m21*B->m11 + A->m22*B->m21+ A->m23*B->m31;
+    C.m22 = A->m20*B->m02 + A->m21*B->m12 + A->m22*B->m22+ A->m23*B->m32;
+    C.m23 = A->m20*B->m03 + A->m21*B->m13 + A->m22*B->m23+ A->m23*B->m33;
+
+    C.m30 = A->m30*B->m00 + A->m31*B->m10 + A->m32*B->m20+ A->m33*B->m30;
+    C.m31 = A->m30*B->m01 + A->m31*B->m11 + A->m32*B->m21+ A->m33*B->m31;
+    C.m32 = A->m30*B->m02 + A->m31*B->m12 + A->m32*B->m22+ A->m33*B->m32;
+    C.m33 = A->m30*B->m03 + A->m31*B->m13 + A->m32*B->m23+ A->m33*B->m33;
+    return *C;
 }
 
-void Mat4Copy(Mat4 *A, Mat4 *B) {
-    for (int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            A->T[i][j] =  B->T[i][j];
-        }
-    }
-}
-
-Mat4 Mat4Add(Mat4 *A, Mat4 *B) {
+Mat4 mat4_add(Mat4 *A, Mat4 *B) {
     Mat4 C = {0};
 
     for (int i=0; i<4; i++) {
@@ -65,33 +69,212 @@ Mat4 Mat4Add(Mat4 *A, Mat4 *B) {
     return C;
 }
 
-void Mat4Translate(Mat4 *A, Vec3 *dir) {
-    A->T[0][3] += dir->x;
-    A->T[1][3] += dir->y;
-    A->T[2][3] += dir->z;
+void mat4_scale(Vec3 *vec, Mat4 *source) {
+    source->m00 = vec->x * source->m00;
+    source->m01 = vec->x * source->m01;
+    source->m02 = vec->x * source->m02;
+    source->m03 = vec->x * source->m03;
+
+    source->m10 = vec->y * source->m10;
+    source->m11 = vec->y * source->m11;
+    source->m12 = vec->y * source->m12;
+    source->m13 = vec->y * source->m13;
+
+    source->m20 = vec->z * source->m20;
+    source->m21 = vec->z * source->m21;
+    source->m22 = vec->z * source->m22;
+    source->m23 = vec->z * source->m23;
 }
 
-Mat4 Mat4Transpose(Mat4 *A) {
+Mat4 mat4_copy(const Mat4 *A) {
     Mat4 C = {0};
-    for (int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            C.T[i][j] = A->T[j][i];
-        }
-    }
+    C.m00 = A->m00;
+    C.m01 = A->m01;
+    C.m02 = A->m02;
+    C.m03 = A->m03;
+
+    C.m10 = A->m10;
+    C.m11 = A->m11;
+    C.m12 = A->m12;
+    C.m13 = A->m13;
+
+    C.m20 = A->m20;
+    C.m21 = A->m21;
+    C.m22 = A->m22;
+    C.m23 = A->m23;
+
+    C.m30 = A->m30;
+    C.m31 = A->m31;
+    C.m32 = A->m32;
+    C.m33 = A->m33;
+
     return C;
 }
 
-void Mat4Scale(Mat4 *A, float c) {
-    for (int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            A->T[i][j] *= c;
-        }
-    }
+Mat4 mat4_rotate_x(float angle, Mat4 *A) {
+    Mat4 C = Mat4I();
+
+    float c = cos(angle);
+    float s = sin(angle);
+
+    float f00 = 1
+    float f01 = 0;
+    float f02 = 0;
+    float f10 = 0;
+    float f11 = c;
+    float f12 = s;
+    float f20 = 0;
+    float f21 = -s;
+    float f22 = c;
+
+    float t00 = A->m00 * f00 + A->m10 * f01 + A->m20 * f02;
+    float t01 = A->m01 * f00 + A->m11 * f01 + A->m21 * f02;
+    float t02 = A->m02 * f00 + A->m12 * f01 + A->m22 * f02;
+    float t03 = A->m03 * f00 + A->m13 * f01 + A->m23 * f02;
+
+    float t10 = A->m00 * f10 + A->m10 * f11 + A->m20 * f12;
+    float t11 = A->m01 * f10 + A->m11 * f11 + A->m21 * f12;
+    float t12 = A->m02 * f10 + A->m12 * f11 + A->m22 * f12;
+    float t13 = A->m03 * f10 + A->m13 * f11 + A->m23 * f12;
+
+    C.m20 = A->m00 * f20 + A->m10 * f21 + A->m20 * f22;
+    C.m21 = A->m01 * f20 + A->m11 * f21 + A->m21 * f22;
+    C.m22 = A->m02 * f20 + A->m12 * f21 + A->m22 * f22;
+    C.m23 = A->m03 * f20 + A->m13 * f21 + A->m23 * f22;
+    C.m00 = t00;
+    C.m01 = t01;
+    C.m02 = t02;
+    C.m03 = t03;
+    C.m10 = t10;
+    C.m11 = t11;
+    C.m12 = t12;
+    C.m13 = t13;
+
+    return C;
 }
 
-//void Mat4RotX(float [4][4] mat, float deg) {
-//}
-//void Mat4RotY(float [4][4] mat, float deg) {
-//}
-//void Mat4RotZ(float [4][4] mat, float deg) {
-//}
+Mat4 mat4_rotate_y(float angle, Mat4 *A) {
+    Mat4 C = Mat4I();
+
+    float c = cos(angle);
+    float s = sin(angle);
+
+    float f00 = c
+    float f01 = 0;
+    float f02 = -s;
+    float f10 = 0;
+    float f11 = 1;
+    float f12 = 0;
+    float f20 = s;
+    float f21 = 0;
+    float f22 = c;
+
+    float t00 = A->m00 * f00 + A->m10 * f01 + A->m20 * f02;
+    float t01 = A->m01 * f00 + A->m11 * f01 + A->m21 * f02;
+    float t02 = A->m02 * f00 + A->m12 * f01 + A->m22 * f02;
+    float t03 = A->m03 * f00 + A->m13 * f01 + A->m23 * f02;
+
+    float t10 = A->m00 * f10 + A->m10 * f11 + A->m20 * f12;
+    float t11 = A->m01 * f10 + A->m11 * f11 + A->m21 * f12;
+    float t12 = A->m02 * f10 + A->m12 * f11 + A->m22 * f12;
+    float t13 = A->m03 * f10 + A->m13 * f11 + A->m23 * f12;
+
+    C.m20 = A->m00 * f20 + A->m10 * f21 + A->m20 * f22;
+    C.m21 = A->m01 * f20 + A->m11 * f21 + A->m21 * f22;
+    C.m22 = A->m02 * f20 + A->m12 * f21 + A->m22 * f22;
+    C.m23 = A->m03 * f20 + A->m13 * f21 + A->m23 * f22;
+    C.m00 = t00;
+    C.m01 = t01;
+    C.m02 = t02;
+    C.m03 = t03;
+    C.m10 = t10;
+    C.m11 = t11;
+    C.m12 = t12;
+    C.m13 = t13;
+
+    return C;
+}
+
+Mat4 mat4_rotate_z(float angle, Mat4 *A) {
+    Mat4 C = Mat4I();
+
+    float c = cos(angle);
+    float s = sin(angle);
+
+    float f00 = c
+    float f01 = s;
+    float f02 = 0;
+    float f10 = -s;
+    float f11 = c;
+    float f12 = 0;
+    float f20 = 0;
+    float f21 = 0;
+    float f22 = 1;
+
+    float t00 = A->m00 * f00 + A->m10 * f01 + A->m20 * f02;
+    float t01 = A->m01 * f00 + A->m11 * f01 + A->m21 * f02;
+    float t02 = A->m02 * f00 + A->m12 * f01 + A->m22 * f02;
+    float t03 = A->m03 * f00 + A->m13 * f01 + A->m23 * f02;
+
+    float t10 = A->m00 * f10 + A->m10 * f11 + A->m20 * f12;
+    float t11 = A->m01 * f10 + A->m11 * f11 + A->m21 * f12;
+    float t12 = A->m02 * f10 + A->m12 * f11 + A->m22 * f12;
+    float t13 = A->m03 * f10 + A->m13 * f11 + A->m23 * f12;
+
+    C.m20 = A->m00 * f20 + A->m10 * f21 + A->m20 * f22;
+    C.m21 = A->m01 * f20 + A->m11 * f21 + A->m21 * f22;
+    C.m22 = A->m02 * f20 + A->m12 * f21 + A->m22 * f22;
+    C.m23 = A->m03 * f20 + A->m13 * f21 + A->m23 * f22;
+    C.m00 = t00;
+    C.m01 = t01;
+    C.m02 = t02;
+    C.m03 = t03;
+    C.m10 = t10;
+    C.m11 = t11;
+    C.m12 = t12;
+    C.m13 = t13;
+
+    return C;
+}
+
+Mat4 mat4_translate(Vec3 *vec, Mat4 A) {
+    Mat4 C = Mat4I();
+    C.m30 += A->m00 * vec->x + A->m10 * vec->y + A->m20 * vec->z;
+    C.m31 += A->m01 * vec->x + A->m11 * vec->y + A->m21 * vec->z;
+    C.m32 += A->m02 * vec->x + A->m12 * vec->y + A->m22 * vec->z;
+    C.m33 += A->m03 * vec->x + A->m13 * vec->y + A->m23 * vec->z;
+    return C;
+}
+
+Mat4 create_transformation_matrix(
+    Vec3 *translation,
+    float rx, float ry, float rz, float scale_factor
+) {
+    Mat4 C = Mat4I();
+
+    C = mat4_translate(translation, &C);
+    C = mat4_rotate_x(rx), &C);
+    C = mat4_rotate_y(ry), &C);
+    C = mat4_rotate_z(rz), &C);
+    C = mat4_scale(newVec3(scale_factor, scale_factor, scale_factor), &C);
+    return C;
+}
+
+Mat4 create_transformation_matrix_2d(
+    float x, float y, float scale_x, float scale_y
+) {
+    Mat4 C = Mat4I();
+
+    C = mat4_translate(newVec3(x, y, 0), &C)
+	C = mat4_scale(newVec3(scale_x, scale_y, 1.0), &C);
+	return C;
+}
+
+Mat4 create_view_matrix(Vec3 *position, float pitch, float yaw) {
+    Mat4 C = Mat4I();
+    C = mat4_rotate_x(pitch, &C);
+    C = mat4_rotate_y(yaw, &C);
+    Vec3 neg_camera_position = newVec3(-1 * pos->x, -1 * pos->y, -1 * pos->z);
+    C = mat4_translate(&neg_camera_position, &C);
+    return C;
+}

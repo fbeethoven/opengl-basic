@@ -42,10 +42,10 @@ G_Object *graphics_new_object() {
 
 
     float vertices[] = {
-    -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,  // top left
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,  // bottom left
-    0.5f, -0.5f, 0.0f,  1.0f, 0.0f,  // bottom right
-    0.5f,  0.5f, 0.0f,  1.0f, 1.0f,  // top right
+    -0.5f,  0.5f, 0.0f, 0.0f, 0.0f,  // top left
+    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,  // bottom left
+    0.5f, -0.5f, 0.0f,  1.0f, 1.0f,  // bottom right
+    0.5f,  0.5f, 0.0f,  0.0f, 1.0f,  // top right
 
     -0.5f,  0.5f, 0.5f, 0.0f, 1.0f,  // top left
     -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom left
@@ -54,8 +54,8 @@ G_Object *graphics_new_object() {
     };
 
     unsigned int indices[] = {
-    0, 1, 2,
-    2, 3, 0
+    0, 1, 3,
+    3, 1, 2
 
 //    2, 6, 7,
 //    7, 3, 2
@@ -95,7 +95,9 @@ G_Object *graphics_new_object() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 //    char *image_path = "texture920x613.png";
-    char *image_path = "wall.jpg";
+//    char *image_path = "wall.jpg";
+//    char *image_path = "marble-floor.jpg";
+    char *image_path = "wood-floor.jpg";
     Image *test = image_load(image_path);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test->width, test->height, 0, GL_RGB, GL_UNSIGNED_BYTE, test->data);
@@ -212,3 +214,90 @@ G_Object *graphics_new_rect(
 
     return new_object;
 }
+
+
+void init_render_handler(GraphicsContext *ctx, RenderHandler *rh) {
+    rh->FOV = 1.19377;
+	rh->NEAR_PLANE = 0.1f;
+	rh->FAR_PLANE = 1000;
+
+	rh->RED = 0.5f;
+	rh->GREEN = 0.5f;
+	rh->BLUE = 0.5f;
+
+    rh->projectionMatrix = create_projection_matrix(ctx, rh);
+
+    rh->shader = shader_get_program();
+    rh->renderer;
+
+    // rh->terrainShader = new TerrainShader();
+    // rh->terrainRenderer = new TerrainRenderer(terrainShader, projectionMatrix);
+}
+
+void prepare(RenderHandler *rh) {
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(rh->RED, rh->GREEN, rh->BLUE, 1);
+}
+
+void render(RenderHandler *rh, Camera *camera) {
+    prepare(rh);
+    glUseProgram(rh->shader);
+
+    shader.loadViewMatrix(camera);
+    Mat4 create_view_matrix(camera->position, camera->pitch, camera->yaw);
+
+
+
+    renderer.render(entities);
+
+    glUseProgram(0);
+
+    entities.clear();
+}
+
+public void processTerrain(Terrain terrain) {
+    terrains.add(terrain);
+}
+
+public void processEntity(Entity entity) {
+    TexturedModel entityModel = entity.getModel();
+    List<Entity> batch = entities.get(entityModel);
+    if (batch != null) {
+        batch.add(entity);
+    } else {
+        List<Entity> newBatch = new ArrayList<Entity>();
+        newBatch.add(entity);
+        entities.put(entityModel, newBatch);
+    }
+}
+
+public void cleanUp() {
+    shader.cleanUp();
+    terrainShader.cleanUp();
+}
+
+
+static Mat4 create_projection_matrix(
+    GraphicsContext *ctx, RenderHandler* rh
+) {
+    float aspectRatio = (float)ctx->getWidth() / (float)ctx->getHeight();
+    float y_scale = (float) ((1.0f / tan(FOV / 2.0f))) * aspectRatio);
+    float x_scale = y_scale / aspectRatio;
+    float frustum_length = rh->FAR_PLANE - rh->NEAR_PLANE;
+
+    projectionMatrix = Mat4I();
+    projectionMatrix.m00 = x_scale;
+    projectionMatrix.m11 = y_scale;
+    projectionMatrix.m22 = -(
+        (rh->FAR_PLANE + rh->NEAR_PLANE) / frustum_length
+    );
+    projectionMatrix.m23 = -1;
+    projectionMatrix.m32 = -(
+        (2 * rh->NEAR_PLANE * rh->FAR_PLANE) / frustum_length
+    );
+    projectionMatrix.m33 = 0;
+    return projectionMatrix;
+}
+
+void graphics_prepare()

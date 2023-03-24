@@ -5,11 +5,13 @@
 
 
 typedef struct GraphicsContext {
+    int width;
+    int height;
     GLFWwindow* window;
 } GraphicsContext;
 
 
-typedef struct G_Object {
+typedef struct Object {
     unsigned int shader_program_id;
 
 	unsigned int vao;
@@ -21,12 +23,35 @@ typedef struct G_Object {
 	float camera_controler[4][4];
 
     Vec3 color;
-} G_Object;
+} GObject;
 
+typedef RenderHandler {
+    float FOV;
+	float NEAR_PLANE;
+	float FAR_PLANE;
 
-G_Object *graphics_new_object();
+	float RED;
+	float GREEN;
+	float BLUE;
 
-void graphics_free_object(G_Object *object);
+	Mat4 projectionMatrix;
+
+	int shader;
+	Renderer renderer;
+
+} RenderHandler;
+
+typedef Camera {
+    float pitch;
+    float yaw;
+    Vec3 position;
+} Camera;
+
+void init_render_handler();
+
+GObject *graphics_new_object();
+
+void graphics_free_object(GObject *object);
 
 int graphics_init(GraphicsContext *ctx);
 
@@ -35,7 +60,7 @@ G_Object *graphics_new_rect(
     Vec3 *topright, Vec3 *topleft, Vec3 *botleft, Vec3 *botright
 );
 
-void graphics_render_rect(GraphicsContext *ctx, G_Object *object);
+void graphics_render_rect(GraphicsContext *ctx, GObject *object);
 
 
 #endif  // GRAPHICS_H
