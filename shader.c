@@ -14,7 +14,7 @@ static char *read_file(char *file_path) {
 
     char *data = malloc(sizeof(char) * file_size);
     if(fread(data, sizeof(char), file_size, file) != file_size) {
-        fprintf(stderr, "There was an error reading input");
+        fprintf(stderr, "There was an error reading input\n");
         free(data);
         fclose(file);
         exit(1);
@@ -25,7 +25,9 @@ static char *read_file(char *file_path) {
 }
 
 
-static unsigned int compile_shaders(GLenum shader_type, const char *shader_source) {
+static unsigned int compile_shaders(
+    GLenum shader_type, const char *shader_source
+) {
 	int status_success;
 
 	unsigned int shader_id;
@@ -47,16 +49,22 @@ static unsigned int compile_shaders(GLenum shader_type, const char *shader_sourc
 
 
 
-static unsigned int shader_get_program_general(char *vertex_shader_path, char* fragment_shader_path) {
+static unsigned int shader_get_program_general(
+    char *vertex_shader_path, char* fragment_shader_path
+) {
 	unsigned int shader_program_id = glCreateProgram();
 
     char* vertex_shader = read_file("shaders/vertex_shader.glsl");
-	unsigned int vertex_shader_id = compile_shaders(GL_VERTEX_SHADER, vertex_shader);
+	unsigned int vertex_shader_id = compile_shaders(
+        GL_VERTEX_SHADER, vertex_shader
+    );
 	glAttachShader(shader_program_id, vertex_shader_id);
 	free(vertex_shader);
 
     char* fragment_shader = read_file("shaders/fragment_shader.glsl");
-	unsigned int fragment_shader_id = compile_shaders(GL_FRAGMENT_SHADER, fragment_shader);
+	unsigned int fragment_shader_id = compile_shaders(
+        GL_FRAGMENT_SHADER, fragment_shader
+    );
 	glAttachShader(shader_program_id, fragment_shader_id);
 	free(fragment_shader);
 
@@ -72,30 +80,53 @@ static unsigned int shader_get_program_general(char *vertex_shader_path, char* f
 
 
 unsigned int shader_get_program_2d() {
-
-    return shader_get_program_general("shaders/vertex_2d.glsl", "shaders/fragment_2d.glsl");
+    return shader_get_program_general(
+        "shaders/vertex_2d.glsl",
+        "shaders/fragment_2d.glsl"
+    );
 }
 
 
 unsigned int shader_get_program() {
-
-    return shader_get_program_general("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+    return shader_get_program_general(
+        "shaders/vertex_shader.glsl",
+        "shaders/fragment_shader.glsl"
+    );
 }
 
-unsigned int shader_load_matrix(
+void shader_load_matrix(
     unsigned int shader_program_id,
     char *location,
     Mat4 *matrix
 ) {
-    uniform_location = glGetUniformLocation(
+    int uniform_location = glGetUniformLocation(
         shader_program_id, location
     );
     if (uniform_location < 0) {
+        printf("MATRIX %s\n", location);
+
+        printf("%f %f %f %f\n", matrix->m00, matrix->m01, matrix->m02, matrix->m03);
+        printf("%f %f %f %f\n", matrix->m10, matrix->m11, matrix->m12, matrix->m13);
+        printf("%f %f %f %f\n", matrix->m20, matrix->m21, matrix->m22, matrix->m23);
+        printf("%f %f %f %f\n", matrix->m30, matrix->m31, matrix->m32, matrix->m33);
+
+
         printf(
-            "[ERROR] shader (ID: %d) couldn't find location %s",
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
             shader_program_id,
             location
         );
     }
-    glUniformMatrix4fv(uniform_location, 1, matrix);
+    glUniformMatrix4fv(uniform_location, 1, GL_FALSE, (float *)matrix);
 }
+
+
+void shader_push(unsigned int shader_program_id) {
+    glUseProgram(shader_program_id);
+}
+
+
+void shader_pop() {
+    glUseProgram(0);
+}
+

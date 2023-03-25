@@ -30,7 +30,7 @@ Mat4 mat4_diag(float x, float y, float z, float w) {
 }
 
 Mat4 Mat4I() {
-    return Mat4_diag(1.0, 1.0, 1.0, 1.0);
+    return mat4_diag(1.0, 1.0, 1.0, 1.0);
 }
 
 Mat4 mat4_multiply(Mat4 *A, Mat4 *B) {
@@ -55,19 +55,20 @@ Mat4 mat4_multiply(Mat4 *A, Mat4 *B) {
     C.m31 = A->m30*B->m01 + A->m31*B->m11 + A->m32*B->m21+ A->m33*B->m31;
     C.m32 = A->m30*B->m02 + A->m31*B->m12 + A->m32*B->m22+ A->m33*B->m32;
     C.m33 = A->m30*B->m03 + A->m31*B->m13 + A->m32*B->m23+ A->m33*B->m33;
-    return *C;
-}
-
-Mat4 mat4_add(Mat4 *A, Mat4 *B) {
-    Mat4 C = {0};
-
-    for (int i=0; i<4; i++) {
-        for (int j=0; j<4; j++) {
-            C.T[i][j] += A->T[i][j] + B->T[i][j];
-        }
-    }
     return C;
 }
+
+
+// Mat4 mat4_add(Mat4 *A, Mat4 *B) {
+//     Mat4 C = {0};
+// 
+//     for (int i=0; i<4; i++) {
+//         for (int j=0; j<4; j++) {
+//             C.mj += A->T[i][j] + B->T[i][j];
+//         }
+//     }
+//     return C;
+// }
 
 void mat4_scale(Vec3 *vec, Mat4 *source) {
     source->m00 = vec->x * source->m00;
@@ -86,7 +87,7 @@ void mat4_scale(Vec3 *vec, Mat4 *source) {
     source->m23 = vec->z * source->m23;
 }
 
-Mat4 mat4_copy(const Mat4 *A) {
+Mat4 mat4_copy(Mat4 *A) {
     Mat4 C = {0};
     C.m00 = A->m00;
     C.m01 = A->m01;
@@ -117,7 +118,7 @@ Mat4 mat4_rotate_x(float angle, Mat4 *A) {
     float c = cos(angle);
     float s = sin(angle);
 
-    float f00 = 1
+    float f00 = 1;
     float f01 = 0;
     float f02 = 0;
     float f10 = 0;
@@ -159,7 +160,7 @@ Mat4 mat4_rotate_y(float angle, Mat4 *A) {
     float c = cos(angle);
     float s = sin(angle);
 
-    float f00 = c
+    float f00 = c;
     float f01 = 0;
     float f02 = -s;
     float f10 = 0;
@@ -201,7 +202,7 @@ Mat4 mat4_rotate_z(float angle, Mat4 *A) {
     float c = cos(angle);
     float s = sin(angle);
 
-    float f00 = c
+    float f00 = c;
     float f01 = s;
     float f02 = 0;
     float f10 = -s;
@@ -237,7 +238,7 @@ Mat4 mat4_rotate_z(float angle, Mat4 *A) {
     return C;
 }
 
-Mat4 mat4_translate(Vec3 *vec, Mat4 A) {
+Mat4 mat4_translate(Vec3 *vec, Mat4 *A) {
     Mat4 C = Mat4I();
     C.m30 += A->m00 * vec->x + A->m10 * vec->y + A->m20 * vec->z;
     C.m31 += A->m01 * vec->x + A->m11 * vec->y + A->m21 * vec->z;
@@ -253,10 +254,11 @@ Mat4 create_transformation_matrix(
     Mat4 C = Mat4I();
 
     C = mat4_translate(translation, &C);
-    C = mat4_rotate_x(rx), &C);
-    C = mat4_rotate_y(ry), &C);
-    C = mat4_rotate_z(rz), &C);
-    C = mat4_scale(newVec3(scale_factor, scale_factor, scale_factor), &C);
+    C = mat4_rotate_x(rx, &C);
+    C = mat4_rotate_y(ry, &C);
+    C = mat4_rotate_z(rz, &C);
+    Vec3 scale_vec = newVec3(scale_factor, scale_factor, scale_factor);
+    mat4_scale(&scale_vec, &C);
     return C;
 }
 
@@ -265,12 +267,14 @@ Mat4 create_transformation_matrix_2d(
 ) {
     Mat4 C = Mat4I();
 
-    C = mat4_translate(newVec3(x, y, 0), &C)
-	C = mat4_scale(newVec3(scale_x, scale_y, 1.0), &C);
+    Vec3 translate_vec = newVec3(x, y, 0);
+    C = mat4_translate(&translate_vec, &C);
+    Vec3 scale_vec = newVec3(scale_x, scale_y, 1.0);
+	mat4_scale(&scale_vec, &C);
 	return C;
 }
 
-Mat4 create_view_matrix(Vec3 *position, float pitch, float yaw) {
+Mat4 create_view_matrix(Vec3 *pos, float pitch, float yaw) {
     Mat4 C = Mat4I();
     C = mat4_rotate_x(pitch, &C);
     C = mat4_rotate_y(yaw, &C);

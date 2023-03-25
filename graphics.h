@@ -11,21 +11,35 @@ typedef struct GraphicsContext {
 } GraphicsContext;
 
 
-typedef struct Object {
-    unsigned int shader_program_id;
-
+typedef struct BaseModel {
 	unsigned int vao;
 	unsigned int vbo;
 	unsigned int ibo;
 
-	unsigned int texture_id;
+    int vertex_count;
 
-	float camera_controler[4][4];
+} BaseModel;
 
-    Vec3 color;
-} GObject;
 
-typedef RenderHandler {
+typedef struct TextureModel {
+    BaseModel base_model;
+    unsigned int texture_id;
+} TextureModel;
+
+
+typedef struct Entity {
+    // TODO: use a TextureModel instead
+    BaseModel *model;
+    Vec3 *position;
+    float rotation_x;
+    float rotation_y;
+    float rotation_z;
+    float scale;
+    int active;
+} Entity;
+
+
+typedef struct Renderer {
     float FOV;
 	float NEAR_PLANE;
 	float FAR_PLANE;
@@ -34,33 +48,43 @@ typedef RenderHandler {
 	float GREEN;
 	float BLUE;
 
-	Mat4 projectionMatrix;
+	Mat4 projection_matrix;
 
 	int shader;
-	Renderer renderer;
+    Entity entities[10];
 
-} RenderHandler;
+} Renderer;
 
-typedef Camera {
+
+typedef struct Camera {
     float pitch;
     float yaw;
     Vec3 position;
 } Camera;
 
-void init_render_handler();
 
-GObject *graphics_new_object();
+void camera_move(Camera *camera, float dx, float dy, float dz);
 
-void graphics_free_object(GObject *object);
+void init_render_handler(GraphicsContext *ctx, Renderer *rh);
+
+void increase_position(Entity *entity, float dx, float dy, float dz);
+
+void increase_rotation(Entity *entity, float dx, float dy, float dz);
 
 int graphics_init(GraphicsContext *ctx);
 
-G_Object *graphics_new_rect(
-    GraphicsContext *ctx,
-    Vec3 *topright, Vec3 *topleft, Vec3 *botleft, Vec3 *botright
+void load_data_to_model(
+    BaseModel *model,
+    float *vertices,  unsigned int *indices,
+    int vertices_size, int indices_size
 );
 
-void graphics_render_rect(GraphicsContext *ctx, GObject *object);
+void render(Renderer *rh, Camera *camera);
+
+
+// GObject *graphics_new_object();
+
+// void graphics_free_object(GObject *object);
 
 
 #endif  // GRAPHICS_H

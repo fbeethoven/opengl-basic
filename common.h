@@ -55,11 +55,11 @@ Vec3 Vec3_add(Vec3 *a, Vec3 *b);
 Mat4 mat4_diag(float x, float y, float z, float w);
 Mat4 Mat4I();
 
-void mat4_copy(Mat4 *A, Mat4 *B);
+Mat4 mat4_copy(Mat4 *A);
 Mat4 mat4_add(Mat4 *A, Mat4 *B);
 Mat4 mat4_mult(Mat4 *A, Mat4 *B);
 void mat4_scale(Vec3 *vec, Mat4 *source);
-Mat4 mat4_translate(Vec3 *vec, Mat4 A);
+Mat4 mat4_translate(Vec3 *vec, Mat4 *A);
 
 Mat4 mat4_rotate_x(float angle, Mat4 *A);
 Mat4 mat4_rotate_y(float angle, Mat4 *A);

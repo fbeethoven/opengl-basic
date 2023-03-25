@@ -7,118 +7,118 @@
 
 #define BAD_COORDS 1
 
-void move_cube(float vertices[], int n, Vec3 *dir, Mat4 *cube_mat) {
-
-    if (BAD_COORDS) {
-        for (int i=0; i<4; i++) {
-            vertices[i*3 + 0] += dir->x;
-            vertices[i*3 + 1] += dir->y;
-            vertices[i*3 + 2] += dir->z;
-        }
-    }
-    else {
-        Mat4 transpose = Mat4I();
-        Mat4Translate(&transpose, dir);
-        Mat4 new_transform = Mat4Mult(&transpose, cube_mat);
-
-        Mat4Copy(cube_mat, &new_transform);
-    }
-}
-
-
-void process_input(GLFWwindow *window, float vertices[], int *triangles, Mat4 *cube_mat){
-    double xpos, ypos;
-    float speed = 0.05;
-
-//    printf("DEBUG VERTICES\n");
-//    printf("x: %f, y: %f z: %f\n", vertices[0], vertices[1], vertices[2]);
-//
-//    glfwGetCursorPos(window, &xpos, &ypos);
-//    printf("x: %f, y: %f\n", xpos, ypos);
-
-//    printf("DEBUG CUBE CAMERA\n");
-//    printf("%f %f %f %f\n", cube->camera_controler[0][0], cube->camera_controler[0][1], cube->camera_controler[0][2], cube->camera_controler[0][3]);
-//    printf("%f %f %f %f\n", cube->camera_controler[1][0], cube->camera_controler[1][1], cube->camera_controler[1][2], cube->camera_controler[1][3]);
-//    printf("%f %f %f %f\n", cube->camera_controler[2][0], cube->camera_controler[2][1], cube->camera_controler[2][2], cube->camera_controler[2][3]);
-//    printf("%f %f %f %f\n", cube->camera_controler[3][0], cube->camera_controler[3][1], cube->camera_controler[3][2], cube->camera_controler[3][3]);
-
-    int shift = 0;
-
-    if(
-        glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS
-    ) {
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_P ) == GLFW_PRESS){
-        if ( (*triangles & (1<<1)) == 0) {
-            *triangles |= (1<<1);
-            *triangles ^= 1;
-        }
-    } else {
-        *triangles &= ~(1<<1);
-    }
-
-
-    if (
-        glfwGetKey(window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS &&
-        glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS
-    ){
-        printf("Going BACKWARDS!\n");
-        Vec3 dir = { .x = 0.0, .y = 0.0, .z= -speed };
-        move_cube(vertices, 36, &dir, cube_mat);
-        shift = 1;
-    } else {
-        shift = 0;
-    }
-    if (
-        glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_K ) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_W ) == GLFW_PRESS
-    ){
-        printf("Pressing UP\n");
-        Vec3 dir = { .x = 0.0, .y = +speed, .z=0.0 };
-        move_cube(vertices, 36, &dir, cube_mat);
-    }
-    if (
-        shift == 0 &&
-        glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS
-    ){
-        printf("Going FORWARD!\n");
-        Vec3 dir = { .x = 0.0, .y = 0.0, .z= speed };
-        move_cube(vertices, 36, &dir, cube_mat);
-    }
-
-    if (
-        glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS
-    ){
-        printf("Pressing DOWN\n");
-        Vec3 dir = { .x = 0.0, .y = -speed, .z=0.0 };
-        move_cube(vertices, 36, &dir, cube_mat);
-    }
-    if (
-        glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_L ) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_D ) == GLFW_PRESS
-    ){
-        printf("Pressing RIGHT\n");
-        Vec3 dir = { .x = speed, .y = 0.0, .z=0.0 };
-        move_cube(vertices, 36, &dir, cube_mat);
-    }
-    if (
-        glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS ||
-        glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS
-    ){
-        printf("Pressing LEFT\n");
-        Vec3 dir = { .x = -speed, .y = 0.0, .z=0.0 };
-        move_cube(vertices, 36, &dir, cube_mat);
-    }
-
-}
+// void move_cube(float vertices[], int n, Vec3 *dir, Mat4 *cube_mat) {
+// 
+//     if (BAD_COORDS) {
+//         for (int i=0; i<4; i++) {
+//             vertices[i*3 + 0] += dir->x;
+//             vertices[i*3 + 1] += dir->y;
+//             vertices[i*3 + 2] += dir->z;
+//         }
+//     }
+//     else {
+//         Mat4 transpose = Mat4I();
+//         Mat4Translate(&transpose, dir);
+//         Mat4 new_transform = Mat4Mult(&transpose, cube_mat);
+// 
+//         Mat4Copy(cube_mat, &new_transform);
+//     }
+// }
+// 
+// 
+// void process_input(GLFWwindow *window, float vertices[], int *triangles, Mat4 *cube_mat){
+//     double xpos, ypos;
+//     float speed = 0.05;
+// 
+// //    printf("DEBUG VERTICES\n");
+// //    printf("x: %f, y: %f z: %f\n", vertices[0], vertices[1], vertices[2]);
+// //
+// //    glfwGetCursorPos(window, &xpos, &ypos);
+// //    printf("x: %f, y: %f\n", xpos, ypos);
+// 
+// //    printf("DEBUG CUBE CAMERA\n");
+// //    printf("%f %f %f %f\n", cube->camera_controler[0][0], cube->camera_controler[0][1], cube->camera_controler[0][2], cube->camera_controler[0][3]);
+// //    printf("%f %f %f %f\n", cube->camera_controler[1][0], cube->camera_controler[1][1], cube->camera_controler[1][2], cube->camera_controler[1][3]);
+// //    printf("%f %f %f %f\n", cube->camera_controler[2][0], cube->camera_controler[2][1], cube->camera_controler[2][2], cube->camera_controler[2][3]);
+// //    printf("%f %f %f %f\n", cube->camera_controler[3][0], cube->camera_controler[3][1], cube->camera_controler[3][2], cube->camera_controler[3][3]);
+// 
+//     int shift = 0;
+// 
+//     if(
+//         glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS
+//     ) {
+//         glfwSetWindowShouldClose(window, GL_TRUE);
+//     }
+// 
+//     if (glfwGetKey(window, GLFW_KEY_P ) == GLFW_PRESS){
+//         if ( (*triangles & (1<<1)) == 0) {
+//             *triangles |= (1<<1);
+//             *triangles ^= 1;
+//         }
+//     } else {
+//         *triangles &= ~(1<<1);
+//     }
+// 
+// 
+//     if (
+//         glfwGetKey(window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS &&
+//         glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS
+//     ){
+//         printf("Going BACKWARDS!\n");
+//         Vec3 dir = { .x = 0.0, .y = 0.0, .z= -speed };
+//         move_cube(vertices, 36, &dir, cube_mat);
+//         shift = 1;
+//     } else {
+//         shift = 0;
+//     }
+//     if (
+//         glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_K ) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_W ) == GLFW_PRESS
+//     ){
+//         printf("Pressing UP\n");
+//         Vec3 dir = { .x = 0.0, .y = +speed, .z=0.0 };
+//         move_cube(vertices, 36, &dir, cube_mat);
+//     }
+//     if (
+//         shift == 0 &&
+//         glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS
+//     ){
+//         printf("Going FORWARD!\n");
+//         Vec3 dir = { .x = 0.0, .y = 0.0, .z= speed };
+//         move_cube(vertices, 36, &dir, cube_mat);
+//     }
+// 
+//     if (
+//         glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS
+//     ){
+//         printf("Pressing DOWN\n");
+//         Vec3 dir = { .x = 0.0, .y = -speed, .z=0.0 };
+//         move_cube(vertices, 36, &dir, cube_mat);
+//     }
+//     if (
+//         glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_L ) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_D ) == GLFW_PRESS
+//     ){
+//         printf("Pressing RIGHT\n");
+//         Vec3 dir = { .x = speed, .y = 0.0, .z=0.0 };
+//         move_cube(vertices, 36, &dir, cube_mat);
+//     }
+//     if (
+//         glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS ||
+//         glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS
+//     ){
+//         printf("Pressing LEFT\n");
+//         Vec3 dir = { .x = -speed, .y = 0.0, .z=0.0 };
+//         move_cube(vertices, 36, &dir, cube_mat);
+//     }
+// 
+// }
 
 
 int main() {
@@ -127,105 +127,104 @@ int main() {
         return -1;
     }
 
+    Renderer renderer = {0};
+    init_render_handler(&ctx, &renderer);
+
+    Camera camera = {0};
+
+    camera.position = newVec3(0, 5, 0);
+    // camera.pitch = 10;
+    camera.pitch = 0.1745;
+    camera.yaw = 0.0;
+
     float vertices[] = {
-        -0.5f,  0.5f, 0.0f,  // top left
-        -0.5f, -0.5f, 0.0f,  // bottom left
-         0.5f, -0.5f, 0.0f,  // bottom right
-         0.5f,  0.5f, 0.0f,  // top right
+        -0.5f,0.5f,-0.5f,	
+        -0.5f,-0.5f,-0.5f,	
+        0.5f,-0.5f,-0.5f,	
+        0.5f,0.5f,-0.5f,		
 
-        -0.5f,  0.5f, 0.5f,  // top left
-         0.5f,  0.5f, 0.5f,  // top right
-         0.5f, -0.5f, 0.5f,  // bottom right
-        -0.5f, -0.5f, 0.5f  // bottom left
-    };
+        -0.5f,0.5f,0.5f,	
+        -0.5f,-0.5f,0.5f,	
+        0.5f,-0.5f,0.5f,	
+        0.5f,0.5f,0.5f,
+
+        0.5f,0.5f,-0.5f,	
+        0.5f,-0.5f,-0.5f,	
+        0.5f,-0.5f,0.5f,	
+        0.5f,0.5f,0.5f,
+
+        -0.5f,0.5f,-0.5f,	
+        -0.5f,-0.5f,-0.5f,	
+        -0.5f,-0.5f,0.5f,	
+        -0.5f,0.5f,0.5f,
+
+        -0.5f,0.5f,0.5f,
+        -0.5f,0.5f,-0.5f,
+        0.5f,0.5f,-0.5f,
+        0.5f,0.5f,0.5f,
+
+        -0.5f,-0.5f,0.5f,
+        -0.5f,-0.5f,-0.5f,
+        0.5f,-0.5f,-0.5f,
+        0.5f,-0.5f,0.5f
+		};
+
     unsigned int indices[] = {
-        0, 1, 2,
-        2, 3, 0,
-
-        1, 4, 7,
-        7, 1, 0,
-
-        3, 2, 5,
-        3, 5, 6,
-
-        1, 4, 5,
-        1, 5, 2
+        0,1,3,	
+        3,1,2,	
+        4,5,7,
+        7,5,6,
+        8,9,11,
+        11,9,10,
+        12,13,15,
+        15,13,14,	
+        16,17,19,
+        19,17,18,
+        20,21,23,
+        23,21,22
     };
 
+    BaseModel model = {0};
 
-    G_Object* cube = graphics_new_object();
-    Mat4 cube_mat = Mat4I();
+    load_data_to_model(
+        &model, vertices, indices,
+        sizeof(vertices), sizeof(indices)
+    );
+    model.vertex_count = sizeof(indices)/sizeof(indices[0]);
+    Entity entity = renderer.entities[0];
+    entity.model = &model;
+    Vec3 entity_position = newVec3(0, 0, 0);
+    entity.position = &entity_position;
+    entity.active = 1;
 
-
-    Vec3 a = newVec3(-0.75, -0.75, 0.0);
-    Vec3 b = newVec3(-0.80, -0.75, 0.0);
-    Vec3 c = newVec3(-0.80, -0.80, 0.0);
-    Vec3 d = newVec3(-0.75, -0.80, 0.0);
-
-    G_Object *rect = graphics_new_rect(&ctx, &a, &b, &c, &d);
-    int triangles = 0;
     while (!glfwWindowShouldClose(ctx.window)) {
-        process_input(ctx.window, vertices, &triangles, &cube_mat);
-
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
-
-        graphics_render_rect(&ctx, rect);
-
-		glBindVertexArray(cube->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, cube->vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
-        glUseProgram(cube->shader_program_id);
-
-        Mat4 transform = Mat4Mult((Mat4 *)cube->camera_controler, &cube_mat);
-
-        printf("TRANSFORM MATRIX\n");
-        printf("%f, %f, %f, %f\n", transform.T[0][0], transform.T[0][1], transform.T[0][2], transform.T[0][3]);
-        printf("%f, %f, %f, %f\n", transform.T[1][0], transform.T[1][1], transform.T[1][2], transform.T[1][3]);
-        printf("%f, %f, %f, %f\n", transform.T[2][0], transform.T[2][1], transform.T[2][2], transform.T[2][3]);
-        printf("%f, %f, %f, %f\n", transform.T[3][0], transform.T[3][1], transform.T[3][2], transform.T[3][3]);
-
-
-        int uniform_location = glGetUniformLocation(cube->shader_program_id, "u_MVP");
-        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &cube->camera_controler[0][0]);
-//        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &transform.T[0][0]);
-        assert(uniform_location >= 0);
-
-
-        uniform_location = glGetUniformLocation(cube->shader_program_id, "u_transform");
-        glUniformMatrix4fv(uniform_location, 1, GL_FALSE, &cube_mat.T[0][0]);
-        assert(uniform_location >= 0);
-
-        float u_color[] = {1.0, 0.0, 0.0, 1.0};
-
-        uniform_location = glGetUniformLocation(cube->shader_program_id, "u_color");
-        glUniform4fv(uniform_location, 1, &u_color[0]);
-        assert(uniform_location >= 0);
-        printf("Uniform color location: %d\n", uniform_location);
-
-
-        if ( (triangles & 1) == 0) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        float speed = 0.05;
+        if(
+            glfwGetKey(ctx.window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
+            glfwGetKey(ctx.window, GLFW_KEY_Q) == GLFW_PRESS
+        ) {
+            glfwSetWindowShouldClose(ctx.window, GL_TRUE);
         }
-        else {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        if (glfwGetKey(ctx.window, GLFW_KEY_A) == GLFW_PRESS) {
+            camera_move(&camera, speed, 0, 0);
         }
+        
 
-        glBindTexture(GL_TEXTURE_2D, cube->texture_id);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // process_input(ctx.window, vertices, &triangles, &cube_mat);
+        render(&renderer, &camera);
 
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindVertexArray(0);
-        glUseProgram(0);
+        // if ( (triangles & 1) == 0) {
+        //     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // }
+        // else {
+        //     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        // }
+
 
 
         glfwSwapBuffers(ctx.window);
         glfwPollEvents();
     }
-
-    graphics_free_object(cube);
-    graphics_free_object(rect);
 
     glfwTerminate();
     return 0;
