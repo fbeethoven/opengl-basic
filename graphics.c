@@ -309,9 +309,9 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 	rh->NEAR_PLANE = 0.1f;
 	rh->FAR_PLANE = 1000;
 
-	rh->RED = 1.0f;
-	rh->GREEN = 0.3f;
-	rh->BLUE = 0.1f;
+	rh->RED = 0.0f;
+	rh->GREEN = 0.5f;
+	rh->BLUE = 0.3f;
 
     rh->projection_matrix = create_projection_matrix(ctx, rh);
 
@@ -335,6 +335,8 @@ void prepare(Renderer *rh) {
 
 
 void render(Renderer *rh, Camera *camera) {
+    // rh->projection_matrix.m33 = 1.0;
+    // print_mat4("Projection Matrix:", &rh->projection_matrix);
     prepare(rh);
     shader_push(rh->shader);
 
@@ -342,7 +344,6 @@ void render(Renderer *rh, Camera *camera) {
         &camera->position, camera->pitch, camera->yaw
     );
 
-    print_mat4(&view_matrix);
 
     shader_load_matrix(
         rh->shader,
@@ -354,12 +355,18 @@ void render(Renderer *rh, Camera *camera) {
         Entity entity = rh->entities[i];
 
         if (entity.active == 0) {
+            // printf("Entity number %d: is not active\n", i);
             continue;
         }
+        printf(
+            "Entity %d position: %f %f %f\n",
+            i,
+            entity.position->x, entity.position->y, entity.position->z
+        );
 
         glBindVertexArray(entity.model->vao);
         glEnableVertexAttribArray(0);
-
+        
         Mat4 transformation_matrix = create_transformation_matrix(
             entity.position,
             entity.rotation_x,
@@ -371,6 +378,13 @@ void render(Renderer *rh, Camera *camera) {
                 "transformation_matrix",
                 &transformation_matrix
             );
+        // printf("Vertex count: %d\n", entity.model->vertex_count);
+        if ( (rh->fill & 1) == 0) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
         glDrawElements(
             GL_TRIANGLES, entity.model->vertex_count, GL_UNSIGNED_INT, 0
         );

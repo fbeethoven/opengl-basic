@@ -27,10 +27,3 @@ void image_free(Image *img) {
     free(img);
 }
 
-static int test_main() {
-    char *image_path = "texture920x613.png";
-    Image *test = image_load(image_path);
-    printf("Success? \n");
-    printf("width: %d height: %d channels: %d \n", test->width, test->height, test->channels);
-    return 0;
-}

@@ -254,9 +254,10 @@ Mat4 create_transformation_matrix(
     Mat4 C = Mat4I();
 
     C = mat4_translate(translation, &C);
-    C = mat4_rotate_x(rx, &C);
-    C = mat4_rotate_y(ry, &C);
-    C = mat4_rotate_z(rz, &C);
+    // TODO: fix rotation matrix
+    // C = mat4_rotate_x(rx, &C);
+    // C = mat4_rotate_y(ry, &C);
+    // C = mat4_rotate_z(rz, &C);
     Vec3 scale_vec = newVec3(scale_factor, scale_factor, scale_factor);
     mat4_scale(&scale_vec, &C);
     return C;
@@ -283,8 +284,8 @@ Mat4 create_view_matrix(Vec3 *pos, float pitch, float yaw) {
     return C;
 }
 
-void print_mat4(Mat4 *matrix) {
-    printf("MATRIX\n");
+void print_mat4(char *msg, Mat4 *matrix) {
+    printf("%s\n", msg);
 
     printf("%f %f %f %f\n", matrix->m00, matrix->m01, matrix->m02, matrix->m03);
     printf("%f %f %f %f\n", matrix->m10, matrix->m11, matrix->m12, matrix->m13);

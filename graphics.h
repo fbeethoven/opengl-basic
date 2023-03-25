@@ -53,6 +53,8 @@ typedef struct Renderer {
 	int shader;
     Entity entities[10];
 
+    int fill;
+
 } Renderer;
 
 

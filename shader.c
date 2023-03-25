@@ -117,7 +117,7 @@ void shader_load_matrix(
             location
         );
     }
-    glUniformMatrix4fv(uniform_location, 1, GL_FALSE, (float *)matrix);
+    glUniformMatrix4fv(uniform_location, 1, GL_TRUE, (float *)matrix);
 }
 
 
