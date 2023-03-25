@@ -151,6 +151,11 @@ Mat4 mat4_rotate_x(float angle, Mat4 *A) {
     C.m12 = t12;
     C.m13 = t13;
 
+    C.m30 = A->m30;
+    C.m31 = A->m31;
+    C.m32 = A->m32;
+    C.m33 = A->m33;
+
     return C;
 }
 
@@ -192,6 +197,11 @@ Mat4 mat4_rotate_y(float angle, Mat4 *A) {
     C.m11 = t11;
     C.m12 = t12;
     C.m13 = t13;
+
+    C.m30 = A->m30;
+    C.m31 = A->m31;
+    C.m32 = A->m32;
+    C.m33 = A->m33;
 
     return C;
 }
@@ -235,6 +245,11 @@ Mat4 mat4_rotate_z(float angle, Mat4 *A) {
     C.m12 = t12;
     C.m13 = t13;
 
+    C.m30 = A->m30;
+    C.m31 = A->m31;
+    C.m32 = A->m32;
+    C.m33 = A->m33;
+
     return C;
 }
 
@@ -254,10 +269,9 @@ Mat4 create_transformation_matrix(
     Mat4 C = Mat4I();
 
     C = mat4_translate(translation, &C);
-    // TODO: fix rotation matrix
-    // C = mat4_rotate_x(rx, &C);
-    // C = mat4_rotate_y(ry, &C);
-    // C = mat4_rotate_z(rz, &C);
+    C = mat4_rotate_x(rx, &C);
+    C = mat4_rotate_y(ry, &C);
+    C = mat4_rotate_z(rz, &C);
     Vec3 scale_vec = newVec3(scale_factor, scale_factor, scale_factor);
     mat4_scale(&scale_vec, &C);
     return C;
