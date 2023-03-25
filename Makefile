@@ -4,7 +4,7 @@ LIBS = -lglfw -ldl -lm
 INCLUDES = -I external
 BIN = build
 OBJ = shader.c graphics.c common.c image.c
-PROG = $(BIN)/win
+PROG = $(BIN)/p.exe
 
 
 .PHONY: clean dev
