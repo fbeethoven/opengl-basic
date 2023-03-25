@@ -25,7 +25,7 @@ int main() {
 
     Camera camera = {0};
 
-    camera.position = newVec3(0.0, 5.0, 0.0);
+    camera.position = newVec3(5.0, 0.0, 0.0);
     // camera.pitch = 10;
     camera.pitch = 0.1745;
     camera.yaw = 0.0;
@@ -34,47 +34,47 @@ int main() {
         -0.5f,0.5f,-0.5f,	
         -0.5f,-0.5f,-0.5f,	
         0.5f,-0.5f,-0.5f,	
-        0.5f,0.5f,-0.5f
+        0.5f,0.5f,-0.5f,
 
-//         -0.5f,0.5f,0.5f,	
-//         -0.5f,-0.5f,0.5f,	
-//         0.5f,-0.5f,0.5f,	
-//         0.5f,0.5f,0.5f,
-// 
-//         0.5f,0.5f,-0.5f,	
-//         0.5f,-0.5f,-0.5f,	
-//         0.5f,-0.5f,0.5f,	
-//         0.5f,0.5f,0.5f,
-// 
-//         -0.5f,0.5f,-0.5f,	
-//         -0.5f,-0.5f,-0.5f,	
-//         -0.5f,-0.5f,0.5f,	
-//         -0.5f,0.5f,0.5f,
-// 
-//         -0.5f,0.5f,0.5f,
-//         -0.5f,0.5f,-0.5f,
-//         0.5f,0.5f,-0.5f,
-//         0.5f,0.5f,0.5f,
-// 
-//         -0.5f,-0.5f,0.5f,
-//         -0.5f,-0.5f,-0.5f,
-//         0.5f,-0.5f,-0.5f,
-//         0.5f,-0.5f,0.5f
+         -0.5f,0.5f,0.5f,	
+         -0.5f,-0.5f,0.5f,	
+         0.5f,-0.5f,0.5f,	
+         0.5f,0.5f,0.5f,
+ 
+         0.5f,0.5f,-0.5f,	
+         0.5f,-0.5f,-0.5f,	
+         0.5f,-0.5f,0.5f,	
+         0.5f,0.5f,0.5f,
+ 
+         -0.5f,0.5f,-0.5f,	
+         -0.5f,-0.5f,-0.5f,	
+         -0.5f,-0.5f,0.5f,	
+         -0.5f,0.5f,0.5f,
+ 
+         -0.5f,0.5f,0.5f,
+         -0.5f,0.5f,-0.5f,
+         0.5f,0.5f,-0.5f,
+         0.5f,0.5f,0.5f,
+ 
+         -0.5f,-0.5f,0.5f,
+         -0.5f,-0.5f,-0.5f,
+         0.5f,-0.5f,-0.5f,
+         0.5f,-0.5f,0.5f
 		};
 
     unsigned int indices[] = {
         0,1,3,	
-        // 3,1,2
-//        4,5,7,
-//        7,5,6,
-//        8,9,11,
-//        11,9,10,
-//        12,13,15,
-//        15,13,14,	
-//        16,17,19,
-//        19,17,18,
-//        20,21,23,
-//        23,21,22
+        3,1,2,
+        4,5,7,
+        7,5,6,
+        8,9,11,
+        11,9,10,
+        12,13,15,
+        15,13,14,	
+        16,17,19,
+        19,17,18,
+        20,21,23,
+        23,21,22
     };
 
     BaseModel model = {0};
@@ -174,69 +174,16 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         printf("Button pressed\n");
         increase_position(entity, 0.0, -speed, 0.0);
     }
+    if (glfwGetKey(ctx->window, GLFW_KEY_J) == GLFW_PRESS) {
+        entity->scale -= 0.01;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_K) == GLFW_PRESS) {
+        entity->scale += 0.01;
+    }
+
+    printf("scale: %f\n", entity->scale);
+    printf("pitch: %f\n", camera->pitch);
+    printf("yaw: %f\n", camera->yaw);
 }
-// 
-// 
-// 
-//     if (
-//         glfwGetKey(window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS &&
-//         glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS
-//     ){
-//         printf("Going BACKWARDS!\n");
-//         Vec3 dir = { .x = 0.0, .y = 0.0, .z= -speed };
-//         move_cube(vertices, 36, &dir, cube_mat);
-//         shift = 1;
-//     } else {
-//         shift = 0;
-//     }
-//     if (
-//         glfwGetKey(window, GLFW_KEY_UP ) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_K ) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_W ) == GLFW_PRESS
-//     ){
-//         printf("Pressing UP\n");
-//         Vec3 dir = { .x = 0.0, .y = +speed, .z=0.0 };
-//         move_cube(vertices, 36, &dir, cube_mat);
-//     }
-//     if (
-//         shift == 0 &&
-//         glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS
-//     ){
-//         printf("Going FORWARD!\n");
-//         Vec3 dir = { .x = 0.0, .y = 0.0, .z= speed };
-//         move_cube(vertices, 36, &dir, cube_mat);
-//     }
-// 
-//     if (
-//         glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS
-//     ){
-//         printf("Pressing DOWN\n");
-//         Vec3 dir = { .x = 0.0, .y = -speed, .z=0.0 };
-//         move_cube(vertices, 36, &dir, cube_mat);
-//     }
-//     if (
-//         glfwGetKey(window, GLFW_KEY_RIGHT ) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_L ) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_D ) == GLFW_PRESS
-//     ){
-//         printf("Pressing RIGHT\n");
-//         Vec3 dir = { .x = speed, .y = 0.0, .z=0.0 };
-//         move_cube(vertices, 36, &dir, cube_mat);
-//     }
-//     if (
-//         glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS ||
-//         glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS
-//     ){
-//         printf("Pressing LEFT\n");
-//         Vec3 dir = { .x = -speed, .y = 0.0, .z=0.0 };
-//         move_cube(vertices, 36, &dir, cube_mat);
-//     }
-// 
-// }
-
-
 
 

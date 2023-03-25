@@ -314,6 +314,7 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 	rh->BLUE = 0.3f;
 
     rh->projection_matrix = create_projection_matrix(ctx, rh);
+    // rh->projection_matrix.m33 = 1.0;
 
     rh->shader = shader_get_program();
 
@@ -335,7 +336,6 @@ void prepare(Renderer *rh) {
 
 
 void render(Renderer *rh, Camera *camera) {
-    // rh->projection_matrix.m33 = 1.0;
     // print_mat4("Projection Matrix:", &rh->projection_matrix);
     prepare(rh);
     shader_push(rh->shader);
