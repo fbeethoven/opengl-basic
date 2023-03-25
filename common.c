@@ -282,3 +282,14 @@ Mat4 create_view_matrix(Vec3 *pos, float pitch, float yaw) {
     C = mat4_translate(&neg_camera_position, &C);
     return C;
 }
+
+void print_mat4(Mat4 *matrix) {
+    printf("MATRIX\n");
+
+    printf("%f %f %f %f\n", matrix->m00, matrix->m01, matrix->m02, matrix->m03);
+    printf("%f %f %f %f\n", matrix->m10, matrix->m11, matrix->m12, matrix->m13);
+    printf("%f %f %f %f\n", matrix->m20, matrix->m21, matrix->m22, matrix->m23);
+    printf("%f %f %f %f\n", matrix->m30, matrix->m31, matrix->m32, matrix->m33);
+}
+
+

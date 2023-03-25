@@ -309,7 +309,7 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 	rh->NEAR_PLANE = 0.1f;
 	rh->FAR_PLANE = 1000;
 
-	rh->RED = 0.2f;
+	rh->RED = 1.0f;
 	rh->GREEN = 0.3f;
 	rh->BLUE = 0.1f;
 
@@ -341,6 +341,8 @@ void render(Renderer *rh, Camera *camera) {
     Mat4 view_matrix = create_view_matrix(
         &camera->position, camera->pitch, camera->yaw
     );
+
+    print_mat4(&view_matrix);
 
     shader_load_matrix(
         rh->shader,

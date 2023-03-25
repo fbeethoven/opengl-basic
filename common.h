@@ -74,4 +74,6 @@ Mat4 create_transformation_matrix_2d(
     float x, float y, float scale_x, float scale_y
 );
 
+void print_mat4(Mat4 *matrix);
+
 #endif  // COMMON_H
