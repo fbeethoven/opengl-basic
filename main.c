@@ -62,10 +62,10 @@ int main() {
     );
     load_texture_to_model(
         &rect, "assets/fonts/charmap-oldschool_white.png", text_coord, 
+        // &rect, "assets/textures/marble-floor.jpg", text_coord, 
         sizeof(text_coord)
     );
     rect.vertex_count = sizeof(indices)/sizeof(indices[0]);
-    rect.vertex_count = 2;
 
     BaseModel model = {0};
     IntermediateModel cube_data = {0};

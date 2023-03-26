@@ -67,6 +67,8 @@ void load_data_to_model(
     int vertices_size, int indices_size
 ) {
     glGenVertexArrays(1, &model->vao);
+    glBindVertexArray(model->vao);
+
 
     bind_indices_buffer(&model->ibo, indices_size, indices);
 
@@ -87,7 +89,8 @@ void load_texture_to_model(
     BaseModel *model, char *texture_file_path,
     float *texture_coord, int textures_size
 ){
-    // glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(model->vao);
+    glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &model->texture_id);
     glBindTexture(GL_TEXTURE_2D, model->texture_id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -100,8 +103,8 @@ void load_texture_to_model(
     Image *test = image_load(texture_file_path);
 
     glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGB, test->width, test->height,
-        0, GL_RGB, GL_UNSIGNED_BYTE, test->data
+        GL_TEXTURE_2D, 0, GL_RGBA, test->width, test->height,
+        0, GL_RGBA, GL_UNSIGNED_BYTE, test->data
     );
     glGenerateMipmap(GL_TEXTURE_2D);
     image_free(test);
@@ -297,7 +300,7 @@ void render(Renderer *rh, Camera *camera) {
         glBindVertexArray(entity.model->vao);
 
         glEnableVertexAttribArray(0);
-        // glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(1);
         
         Mat4 transformation_matrix = create_transformation_matrix(
             entity.position,
@@ -318,15 +321,16 @@ void render(Renderer *rh, Camera *camera) {
         }
 
 
-        // glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
         glDrawElements(
             GL_TRIANGLES, entity.model->vertex_count, GL_UNSIGNED_INT, 0
         );
 	}
 
     glDisableVertexAttribArray(0);
-    // glDisableVertexAttribArray(1);
-    // glBindTexture(GL_TEXTURE_2D, 0);
+    glDisableVertexAttribArray(1);
+    glBindTexture(GL_TEXTURE_2D, 0);
     glBindVertexArray(0);
 
     shader_pop();
