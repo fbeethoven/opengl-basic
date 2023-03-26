@@ -37,58 +37,33 @@ int main() {
     camera.yaw = 0.0;
 
     float vertices[] = {
-        -0.5f,0.5f,-0.5f,
-        -0.5f,-0.5f,-0.5f,
-        0.5f,-0.5f,-0.5f,
-        0.5f,0.5f,-0.5f,
-
-         -0.5f,0.5f,0.5f,
-         -0.5f,-0.5f,0.5f,
-         0.5f,-0.5f,0.5f,
-         0.5f,0.5f,0.5f,
-
-         0.5f,0.5f,-0.5f,
-         0.5f,-0.5f,-0.5f,
-         0.5f,-0.5f,0.5f,
-         0.5f,0.5f,0.5f,
-
-         -0.5f,0.5f,-0.5f,
-         -0.5f,-0.5f,-0.5f,
-         -0.5f,-0.5f,0.5f,
-         -0.5f,0.5f,0.5f,
-
-         -0.5f,0.5f,0.5f,
-         -0.5f,0.5f,-0.5f,
-         0.5f,0.5f,-0.5f,
-         0.5f,0.5f,0.5f,
-
-         -0.5f,-0.5f,0.5f,
-         -0.5f,-0.5f,-0.5f,
-         0.5f,-0.5f,-0.5f,
-         0.5f,-0.5f,0.5f
+        -0.5f,0.5f, 0.0f,
+        -0.5f,-0.5f, 0.0f,
+        0.5f,-0.5f, 0.0f,
+        0.5f,0.5f, 0.0f
 		};
 
     unsigned int indices[] = {
         0,1,3,
-        3,1,2,
-        4,5,7,
-        7,5,6,
-        8,9,11,
-        11,9,10,
-        12,13,15,
-        15,13,14,
-        16,17,19,
-        19,17,18,
-        20,21,23,
-        23,21,22
+        3,1,2
     };
 
-    BaseModel model = {0};
+    BaseModel rect = {0};
     load_data_to_model(
-        &model, vertices, indices,
+        &rect, vertices, indices,
         sizeof(vertices), sizeof(indices)
     );
-    model.vertex_count = sizeof(indices)/sizeof(indices[0]);
+    rect.vertex_count = sizeof(indices)/sizeof(indices[0]);
+
+    BaseModel model = {0};
+    IntermediateModel cube_data = {0};
+    parse_obj_file_simple("assets/models/cube.obj", &cube_data);
+    load_data_to_model(
+        &model, cube_data.vertices, cube_data.indices,
+        cube_data.vertices_count * sizeof(float),
+        cube_data.indices_count * sizeof(unsigned int)
+    );
+    model.vertex_count = cube_data.indices_count;
 
 
     BaseModel tea_model = {0};
@@ -113,7 +88,7 @@ int main() {
     suzanne.vertex_count = suzanne_data.indices_count;
 
     Entity *entity = &renderer.entities[0];
-    entity->model = &model;
+    entity->model = &rect;
     Vec3 entity_position_1 = newVec3(20, 0, -50);
     entity->position = &entity_position_1;
     entity->active = 1;
