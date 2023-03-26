@@ -93,7 +93,7 @@ int main() {
 
     BaseModel tea_model = {0};
     IntermediateModel tmp = {0};
-    parse_obj_file("assets/models/utah_teapot.obj", &tmp);
+    parse_obj_file_simple("assets/models/utah_teapot.obj", &tmp);
     load_data_to_model(
         &tea_model, tmp.vertices, tmp.indices,
         tmp.vertices_count* sizeof(float),
@@ -102,12 +102,22 @@ int main() {
     tea_model.vertex_count = tmp.indices_count;
 
 
+    BaseModel suzenne = {0};
+    IntermediateModel suzenne_data = {0};
+    parse_obj_file("assets/models/suzanne.obj", &suzenne_data);
+    load_data_to_model(
+        &suzenne, suzenne_data.vertices, suzenne_data.indices,
+        suzenne_data.vertices_count* sizeof(float),
+        suzenne_data.indices_count * sizeof(unsigned int)
+    );
+    suzenne.vertex_count = suzenne_data.indices_count;
+
     Entity *entity = &renderer.entities[0];
     entity->model = &model;
-    Vec3 entity_position_1 = newVec3(0, 0, 0);
+    Vec3 entity_position_1 = newVec3(20, 0, -50);
     entity->position = &entity_position_1;
     entity->active = 1;
-    entity->scale = 5.0;
+    entity->scale = 3.0;
 
     entity = &renderer.entities[1];
     entity->model = &model;
@@ -117,12 +127,11 @@ int main() {
     entity->scale = 5.0;
 
     entity = &renderer.entities[2];
-    entity->model = &model;
-    Vec3 entity_position_3 = newVec3(20, 0, -50);
+    entity->model = &suzenne;
+    Vec3 entity_position_3 = newVec3(10.0, 0.0, -50.0);
     entity->position = &entity_position_3;
     entity->active = 1;
-    entity->scale = 3.0;
-
+    entity->scale = 1.0;
 
     entity = &renderer.entities[3];
     entity->model = &tea_model;
@@ -130,6 +139,7 @@ int main() {
     entity->position = &entity_position_4;
     entity->active = 1;
     entity->scale = 1.0;
+
 
     while (!glfwWindowShouldClose(ctx.window)) {
         printf("Entity SELETED: %d\n", entity_index);

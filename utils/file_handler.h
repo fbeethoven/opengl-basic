@@ -23,6 +23,7 @@ typedef struct StrSplitter {
 
 
 char *read_file(char *file_path);
+void parse_obj_file_simple(char *data, IntermediateModel *dest);
 void parse_obj_file(char *data, IntermediateModel *dest);
 int split_next(StrSplitter *splitter, char *data);
 

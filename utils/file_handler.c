@@ -15,12 +15,17 @@ int push_vertice(IntermediateModel *dest, float x) {
 
 
 int push_index(IntermediateModel *dest, unsigned int x) {
-    printf("Pushing: %d\n", x);
     if (dest->indices_count == IndicesCapacity) {
         return -1;
     }
     dest->indices[dest->indices_count++] = x;
     return 0;
+}
+
+
+void splitter_reset(StrSplitter *splitter) {
+    splitter->cursor = 0;
+    memset(splitter->buffer, 0, BufferCapacity * sizeof(char));
 }
 
 
@@ -44,12 +49,6 @@ int split_next(StrSplitter *splitter, char *data) {
         return -2;
     }
     return 0;
-}
-
-
-void splitter_reset(StrSplitter *splitter) {
-    splitter->cursor = 0;
-    memset(splitter->buffer, 0, BufferCapacity * sizeof(char));
 }
 
 
@@ -77,8 +76,7 @@ char *read_file(char *file_path) {
 }
 
 
-
-void parse_obj_file(char *file_path, IntermediateModel *dest) {
+void parse_obj_file_simple(char *file_path, IntermediateModel *dest) {
     char *data = read_file(file_path);
     StrSplitter split_line = {0};
     split_line.separator = '\n';
@@ -88,24 +86,27 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
     while (split_next(&split_line, data) >= 0) {
         if (split_line.buffer[0] == 'v') {
             splitter_reset(&split_space);
+            split_next(&split_space, split_line.buffer);
 
             split_next(&split_space, split_line.buffer);
+            push_vertice(dest, atof(split_space.buffer));
+
             split_next(&split_space, split_line.buffer);
             push_vertice(dest, atof(split_space.buffer));
-            split_next(&split_space, split_line.buffer);
-            push_vertice(dest, atof(split_space.buffer));
+
             split_next(&split_space, split_line.buffer);
             push_vertice(dest, atof(split_space.buffer));
         }
         else if ( split_line.buffer[0] == 'f') {
             splitter_reset(&split_space);
-
-            split_next(&split_space, split_line.buffer);
             split_next(&split_space, split_line.buffer);
 
-            push_index(dest, (unsigned int) atoi(split_space.buffer));
             split_next(&split_space, split_line.buffer);
             push_index(dest, (unsigned int) atoi(split_space.buffer));
+
+            split_next(&split_space, split_line.buffer);
+            push_index(dest, (unsigned int) atoi(split_space.buffer));
+
             split_next(&split_space, split_line.buffer);
             push_index(dest, (unsigned int) atoi(split_space.buffer));
         }
@@ -113,3 +114,55 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
     free(data);
 }
 
+
+void parse_obj_file(char *file_path, IntermediateModel *dest) {
+    char *data = read_file(file_path);
+    StrSplitter split_line = {0};
+    split_line.separator = '\n';
+    StrSplitter split_space = {0};
+    split_space.separator = ' ';
+
+    StrSplitter split_bar = {0};
+    split_space.separator = '/';
+
+    while (split_next(&split_line, data) >= 0) {
+        splitter_reset(&split_space);
+        if (split_line.buffer[0] == 'v') {
+            split_next(&split_space, split_line.buffer);
+
+            split_next(&split_space, split_line.buffer);
+            push_vertice(dest, atof(split_space.buffer));
+
+            split_next(&split_space, split_line.buffer);
+            push_vertice(dest, atof(split_space.buffer));
+
+            split_next(&split_space, split_line.buffer);
+            push_vertice(dest, atof(split_space.buffer));
+        }
+        else if ( split_line.buffer[0] == 'f') {
+            split_next(&split_space, split_line.buffer);
+
+            split_next(&split_space, split_line.buffer);
+            splitter_reset(&split_bar);
+            split_next(&split_bar, split_space.buffer);
+            push_index(dest, (unsigned int) atoi(split_bar.buffer));
+
+            split_next(&split_space, split_line.buffer);
+            splitter_reset(&split_bar);
+            split_next(&split_bar, split_space.buffer);
+            push_index(dest, (unsigned int) atoi(split_bar.buffer));
+
+            split_next(&split_space, split_line.buffer);
+            splitter_reset(&split_bar);
+            split_next(&split_bar, split_space.buffer);
+            push_index(dest, (unsigned int) atoi(split_bar.buffer));
+        }
+    }
+    free(data);
+}
+
+
+int main() {
+    IntermediateModel suzenne_data = {0};
+    parse_obj_file("assets/models/suzanne.obj", &suzenne_data);
+}
