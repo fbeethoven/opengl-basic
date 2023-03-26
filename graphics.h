@@ -18,6 +18,8 @@ typedef struct BaseModel {
 
     int vertex_count;
 
+    unsigned int texture_id;
+
 } BaseModel;
 
 
@@ -74,6 +76,11 @@ void increase_position(Entity *entity, float dx, float dy, float dz);
 void increase_rotation(Entity *entity, float dx, float dy, float dz);
 
 int graphics_init(GraphicsContext *ctx);
+
+void load_texture_to_model(
+    BaseModel *model, char *texture_file_path,
+    float *texture_coord, int textures_size
+);
 
 void load_data_to_model(
     BaseModel *model,

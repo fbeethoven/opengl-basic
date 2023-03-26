@@ -8,26 +8,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 
-// //    char *image_path = "texture920x613.png";
-// //    char *image_path = "wall.jpg";
-// //    char *image_path = "marble-floor.jpg";
-//     char *image_path = "wood-floor.jpg";
-//     Image *test = image_load(image_path);
-// 
-//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, test->width, test->height, 0, GL_RGB, GL_UNSIGNED_BYTE, test->data);
-//     glGenerateMipmap(GL_TEXTURE_2D);
-//     image_free(test);
-// 
-//     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-//     glEnableVertexAttribArray(1);
-// 
-// 
-//     glBindBuffer(GL_ARRAY_BUFFER, 0);
-//     glBindVertexArray(0);
-//     return new_object;
-// }
-
-
 // void graphics_free_object(GObject *object){
 //     glDeleteVertexArrays(1, &object->vao);
 //     glDeleteBuffers(1, &object->vbo);
@@ -87,7 +67,6 @@ void load_data_to_model(
     int vertices_size, int indices_size
 ) {
     glGenVertexArrays(1, &model->vao);
-    glBindVertexArray(model->vao);
 
     bind_indices_buffer(&model->ibo, indices_size, indices);
 
@@ -100,6 +79,37 @@ void load_data_to_model(
     //     &new_object->vbo_texture, 1, 3, texture_size, texture
     // );
 
+    glBindVertexArray(0);
+}
+
+
+void load_texture_to_model(
+    BaseModel *model, char *texture_file_path,
+    float *texture_coord, int textures_size
+){
+    // glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &model->texture_id);
+    glBindTexture(GL_TEXTURE_2D, model->texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(
+        GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    Image *test = image_load(texture_file_path);
+
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, test->width, test->height,
+        0, GL_RGB, GL_UNSIGNED_BYTE, test->data
+    );
+    glGenerateMipmap(GL_TEXTURE_2D);
+    image_free(test);
+    store_float_in_attributes(
+        &model->texture_id, 1, 2, textures_size, texture_coord
+    );
+
+    glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 }
 
@@ -284,11 +294,10 @@ void render(Renderer *rh, Camera *camera) {
             entity.model->ibo
         );
 
-        if (i == 3) {
-        }
-
         glBindVertexArray(entity.model->vao);
+
         glEnableVertexAttribArray(0);
+        // glEnableVertexAttribArray(1);
         
         Mat4 transformation_matrix = create_transformation_matrix(
             entity.position,
@@ -307,12 +316,17 @@ void render(Renderer *rh, Camera *camera) {
         else {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
+
+
+        // glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
         glDrawElements(
             GL_TRIANGLES, entity.model->vertex_count, GL_UNSIGNED_INT, 0
         );
 	}
 
     glDisableVertexAttribArray(0);
+    // glDisableVertexAttribArray(1);
+    // glBindTexture(GL_TEXTURE_2D, 0);
     glBindVertexArray(0);
 
     shader_pop();

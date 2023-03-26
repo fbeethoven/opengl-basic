@@ -43,6 +43,13 @@ int main() {
         0.5f,0.5f, 0.0f
 		};
 
+    float text_coord[] = {
+        0.0f,0.0f,
+        0.0f,1.0f,
+        1.0f,1.0f,
+        1.0f,0.0f
+		};
+
     unsigned int indices[] = {
         0,1,3,
         3,1,2
@@ -53,7 +60,12 @@ int main() {
         &rect, vertices, indices,
         sizeof(vertices), sizeof(indices)
     );
+    load_texture_to_model(
+        &rect, "assets/fonts/charmap-oldschool_white.png", text_coord, 
+        sizeof(text_coord)
+    );
     rect.vertex_count = sizeof(indices)/sizeof(indices[0]);
+    rect.vertex_count = 2;
 
     BaseModel model = {0};
     IntermediateModel cube_data = {0};
@@ -94,26 +106,26 @@ int main() {
     entity->active = 1;
     entity->scale = 3.0;
 
-    entity = &renderer.entities[1];
-    entity->model = &model;
-    Vec3 entity_position_2 = newVec3(0, 0, -20);
-    entity->position = &entity_position_2;
-    entity->active = 1;
-    entity->scale = 5.0;
+    // entity = &renderer.entities[1];
+    // entity->model = &model;
+    // Vec3 entity_position_2 = newVec3(0, 0, -20);
+    // entity->position = &entity_position_2;
+    // entity->active = 1;
+    // entity->scale = 5.0;
 
-    entity = &renderer.entities[2];
-    entity->model = &suzanne;
-    Vec3 entity_position_3 = newVec3(10.0, 0.0, -50.0);
-    entity->position = &entity_position_3;
-    entity->active = 1;
-    entity->scale = 1.0;
+    // entity = &renderer.entities[2];
+    // entity->model = &suzanne;
+    // Vec3 entity_position_3 = newVec3(10.0, 0.0, -50.0);
+    // entity->position = &entity_position_3;
+    // entity->active = 1;
+    // entity->scale = 1.0;
 
-    entity = &renderer.entities[3];
-    entity->model = &tea_model;
-    Vec3 entity_position_4 = newVec3(10.0, 0.0, -30.0);
-    entity->position = &entity_position_4;
-    entity->active = 1;
-    entity->scale = 1.0;
+    // entity = &renderer.entities[3];
+    // entity->model = &tea_model;
+    // Vec3 entity_position_4 = newVec3(10.0, 0.0, -30.0);
+    // entity->position = &entity_position_4;
+    // entity->active = 1;
+    // entity->scale = 1.0;
 
 
     while (!glfwWindowShouldClose(ctx.window)) {
