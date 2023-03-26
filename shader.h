@@ -5,6 +5,9 @@
 
 unsigned int shader_get_program();
 unsigned int shader_get_program_2d();
+unsigned int shader_get_program_general(
+    char *vertex_shader_path, char* fragment_shader_path
+);
 
 
 void shader_push(unsigned int shader_program_id);

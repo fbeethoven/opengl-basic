@@ -1,28 +1,7 @@
 #include "shader.h"
+#include "utils/file_handler.h"
 
 
-static char *read_file(char *file_path) {
-    FILE *file = fopen(file_path, "r");
-    if (!file) {
-        fprintf(stderr, "Failed to read input\n");
-        exit(1);
-    }
-
-    fseek(file, 0, SEEK_END);
-    int file_size = ftell(file);
-    rewind(file);
-
-    char *data = malloc(sizeof(char) * file_size);
-    if(fread(data, sizeof(char), file_size, file) != file_size) {
-        fprintf(stderr, "There was an error reading input\n");
-        free(data);
-        fclose(file);
-        exit(1);
-    }
-
-    fclose(file);
-    return data;
-}
 
 
 static unsigned int compile_shaders(
@@ -49,7 +28,7 @@ static unsigned int compile_shaders(
 
 
 
-static unsigned int shader_get_program_general(
+unsigned int shader_get_program_general(
     char *vertex_shader_path, char* fragment_shader_path
 ) {
 	unsigned int shader_program_id = glCreateProgram();

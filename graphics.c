@@ -8,92 +8,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 
-// Entity *graphics_new_entity() {
-//     glEnable(GL_DEPTH_TEST);
-//     GObject *new_object = (GObject*) malloc(sizeof(GObject));
-//     memset(new_object, 0, sizeof(GObject));
-// 
-//     float top = 1.0;
-//     float right = 1.0;
-//     float bottom = -1.0;
-//     float left = -1.0;
-//     float near = -1.0;
-//     float far = 1.0;
-// 
-//     new_object->camera_controler[0][0] = (2*near)/ (right - left);
-//     new_object->camera_controler[0][1] = 0;
-//     new_object->camera_controler[0][2] = (right + left)/(right - left);
-//     new_object->camera_controler[0][3] = 0;
-// 
-//     new_object->camera_controler[1][0] = 0;
-//     new_object->camera_controler[1][1] = (2*near)/(top - bottom);
-//     new_object->camera_controler[1][2] = (top + bottom)/(top - bottom);
-//     new_object->camera_controler[1][3] = 0;
-// 
-//     new_object->camera_controler[2][0] = 0;
-//     new_object->camera_controler[2][1] = 0;
-//     new_object->camera_controler[2][2] = -(far + near)/(far - near);
-//     new_object->camera_controler[2][3] = -(2*far*near)/(far - near);
-// 
-//     new_object->camera_controler[3][0] = 0;
-//     new_object->camera_controler[3][1] = 0;
-//     new_object->camera_controler[3][2] = -1;
-//     new_object->camera_controler[3][3] = 1;
-// 
-// 
-//     float vertices[] = {
-//     -0.5f,  0.5f, 0.0f, 0.0f, 0.0f,  // top left
-//     -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,  // bottom left
-//     0.5f, -0.5f, 0.0f,  1.0f, 1.0f,  // bottom right
-//     0.5f,  0.5f, 0.0f,  0.0f, 1.0f,  // top right
-// 
-//     -0.5f,  0.5f, 0.5f, 0.0f, 1.0f,  // top left
-//     -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,  // bottom left
-//     0.5f, -0.5f, 0.5f,  1.0f, 0.0f,  // bottom right
-//     0.5f,  0.5f, 0.5f,  1.0f, 1.0f  // top right
-//     };
-// 
-//     unsigned int indices[] = {
-//     0, 1, 3,
-//     3, 1, 2
-// 
-// //    2, 6, 7,
-// //    7, 3, 2
-// 
-// //    3, 2, 5,
-// //    3, 5, 6,
-// //
-// //    1, 4, 5,
-// //    1, 5, 2
-//     };
-// 
-//     new_object->shader_program_id = shader_get_program();
-// 
-//     // glCreateVertexArrays(1, &new_object->vao);
-//     glGenVertexArrays(1, &new_object->vao);
-//     glBindVertexArray(new_object->vao);
-// 
-//     glGenBuffers(1, &new_object->vbo);
-// 	glBindBuffer(GL_ARRAY_BUFFER, new_object->vbo);
-//     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), 0, GL_DYNAMIC_DRAW);
-// 
-// 
-//     glGenBuffers(1, &new_object->ibo);
-//     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, new_object->ibo);
-//     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-// 
-// 
-//     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-//     glEnableVertexAttribArray(0);
-// 
-// 
-// 
-//     glGenTextures(1, &new_object->texture_id);
-//     glBindTexture(GL_TEXTURE_2D, new_object->texture_id);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 // //    char *image_path = "texture920x613.png";
 // //    char *image_path = "wall.jpg";
 // //    char *image_path = "marble-floor.jpg";
@@ -358,11 +272,20 @@ void render(Renderer *rh, Camera *camera) {
             // printf("Entity number %d: is not active\n", i);
             continue;
         }
+        printf("Entity %d Debug INFO:\n", i);
         printf(
-            "Entity %d position: %f %f %f\n",
-            i,
+            "  position: %f %f %f\n",
             entity.position->x, entity.position->y, entity.position->z
         );
+        printf(
+            "  vao: %u, vbo: %u, ibo: %u\n",
+            entity.model->vao,
+            entity.model->vbo,
+            entity.model->ibo
+        );
+
+        if (i == 3) {
+        }
 
         glBindVertexArray(entity.model->vao);
         glEnableVertexAttribArray(0);
@@ -378,7 +301,6 @@ void render(Renderer *rh, Camera *camera) {
                 "transformation_matrix",
                 &transformation_matrix
             );
-        // printf("Vertex count: %d\n", entity.model->vertex_count);
         if ( (rh->fill & 1) == 0) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }

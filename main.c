@@ -4,6 +4,8 @@
 
 #include "common.h"
 #include "graphics.h"
+#include "utils/file_handler.h"
+
 
 #define BAD_COORDS 1
 
@@ -11,8 +13,8 @@ float speed;
 int entity_index;
 int pulse_n;
 
-void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
+void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
 
 int main() {
@@ -82,12 +84,23 @@ int main() {
     };
 
     BaseModel model = {0};
-
     load_data_to_model(
         &model, vertices, indices,
         sizeof(vertices), sizeof(indices)
     );
     model.vertex_count = sizeof(indices)/sizeof(indices[0]);
+
+
+    BaseModel tea_model = {0};
+    IntermediateModel tmp = {0};
+    parse_obj_file("assets/models/utah_teapot.obj", &tmp);
+    load_data_to_model(
+        &tea_model, tmp.vertices, tmp.indices,
+        tmp.vertices_count* sizeof(float),
+        tmp.indices_count * sizeof(unsigned int)
+    );
+    tea_model.vertex_count = tmp.indices_count;
+
 
     Entity *entity = &renderer.entities[0];
     entity->model = &model;
@@ -109,6 +122,14 @@ int main() {
     entity->position = &entity_position_3;
     entity->active = 1;
     entity->scale = 3.0;
+
+
+    entity = &renderer.entities[3];
+    entity->model = &tea_model;
+    Vec3 entity_position_4 = newVec3(10.0, 0.0, -30.0);
+    entity->position = &entity_position_4;
+    entity->active = 1;
+    entity->scale = 1.0;
 
     while (!glfwWindowShouldClose(ctx.window)) {
         printf("Entity SELETED: %d\n", entity_index);
@@ -174,7 +195,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         if (pulse_n == 0 ) {
             pulse_n = 1;
             entity_index++;
-            if (entity_index > 2) {
+            if (entity_index > 3) {
                 printf("%d", entity_index);
                 entity_index = 0;
             }
