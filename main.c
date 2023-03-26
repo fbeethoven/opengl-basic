@@ -102,15 +102,15 @@ int main() {
     tea_model.vertex_count = tmp.indices_count;
 
 
-    BaseModel suzenne = {0};
-    IntermediateModel suzenne_data = {0};
-    parse_obj_file("assets/models/suzanne.obj", &suzenne_data);
+    BaseModel suzanne = {0};
+    IntermediateModel suzanne_data = {0};
+    parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
     load_data_to_model(
-        &suzenne, suzenne_data.vertices, suzenne_data.indices,
-        suzenne_data.vertices_count* sizeof(float),
-        suzenne_data.indices_count * sizeof(unsigned int)
+        &suzanne, suzanne_data.vertices, suzanne_data.indices,
+        suzanne_data.vertices_count* sizeof(float),
+        suzanne_data.indices_count * sizeof(unsigned int)
     );
-    suzenne.vertex_count = suzenne_data.indices_count;
+    suzanne.vertex_count = suzanne_data.indices_count;
 
     Entity *entity = &renderer.entities[0];
     entity->model = &model;
@@ -127,7 +127,7 @@ int main() {
     entity->scale = 5.0;
 
     entity = &renderer.entities[2];
-    entity->model = &suzenne;
+    entity->model = &suzanne;
     Vec3 entity_position_3 = newVec3(10.0, 0.0, -50.0);
     entity->position = &entity_position_3;
     entity->active = 1;

@@ -3,15 +3,21 @@
 
 
 #define VerticesCapacity 20000
+#define NormalsCapacity 20000
 #define IndicesCapacity 20000
+#define TexCapacity 20000
 #define BufferCapacity 500
 
 
 typedef struct IntermediateModel {
     float vertices[VerticesCapacity];
+    float normals[NormalsCapacity];
+    float tex_coords[TexCapacity];
     unsigned int indices[IndicesCapacity]; 
-    int vertices_count;
-    int indices_count;
+    unsigned int vertices_count;
+    unsigned int normals_count;
+    unsigned int tex_coords_count;
+    unsigned int indices_count;
 } IntermediateModel;
 
 
