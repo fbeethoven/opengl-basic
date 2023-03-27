@@ -15,6 +15,7 @@ typedef struct BaseModel {
 	unsigned int vao;
 	unsigned int vbo;
 	unsigned int ibo;
+    unsigned int uv;
 
     int vertex_count;
 

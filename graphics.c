@@ -3,6 +3,14 @@
 #include "image.h"
 
 
+void log_if_err(char *err_msg) {
+    int err = glGetError();
+    if (err != GL_NO_ERROR) {
+        printf("[ERROR: %d] GL Error: %s", err, err_msg);
+        exit(1);
+    }
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -104,12 +112,12 @@ void load_texture_to_model(
 
     glTexImage2D(
         GL_TEXTURE_2D, 0, GL_RGBA, test->width, test->height,
-        0, GL_RGBA, GL_UNSIGNED_BYTE, test->data
+        0, GL_RGB, GL_UNSIGNED_BYTE, test->data
     );
     glGenerateMipmap(GL_TEXTURE_2D);
     image_free(test);
     store_float_in_attributes(
-        &model->texture_id, 1, 2, textures_size, texture_coord
+        &model->uv, 1, 2, textures_size, texture_coord
     );
 
     glEnableVertexAttribArray(1);
