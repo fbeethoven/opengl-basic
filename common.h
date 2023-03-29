@@ -13,11 +13,18 @@
 #include <assert.h>
 
 
+typedef struct Vec2 {
+    float x;
+    float y;
+} Vec2;
+
+
 typedef struct Vec3 {
     float x;
     float y;
     float z;
 } Vec3;
+
 
 typedef struct Vec4 {
     float x;
@@ -25,6 +32,7 @@ typedef struct Vec4 {
     float z;
     float w;
 } Vec4;
+
 
 typedef struct Mat4 {
     float m00;
@@ -48,8 +56,11 @@ typedef struct Mat4 {
     float m33;
 } Mat4;
 
+
+Vec2 newVec2(float x, float y);
 Vec3 newVec3(float x, float y, float z);
 Vec3 Vec3_add(Vec3 *a, Vec3 *b);
+Vec4 newVec4(float x, float y, float z, float w);
 
 
 Mat4 mat4_diag(float x, float y, float z, float w);

@@ -1,6 +1,15 @@
 #include "common.h"
 
 
+Vec2 newVec2(float x, float y) {
+    Vec2 result = {0};
+    result.x = x;
+    result.y = y;
+
+    return result;
+}
+
+
 Vec3 newVec3(float x, float y, float z) {
     Vec3 result = {0};
     result.x = x;
@@ -9,6 +18,18 @@ Vec3 newVec3(float x, float y, float z) {
 
     return result;
 }
+
+
+Vec4 newVec4(float x, float y, float z, float w) {
+    Vec4 result = {0};
+    result.x = x;
+    result.y = y;
+    result.z = z;
+    result.w = w;
+
+    return result;
+}
+
 
 Vec3 Vec3_add(Vec3 *a, Vec3 *b) {
     Vec3 result = {0};

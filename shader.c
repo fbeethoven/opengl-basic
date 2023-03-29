@@ -73,6 +73,89 @@ unsigned int shader_get_program() {
     );
 }
 
+
+void shader_load_vec2(
+    unsigned int shader_program_id,
+    char *location,
+    Vec2 *vec
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("VECTOR %s\n", location);
+        printf("%f %f\n", vec->x, vec->y);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform2fv(uniform_location, GL_FALSE, (float *)vec);
+}
+
+void shader_load_float(
+    unsigned int shader_program_id,
+    char *location,
+    float x
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("FLOAT %s\n", location);
+        printf("%f\n", x);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform1f(uniform_location, GL_FALSE, x);
+}
+
+
+void shader_load_vec3(
+    unsigned int shader_program_id,
+    char *location,
+    Vec3 *vec
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("VECTOR %s\n", location);
+        printf("%f %f %f\n", vec->x, vec->y, vec->z);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform3fv(uniform_location, GL_FALSE, (float *)vec);
+}
+
+
+void shader_load_vec4(
+    unsigned int shader_program_id,
+    char *location,
+    Vec4 *vec
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("VECTOR %s\n", location);
+        printf("%f %f %f %f\n", vec->x, vec->y, vec->z, vec->z);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform4fv(uniform_location, GL_FALSE, (float *)vec);
+}
+
 void shader_load_matrix(
     unsigned int shader_program_id,
     char *location,

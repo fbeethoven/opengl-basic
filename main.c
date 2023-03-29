@@ -101,7 +101,7 @@ int main() {
 
     Entity *entity = &renderer.entities[0];
     entity->model = &rect;
-    Vec3 entity_position_1 = newVec3(20, 0, -50);
+    Vec3 entity_position_1 = newVec3(5, 0, -5);
     entity->position = &entity_position_1;
     entity->active = 1;
     entity->scale = 3.0;
