@@ -251,7 +251,11 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     rh->projection_matrix = create_projection_matrix(ctx, rh);
     // rh->projection_matrix.m33 = 1.0;
 
-    rh->shader = shader_get_program();
+    // rh->shader = shader_get_program();
+    rh->shader = shader_get_program_general(
+        "shaders/gui_vertex.glsl", "shaders/gui_fragment.glsl"
+    );
+    log_if_err("There was an issue on renderer init\n");
 
     shader_push(rh->shader);
     shader_load_matrix(
@@ -267,6 +271,9 @@ void prepare(Renderer *rh) {
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(rh->RED, rh->GREEN, rh->BLUE, 1);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        log_if_err("There was an issue Preparing\n");
 }
 
 
@@ -335,12 +342,18 @@ void render(Renderer *rh, Camera *camera) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
 
+        glBindVertexArray(rh->rotating_label->vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rh->rotating_label->indexBuffer);
+        log_if_err("There was an issue Binding\n");
+        glDrawElements(GL_TRIANGLES, rh->rotating_label->indexElementCount, GL_UNSIGNED_SHORT, 0);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-        glDrawElements(
-            GL_TRIANGLES, entity.model->vertex_count, GL_UNSIGNED_INT, 0
-        );
+        log_if_err("There was an issue Drawing\n");
+
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        // glDrawElements(
+        //     GL_TRIANGLES, entity.model->vertex_count, GL_UNSIGNED_INT, 0
+        // );
 	}
 
     glDisableVertexAttribArray(0);

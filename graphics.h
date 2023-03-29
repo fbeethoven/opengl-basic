@@ -4,6 +4,19 @@
 #include "common.h"
 
 
+
+typedef struct RotatingLabel {
+    U32 vao;
+    U32 vertexBuffer;
+    U32 uvBuffer;
+    U32 indexBuffer;
+    uint16_t indexElementCount;
+    float angle;
+} RotatingLabel;
+
+
+
+
 typedef struct GraphicsContext {
     int width;
     int height;
@@ -58,6 +71,8 @@ typedef struct Renderer {
 
     int fill;
 
+    RotatingLabel *rotating_label;
+
 } Renderer;
 
 
@@ -68,6 +83,8 @@ typedef struct Camera {
     Vec3 centre;
 } Camera;
 
+
+void log_if_err(char *err_msg);
 
 void camera_move(Camera *camera, float dx, float dy, float dz);
 

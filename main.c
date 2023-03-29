@@ -1,8 +1,10 @@
 /* Modified fom: https://learnopengl.com/Getting-started/Hello-Window */
 #define GLAD_GL_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_TRUETYPE_IMPLEMENTATION
 
 #include "common.h"
+#include "external/stb_truetype.h"
 #include "graphics.h"
 #include "mesh.h"
 #include "utils/file_handler.h"
@@ -17,11 +19,148 @@ int pulse_n;
 float distance_from_player;
 
 
+typedef struct GlyphInfo {
+    Vec3 positions[4];
+    Vec2 uvs[4];
+    float offsetX, offsetY;
+} GlyphInfo;
+
+
+// typedef struct RotatingLabel {
+//     U32 vao;
+//     U32 vertexBuffer;
+//     U32 uvBuffer;
+//     U32 indexBuffer;
+//     uint16_t indexElementCount;
+//     float angle;
+// } RotatingLabel;
+
+typedef struct AtlastQuad {
+    U32 vao;
+    U32 vertexBuffer;
+    U32 uvBuffer;
+    float time;
+} AtlasQuad;
+
+typedef struct Font{
+    U32 size;
+    U32 atlasWidth;
+    U32 atlasHeight;
+    U32 oversampleX;
+    U32 oversampleY;
+    U32 firstChar;
+    U32 charCount;
+    stbtt_packedchar char_info[127];
+    U32 texture;
+} Font;
+
+
+Font font;
+RotatingLabel rotating_label;
+
+
+
+GlyphInfo getGlyphInfo(uint32_t character, float offsetX, float offsetY) {
+    stbtt_aligned_quad quad;
+
+    stbtt_GetPackedQuad(
+        font.char_info,
+        font.atlasWidth,
+        font.atlasHeight,
+        character - font.firstChar,
+        &offsetX,
+        &offsetY,
+        &quad,
+        1
+    );
+    float xmin = quad.x0;
+    float xmax = quad.x1;
+    float ymin = -quad.y1;
+    float ymax = -quad.y0;
+
+    printf("QUAD POSITION: %f, %f, %f, %f\n", xmin, xmax, ymin, ymax);
+
+    GlyphInfo info = {0};
+    info.offsetX = offsetX;
+    info.offsetY = offsetY;
+    info.positions[0] = newVec3(xmin, ymin, 0.0);
+    info.positions[1] = newVec3(xmin, ymax, 0.0);
+    info.positions[2] = newVec3(xmax, ymax, 0.0);
+    info.positions[3] = newVec3(xmax, ymin, 0.0);
+    info.uvs[0] = newVec2(quad.s0, quad.t1);
+    info.uvs[1] = newVec2(quad.s0, quad.t0);
+    info.uvs[2] = newVec2(quad.s1, quad.t0);
+    info.uvs[3] = newVec2(quad.s1, quad.t1);
+
+    return info;
+}
+
+
+void initFont() {
+    char *fontData = read_file("assets/fonts/VictorMono-Regular.ttf");
+    U8 atlasData[font.atlasWidth * font.atlasHeight];
+
+    stbtt_pack_context context;
+    if (!stbtt_PackBegin(
+        &context, atlasData, font.atlasWidth, font.atlasHeight, 0, 1, 0)
+    ) {
+        printf("Failed to initialize font");
+        exit(1);
+    }
+
+    stbtt_PackSetOversampling(&context, font.oversampleX, font.oversampleY);
+    if (!stbtt_PackFontRange(
+        &context, (unsigned char *)fontData, 0, font.size, font.firstChar,
+        font.charCount, font.char_info)
+    ) {
+        printf("Failed to pack font");
+        exit(1);
+    }
+
+
+    stbtt_PackEnd(&context);
+    log_if_err("issue before Generating textures");
+
+    glGenTextures(1, &font.texture);
+    log_if_err("What is going on");
+    glBindTexture(GL_TEXTURE_2D, font.texture);
+    log_if_err("What is going on 1");
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    log_if_err("What is going on 2");
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, font.atlasWidth, font.atlasHeight,
+        0, GL_RED, GL_UNSIGNED_BYTE, atlasData
+    );
+    log_if_err("What is going on 3");
+    // glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+    // glHint(GL_GENERATE_MIPMAP_SGIS, GL_NICEST);
+    log_if_err("glhint issue\n");
+    glGenerateMipmap(GL_TEXTURE_2D);
+    log_if_err("Mipmap issue\n");
+
+}
+
+
+
+
+
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
 
 int main() {
     speed = 0.2;
+    // Font font = {0};
+    font.size = 40;
+    font.atlasWidth = 1024;
+    font.atlasHeight = 1024;
+    font.oversampleX = 2;
+    font.oversampleY = 2;
+    font.firstChar = ' ';
+    font.charCount = '~' - ' ';
+    font.texture = 0;
+
+
+    speed = 0.05;
     entity_index = 0;
     pulse_n = 0;
 
@@ -73,7 +212,79 @@ int main() {
     world_model.vertex_count = mesh.indices_len;
 
 
-    float vertices[] = {
+
+    char *text = "Rotating in world space";
+    log_if_err("Issue before Font initiation\n");
+    initFont();
+    log_if_err("Issue with Font initiation\n");
+
+    Vec3 vertices[200];
+    Vec2 uvs[200];
+    unsigned int indexes[200];
+
+
+    uint16_t lastIndex = 0;
+    float offsetX = 0, offsetY = 0;
+    int counter = 0;
+    int indices_counter = 0;
+    for (int i=0; i<strlen(text); i++) { 
+        char c = text[i];
+        GlyphInfo glyph_info = getGlyphInfo(c, offsetX, offsetY);
+        offsetX = glyph_info.offsetX;
+        offsetY = glyph_info.offsetY;
+
+        vertices[counter] = glyph_info.positions[0];
+        vertices[counter + 1] = glyph_info.positions[1];
+        vertices[counter + 2] = glyph_info.positions[2];
+        vertices[counter + 3] = glyph_info.positions[3];
+        uvs[counter] = glyph_info.uvs[0];
+        uvs[counter + 1] = glyph_info.uvs[1];
+        uvs[counter + 2] = glyph_info.uvs[2];
+        uvs[counter + 3] = glyph_info.uvs[3];
+        indexes[indices_counter] = lastIndex;
+        indexes[indices_counter + 1] = lastIndex + 1;
+        indexes[indices_counter + 2] = lastIndex + 2;
+        indexes[indices_counter + 3] = lastIndex;
+        indexes[indices_counter + 4] = lastIndex + 2;
+        indexes[indices_counter + 5] = lastIndex + 3;
+
+        lastIndex += 4;
+        counter += 4;
+        indices_counter += 6;
+    }
+    log_if_err("Issue before vaos and  vbo\n");
+
+    glGenVertexArrays(1, &rotating_label.vao);
+    glBindVertexArray(rotating_label.vao);
+    log_if_err("Issue with vao\n");
+
+    glGenBuffers(1, &rotating_label.vertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, rotating_label.vertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * counter, (float *)vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+    log_if_err("Issue with vbo\n");
+
+    glGenBuffers(1, &rotating_label.uvBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, rotating_label.uvBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * counter, (float *)uvs, GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(1);
+    log_if_err("Issue with uvs\n");
+
+    rotating_label.indexElementCount = indices_counter;
+    glGenBuffers(1, &rotating_label.indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rotating_label.indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * rotating_label.indexElementCount, indexes, GL_STATIC_DRAW);
+    log_if_err("Issue with vaos and vbos\n");
+
+
+    renderer.rotating_label = &rotating_label;
+
+
+
+
+    float vertices1[] = {
         -0.5f,0.5f, 0.0f,
         -0.5f,-0.5f, 0.0f,
         0.5f,-0.5f, 0.0f,
@@ -87,22 +298,22 @@ int main() {
         1.0f,0.0f
 		};
 
-    unsigned int indices[] = {
+    unsigned int indices1[] = {
         0,1,3,
         3,1,2
     };
 
     BaseModel rect = {0};
     load_data_to_model(
-        &rect, vertices, indices,
-        sizeof(vertices), sizeof(indices)
+        &rect, vertices1, indices1,
+        sizeof(vertices1), sizeof(indices1)
     );
     load_texture_to_model(
         &rect, "assets/fonts/charmap-oldschool_white.png", text_coord, 
         // &rect, "assets/textures/marble-floor.jpg", text_coord, 
         sizeof(text_coord)
     );
-    rect.vertex_count = sizeof(indices)/sizeof(indices[0]);
+    rect.vertex_count = sizeof(indices1)/sizeof(indices1[0]);
 
     BaseModel model = {0};
     IntermediateModel cube_data = {0};
