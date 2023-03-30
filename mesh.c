@@ -13,6 +13,11 @@ float speed;
 int entity_index;
 int pulse_n;
 
+float distance_from_player;
+float angle_around_player = 3.1415;
+double last_time;
+double last_mouse[2];
+
 
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
@@ -59,9 +64,13 @@ void draw_quad(Mesh *mesh, Vec3 position) {
 
 
 int main() {
-    speed = 0.05;
+    speed = 0.1;
     entity_index = 0;
     pulse_n = 0;
+
+
+    distance_from_player = 50.0;
+    angle_around_player = 0.0;
 
     GraphicsContext ctx;
     if(graphics_init(&ctx) != 0) {
@@ -194,6 +203,15 @@ int main() {
     entity->active = 1;
     entity->scale = 1.0;
 
+
+
+    entity = &renderer.entities[9];
+    entity->model = &world_wood;
+    Vec3 entity_position_9 = newVec3(0, 0, 10);
+    entity->position = &entity_position_9;
+    entity->active = 0;
+    entity->scale = 1.0;
+
     // entity = &renderer.entities[1];
     // entity->model = &model;
     // Vec3 entity_position_2 = newVec3(0, 0, -20);
@@ -234,9 +252,20 @@ int main() {
 
 
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
-    // glfwGetCursorPos(window, &xpos, &ypos);
-    // double xpos, ypos;
+    glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
+    double xpos, ypos;
+    glfwGetCursorPos(ctx->window, &xpos, &ypos);
+    glfwSetCursorPos(ctx->window, 500.0, 500.0);
+    double time = glfwGetTime();
+    double delta_time = time - last_time;
+    double delta_mouse[] = {
+        xpos - last_mouse[0], ypos - last_mouse[1]
+    };
+
+
+
     Entity *entity = &renderer->entities[entity_index];
+    Entity *player = &renderer->entities[9];
     if(
         glfwGetKey(ctx->window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
         glfwGetKey(ctx->window, GLFW_KEY_Q) == GLFW_PRESS
@@ -253,20 +282,28 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         renderer->fill &= ~(1<<1);
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        camera_move(camera, speed, 0.0, 0.0);
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        camera_move(camera, 0.0, 0.0, speed);
+        increase_position(player, -speed, 0.0, 0.0);
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        camera_move(camera, -speed, 0, 0);
+        increase_position(player, speed, 0, 0);
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
+        increase_position(player, 0.0, 0.0, speed);
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        camera_move(camera, 0.0, 0.0, -speed);
+        increase_position(player, 0.0, 0.0, -speed);
+    }
+    if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        angle_around_player -= 0.003 * delta_mouse[0];
+    }
+    if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
+        camera->pitch += 0.001 * delta_mouse[1];
+    }
+    if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_3) == GLFW_PRESS) {
+        printf("Pressed button 3\n");
+    }
+    if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_5) == GLFW_PRESS) {
+        printf("Pressed button 5\n");
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_R) == GLFW_PRESS) {
         printf("Button pressed\n");
@@ -314,27 +351,30 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             increase_rotation(entity, 0.0, -speed, 0.0);
         }
     }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        increase_position(entity, 0.0, 0.0, speed);
-    }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        increase_position(entity, -speed, 0.0, 0.0);
-    }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        increase_position(entity, 0.0, 0.0, -speed);
-    }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        printf("Button pressed\n");
-        increase_position(entity, speed, 0.0, 0.0);
-    }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        camera_move(camera, 0.0, speed, 0.0);
-    }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        camera_move(camera, 0.0, -speed, 0.0);
+    else {
+        if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
+            distance_from_player -= speed;  
+            if (distance_from_player <= 1.0) {
+                distance_from_player = 0;
+            }
+        }
+        if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            distance_from_player += speed;
+        }
+        if (glfwGetKey(ctx->window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            printf("Button pressed\n");
+            increase_position(entity, -speed, 0.0, 0.0);
+        }
+        if (glfwGetKey(ctx->window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            printf("Button pressed\n");
+            increase_position(entity, speed, 0.0, 0.0);
+        }
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera_move(camera, 0.0, speed, 0.0);
+        }
+        if (glfwGetKey(ctx->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            camera_move(camera, 0.0, -speed, 0.0);
+        }
     }
 
 
@@ -353,12 +393,32 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         camera->pitch += 0.01;
     }
 
+
+    // TODO: why does changing z also changes y?
+    float theta = player->rotation_y + angle_around_player;
+    float distance_from_player_xy = distance_from_player * cos(camera->pitch);
+
+    camera->position.x = (
+        player->position->x - distance_from_player_xy * sin(theta)
+    );
+    camera->position.y = (
+        player->position->y + distance_from_player * sin(camera->pitch)
+    );
+    camera->position.z = (
+        player->position->z - distance_from_player_xy * cos(theta)
+    );
+
+    camera->yaw = 3.1415 - theta;
+
+
+
     printf(
         "CAMERA: %f %f %f\n",
         camera->position.x,
         camera->position.y,
         camera->position.z
     );
+    printf("Mouse Position: %f %f\n", xpos, ypos);
     printf("pitch: %f\n", camera->pitch);
     printf("yaw: %f\n", camera->yaw);
 }
