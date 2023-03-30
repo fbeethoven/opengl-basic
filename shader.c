@@ -111,7 +111,7 @@ void shader_load_float(
             location
         );
     }
-    glUniform1f(uniform_location, GL_FALSE, x);
+    glUniform1f(uniform_location, x);
 }
 
 
@@ -132,7 +132,7 @@ void shader_load_vec3(
             location
         );
     }
-    glUniform3fv(uniform_location, GL_FALSE, (float *)vec);
+    glUniform3fv(uniform_location, 1, (float *)vec);
 }
 
 
@@ -153,7 +153,7 @@ void shader_load_vec4(
             location
         );
     }
-    glUniform4fv(uniform_location, GL_FALSE, (float *)vec);
+    glUniform4fv(uniform_location, 1, (float *)vec);
 }
 
 void shader_load_matrix(
