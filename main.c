@@ -19,28 +19,13 @@ int pulse_n;
 float distance_from_player;
 
 
+// TODO: Move to image.h
 typedef struct GlyphInfo {
     Vec3 positions[4];
     Vec2 uvs[4];
     float offsetX, offsetY;
 } GlyphInfo;
 
-
-// typedef struct RotatingLabel {
-//     U32 vao;
-//     U32 vertexBuffer;
-//     U32 uvBuffer;
-//     U32 indexBuffer;
-//     uint16_t indexElementCount;
-//     float angle;
-// } RotatingLabel;
-
-typedef struct AtlastQuad {
-    U32 vao;
-    U32 vertexBuffer;
-    U32 uvBuffer;
-    float time;
-} AtlasQuad;
 
 typedef struct Font{
     U32 size;
@@ -56,8 +41,6 @@ typedef struct Font{
 
 
 Font font;
-RotatingLabel rotating_label;
-
 
 
 GlyphInfo getGlyphInfo(uint32_t character, float offsetX, float offsetY) {
@@ -77,8 +60,6 @@ GlyphInfo getGlyphInfo(uint32_t character, float offsetX, float offsetY) {
     float xmax = quad.x1;
     float ymin = -quad.y1;
     float ymax = -quad.y0;
-
-    printf("QUAD POSITION: %f, %f, %f, %f\n", xmin, xmax, ymin, ymax);
 
     GlyphInfo info = {0};
     info.offsetX = offsetX;
@@ -117,31 +98,19 @@ void initFont() {
         exit(1);
     }
 
-
     stbtt_PackEnd(&context);
-    log_if_err("issue before Generating textures");
 
     glGenTextures(1, &font.texture);
-    log_if_err("What is going on");
     glBindTexture(GL_TEXTURE_2D, font.texture);
-    log_if_err("What is going on 1");
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    log_if_err("What is going on 2");
     glTexImage2D(
         GL_TEXTURE_2D, 0, GL_RGB, font.atlasWidth, font.atlasHeight,
         0, GL_RED, GL_UNSIGNED_BYTE, atlasData
     );
-    log_if_err("What is going on 3");
     // glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
-    // glHint(GL_GENERATE_MIPMAP_SGIS, GL_NICEST);
-    log_if_err("glhint issue\n");
     glGenerateMipmap(GL_TEXTURE_2D);
-    log_if_err("Mipmap issue\n");
-
+    log_if_err("Could not initialize font\n");
 }
-
-
-
 
 
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
@@ -149,8 +118,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
 int main() {
     speed = 0.2;
-    // Font font = {0};
-    font.size = 40;
+
+    font.size = 20;
     font.atlasWidth = 1024;
     font.atlasHeight = 1024;
     font.oversampleX = 2;
@@ -213,22 +182,27 @@ int main() {
 
 
 
-    char *text = "Rotating in world space";
+
+
+    char *text = "Find all things without being catch 0/10";
     log_if_err("Issue before Font initiation\n");
     initFont();
     log_if_err("Issue with Font initiation\n");
 
-    Vec3 vertices[200];
-    Vec2 uvs[200];
-    unsigned int indexes[200];
+    Vec3 vertices[2000];
+    Vec2 uvs[2000];
+    unsigned int indexes[2000];
+
+    float text_coord[8];
 
 
     uint16_t lastIndex = 0;
     float offsetX = 0, offsetY = 0;
     int counter = 0;
     int indices_counter = 0;
-    for (int i=0; i<strlen(text); i++) { 
-        char c = text[i];
+    char c;
+    for (int i=0; i<strlen(text); i++) {
+        c = text[i];
         GlyphInfo glyph_info = getGlyphInfo(c, offsetX, offsetY);
         offsetX = glyph_info.offsetX;
         offsetY = glyph_info.offsetY;
@@ -237,10 +211,66 @@ int main() {
         vertices[counter + 1] = glyph_info.positions[1];
         vertices[counter + 2] = glyph_info.positions[2];
         vertices[counter + 3] = glyph_info.positions[3];
+
+        printf("POSITION 0: %f %f %f\n",
+            glyph_info.positions[0].x,
+            glyph_info.positions[0].y,
+            glyph_info.positions[0].z
+        );
+        printf("POSITION 1: %f %f %f\n",
+            glyph_info.positions[1].x,
+            glyph_info.positions[1].y,
+            glyph_info.positions[1].z
+        );
+        printf("POSITION 2: %f %f %f\n",
+            glyph_info.positions[2].x,
+            glyph_info.positions[2].y,
+            glyph_info.positions[2].z
+        );
+        printf("POSITION 3: %f %f %f\n",
+            glyph_info.positions[3].x,
+            glyph_info.positions[3].y,
+            glyph_info.positions[3].z
+        );
+
         uvs[counter] = glyph_info.uvs[0];
         uvs[counter + 1] = glyph_info.uvs[1];
         uvs[counter + 2] = glyph_info.uvs[2];
         uvs[counter + 3] = glyph_info.uvs[3];
+
+
+        text_coord[0] = glyph_info.uvs[0].x;
+        text_coord[1] = glyph_info.uvs[0].y;
+
+        text_coord[2] = glyph_info.uvs[1].x;
+        text_coord[3] = glyph_info.uvs[1].y;
+
+        text_coord[4] = glyph_info.uvs[2].x;
+        text_coord[5] = glyph_info.uvs[2].y;
+
+        text_coord[6] = glyph_info.uvs[3].x;
+        text_coord[7] = glyph_info.uvs[3].y;
+        
+
+
+        printf("POSITION 0: %f %f \n",
+            glyph_info.uvs[0].x,
+            glyph_info.uvs[0].y
+        );
+        printf("POSITION 1: %f %f \n",
+            glyph_info.uvs[1].x,
+            glyph_info.uvs[1].y
+        );
+        printf("POSITION 2: %f %f \n",
+            glyph_info.uvs[2].x,
+            glyph_info.uvs[2].y
+        );
+        printf("POSITION 3: %f %f \n",
+            glyph_info.uvs[3].x,
+            glyph_info.uvs[3].y
+        );
+
+
         indexes[indices_counter] = lastIndex;
         indexes[indices_counter + 1] = lastIndex + 1;
         indexes[indices_counter + 2] = lastIndex + 2;
@@ -252,68 +282,62 @@ int main() {
         counter += 4;
         indices_counter += 6;
     }
+    printf("INDICES COUNTER: %d\n", indices_counter);
+    printf("VERTICES COUNTER: %d\n", 3*counter);
+    printf(" 4xlenx3: %d\n", (int)(4*strlen(text)*3));
+    printf("UVs COUNTER: %d\n", 2*counter);
+    printf(" 4xlenx2: %d\n", (int)(4*strlen(text)*2));
     log_if_err("Issue before vaos and  vbo\n");
-
-    glGenVertexArrays(1, &rotating_label.vao);
-    glBindVertexArray(rotating_label.vao);
-    log_if_err("Issue with vao\n");
-
-    glGenBuffers(1, &rotating_label.vertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, rotating_label.vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * counter, (float *)vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-    log_if_err("Issue with vbo\n");
-
-    glGenBuffers(1, &rotating_label.uvBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, rotating_label.uvBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * counter, (float *)uvs, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(1);
-    log_if_err("Issue with uvs\n");
-
-    rotating_label.indexElementCount = indices_counter;
-    glGenBuffers(1, &rotating_label.indexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rotating_label.indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * rotating_label.indexElementCount, indexes, GL_STATIC_DRAW);
-    log_if_err("Issue with vaos and vbos\n");
-
-
-    renderer.rotating_label = &rotating_label;
-
 
 
 
     float vertices1[] = {
-        -0.5f,0.5f, 0.0f,
         -0.5f,-0.5f, 0.0f,
-        0.5f,-0.5f, 0.0f,
-        0.5f,0.5f, 0.0f
-		};
+        -0.5f,0.5f, 0.0f,
+        0.5f,0.5f, 0.0f,
+        0.5f,-0.5f, 0.0f
+    };
 
-    float text_coord[] = {
+    float text_coord1[] = {
         0.0f,0.0f,
         0.0f,1.0f,
         1.0f,1.0f,
         1.0f,0.0f
-		};
+	};
 
     unsigned int indices1[] = {
-        0,1,3,
-        3,1,2
+        0, 1, 2,
+        0, 2, 3
     };
 
     BaseModel rect = {0};
     load_data_to_model(
-        &rect, vertices1, indices1,
-        sizeof(vertices1), sizeof(indices1)
-    );
-    load_texture_to_model(
-        &rect, "assets/fonts/charmap-oldschool_white.png", text_coord, 
-        // &rect, "assets/textures/marble-floor.jpg", text_coord, 
-        sizeof(text_coord)
+        &rect, (float *)vertices1, indices1,
+        3 * sizeof(float) * 4, sizeof(indices1)
     );
     rect.vertex_count = sizeof(indices1)/sizeof(indices1[0]);
+    load_texture_to_model(
+        // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
+        &rect, "assets/textures/marble-floor.jpg", text_coord1, 
+        sizeof(text_coord1)
+    );
+
+    BaseModel font_model = {0};
+    load_data_to_model(
+        &font_model, (float *)vertices, indexes,
+        3*counter*sizeof(float), sizeof(unsigned int) * indices_counter
+    );
+
+    glBindVertexArray(font_model.vao);
+    glEnableVertexAttribArray(1);
+
+    store_float_in_attributes(
+        &font_model.uv, 1, 2,
+        2 * sizeof(float) * counter, (float *)uvs
+    );
+    font_model.vertex_count = indices_counter;
+    font_model.texture_id = font.texture;
+
 
     BaseModel model = {0};
     IntermediateModel cube_data = {0};
@@ -348,11 +372,11 @@ int main() {
     suzanne.vertex_count = suzanne_data.indices_count;
 
     Entity *entity = &renderer.entities[0];
-    entity->model = &rect;
+    entity->model = &font_model;
     Vec3 entity_position_1 = newVec3(5, 0, -5);
     entity->position = &entity_position_1;
     entity->active = 1;
-    entity->scale = 3.0;
+    entity->scale = 0.05;
 
     entity = &renderer.entities[1];
     entity->model = &world_model;
@@ -367,6 +391,13 @@ int main() {
     // entity->position = &entity_position_2;
     // entity->active = 1;
     // entity->scale = 5.0;
+
+    entity = &renderer.entities[2];
+    entity->model = &rect;
+    Vec3 entity_position_2 = newVec3(0, 0, -3);
+    entity->position = &entity_position_2;
+    entity->active = 1;
+    entity->scale = 5.0;
 
     // entity = &renderer.entities[2];
     // entity->model = &suzanne;

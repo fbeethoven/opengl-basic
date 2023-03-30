@@ -4,19 +4,6 @@
 #include "common.h"
 
 
-
-typedef struct RotatingLabel {
-    U32 vao;
-    U32 vertexBuffer;
-    U32 uvBuffer;
-    U32 indexBuffer;
-    uint16_t indexElementCount;
-    float angle;
-} RotatingLabel;
-
-
-
-
 typedef struct GraphicsContext {
     int width;
     int height;
@@ -37,14 +24,7 @@ typedef struct BaseModel {
 } BaseModel;
 
 
-typedef struct TextureModel {
-    BaseModel base_model;
-    unsigned int texture_id;
-} TextureModel;
-
-
 typedef struct Entity {
-    // TODO: use a TextureModel instead
     BaseModel *model;
     Vec3 *position;
     float rotation_x;
@@ -70,9 +50,6 @@ typedef struct Renderer {
     Entity entities[10];
 
     int fill;
-
-    RotatingLabel *rotating_label;
-
 } Renderer;
 
 
@@ -108,6 +85,14 @@ void load_data_to_model(
 );
 
 void render(Renderer *rh, Camera *camera);
+
+void store_float_in_attributes(
+    unsigned int *buffer_id,
+    int attribute_index,
+    int coordinate_size,
+    int buffer_size,
+    float *data
+);
 
 
 // GObject *graphics_new_object();

@@ -30,7 +30,7 @@ void camera_move(Camera *camera, float dx, float dy, float dz) {
     camera->position.z += dz;
 }
 
-static void store_float_in_attributes(
+void store_float_in_attributes(
     unsigned int *buffer_id,
     int attribute_index,
     int coordinate_size,
@@ -77,17 +77,11 @@ void load_data_to_model(
     glGenVertexArrays(1, &model->vao);
     glBindVertexArray(model->vao);
 
-
     bind_indices_buffer(&model->ibo, indices_size, indices);
 
     store_float_in_attributes(
         &model->vbo, 0, 3, vertices_size, vertices
     );
-
-    // TODO: equivalent function for TextureModel
-    // store_float_in_attributes(
-    //     &new_object->vbo_texture, 1, 3, texture_size, texture
-    // );
 
     glBindVertexArray(0);
 }
@@ -268,11 +262,11 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 
 
 void prepare(Renderer *rh) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(rh->RED, rh->GREEN, rh->BLUE, 1);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         log_if_err("There was an issue Preparing\n");
 }
 
@@ -342,18 +336,12 @@ void render(Renderer *rh, Camera *camera) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
 
-        glBindVertexArray(rh->rotating_label->vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rh->rotating_label->indexBuffer);
-        log_if_err("There was an issue Binding\n");
-        glDrawElements(GL_TRIANGLES, rh->rotating_label->indexElementCount, GL_UNSIGNED_SHORT, 0);
-
-        log_if_err("There was an issue Drawing\n");
-
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-        // glDrawElements(
-        //     GL_TRIANGLES, entity.model->vertex_count, GL_UNSIGNED_INT, 0
-        // );
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        glDrawElements(
+            GL_TRIANGLES, entity.model->vertex_count,
+            GL_UNSIGNED_INT, 0
+        );
 	}
 
     glDisableVertexAttribArray(0);
