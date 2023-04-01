@@ -1,8 +1,9 @@
 CFLAGS = -Wall -g
-LIBS = 
+LIBS = -ldl -lm
 
 INCLUDES = -I external
 BIN = build
+OBJ = shader.c graphics.c common.c image.c utils/file_handler.c
 PROG = $(BIN)/p.exe
 
 UNAME_S := $(shell uname -s)
@@ -23,8 +24,7 @@ endif
 
 
 $(PROG): main.c
-	gcc -o $@ $(CFLAGS) $(INCLUDES) main.c $(LIBS)
-	$(PROG)
+	gcc -o $@ $(CFLAGS) $(INCLUDES) $(OBJ) main.c $(LIBS)
 
 dev: 
 	apt install libglfw3 libglfw3-dev
