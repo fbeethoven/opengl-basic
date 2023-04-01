@@ -65,6 +65,7 @@ typedef struct Camera {
     float pitch;
     float yaw;
     Vec3 position;
+    Vec3 centre;
 } Camera;
 
 

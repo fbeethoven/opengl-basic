@@ -275,9 +275,16 @@ void render(Renderer *rh, Camera *camera) {
     prepare(rh);
     shader_push(rh->shader);
 
-    Mat4 view_matrix = create_view_matrix(
-        &camera->position, camera->pitch, camera->yaw
+    // Mat4 view_matrix = create_view_matrix(
+    //     &camera->position, camera->pitch, camera->yaw
+    // );
+    
+    Mat4 view_matrix = mat4_look_at(
+        camera->position, 
+        camera->centre,
+        newVec3(0.0, 1.0, 0.0)
     );
+
 
 
     shader_load_matrix(

@@ -89,10 +89,12 @@ Mat4 create_transformation_matrix(
     Vec3 *translation,
     float rx, float ry, float rz, float scale_factor
 );
+
 Mat4 create_transformation_matrix_2d(
     float x, float y, float scale_x, float scale_y
 );
 
 void print_mat4(char *msg, Mat4 *matrix);
+Mat4 mat4_look_at(Vec3 eye, Vec3 centre, Vec3 up);
 
 #endif  // COMMON_H
