@@ -13,11 +13,26 @@
 #include <assert.h>
 
 
+typedef uint8_t U8;
+typedef int8_t I8;
+typedef uint32_t U32;
+typedef int32_t I32;
+typedef uint64_t U64;
+typedef int64_t I64;
+
+
+typedef struct Vec2 {
+    float x;
+    float y;
+} Vec2;
+
+
 typedef struct Vec3 {
     float x;
     float y;
     float z;
 } Vec3;
+
 
 typedef struct Vec4 {
     float x;
@@ -25,6 +40,7 @@ typedef struct Vec4 {
     float z;
     float w;
 } Vec4;
+
 
 typedef struct Mat4 {
     float m00;
@@ -48,8 +64,11 @@ typedef struct Mat4 {
     float m33;
 } Mat4;
 
+
+Vec2 newVec2(float x, float y);
 Vec3 newVec3(float x, float y, float z);
 Vec3 Vec3_add(Vec3 *a, Vec3 *b);
+Vec4 newVec4(float x, float y, float z, float w);
 
 
 Mat4 mat4_diag(float x, float y, float z, float w);
@@ -70,10 +89,12 @@ Mat4 create_transformation_matrix(
     Vec3 *translation,
     float rx, float ry, float rz, float scale_factor
 );
+
 Mat4 create_transformation_matrix_2d(
     float x, float y, float scale_x, float scale_y
 );
 
 void print_mat4(char *msg, Mat4 *matrix);
+Mat4 mat4_look_at(Vec3 eye, Vec3 centre, Vec3 up);
 
 #endif  // COMMON_H
