@@ -117,8 +117,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
 
 int main() {
-    speed = 0.2;
-
     font.size = 20;
     font.atlasWidth = 1024;
     font.atlasHeight = 1024;
@@ -129,7 +127,7 @@ int main() {
     font.texture = 0;
 
 
-    speed = 0.05;
+    speed = 0.5;
     entity_index = 0;
     pulse_n = 0;
 
@@ -190,7 +188,7 @@ int main() {
     log_if_err("Issue with Font initiation\n");
 
     Vec3 vertices[2000];
-    Vec2 uvs[2000];
+    Vec2 text_uvs[2000];
     unsigned int indexes[2000];
 
     float text_coord[8];
@@ -233,10 +231,10 @@ int main() {
             glyph_info.positions[3].z
         );
 
-        uvs[counter] = glyph_info.uvs[0];
-        uvs[counter + 1] = glyph_info.uvs[1];
-        uvs[counter + 2] = glyph_info.uvs[2];
-        uvs[counter + 3] = glyph_info.uvs[3];
+        text_uvs[counter] = glyph_info.uvs[0];
+        text_uvs[counter + 1] = glyph_info.uvs[1];
+        text_uvs[counter + 2] = glyph_info.uvs[2];
+        text_uvs[counter + 3] = glyph_info.uvs[3];
 
 
         text_coord[0] = glyph_info.uvs[0].x;
@@ -333,21 +331,26 @@ int main() {
 
     store_float_in_attributes(
         &font_model.uv, 1, 2,
-        2 * sizeof(float) * counter, (float *)uvs
+        2 * sizeof(float) * counter, (float *)text_uvs
     );
     font_model.vertex_count = indices_counter;
     font_model.texture_id = font.texture;
 
 
-    BaseModel model = {0};
+    BaseModel cube_model = {0};
     IntermediateModel cube_data = {0};
     parse_obj_file_simple("assets/models/cube.obj", &cube_data);
     load_data_to_model(
-        &model, cube_data.vertices, cube_data.indices,
+        &cube_model, cube_data.vertices, cube_data.indices,
         cube_data.vertices_count * sizeof(float),
         cube_data.indices_count * sizeof(unsigned int)
     );
-    model.vertex_count = cube_data.indices_count;
+    cube_model.vertex_count = cube_data.indices_count;
+    load_texture_to_model(
+        // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
+        &cube_model, "assets/textures/wall.jpg", text_coord1, 
+        sizeof(text_coord1)
+    );
 
 
     BaseModel tea_model = {0};
@@ -371,7 +374,7 @@ int main() {
     );
     suzanne.vertex_count = suzanne_data.indices_count;
 
-    Entity *entity = &renderer.entities[0];
+    Entity *entity = &renderer.entities[9];
     entity->model = &font_model;
     Vec3 entity_position_1 = newVec3(5, 0, -5);
     entity->position = &entity_position_1;
@@ -392,9 +395,9 @@ int main() {
     // entity->active = 1;
     // entity->scale = 5.0;
 
-    entity = &renderer.entities[2];
-    entity->model = &rect;
-    Vec3 entity_position_2 = newVec3(0, 0, -3);
+    entity = &renderer.entities[0];
+    entity->model = &cube_model;
+    Vec3 entity_position_2 = newVec3(0, 0, 0);
     entity->position = &entity_position_2;
     entity->active = 1;
     entity->scale = 5.0;
