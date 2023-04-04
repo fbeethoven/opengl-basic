@@ -352,7 +352,6 @@ int main() {
         sizeof(text_coord1)
     );
 
-
     BaseModel tea_model = {0};
     IntermediateModel tmp = {0};
     parse_obj_file_simple("assets/models/utah_teapot.obj", &tmp);
