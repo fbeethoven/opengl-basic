@@ -33,14 +33,14 @@ unsigned int shader_get_program_general(
 ) {
 	unsigned int shader_program_id = glCreateProgram();
 
-    char* vertex_shader = read_file("shaders/vertex_shader.glsl");
+    char* vertex_shader = read_file(vertex_shader_path);
 	unsigned int vertex_shader_id = compile_shaders(
         GL_VERTEX_SHADER, vertex_shader
     );
 	glAttachShader(shader_program_id, vertex_shader_id);
 	free(vertex_shader);
 
-    char* fragment_shader = read_file("shaders/fragment_shader.glsl");
+    char* fragment_shader = read_file(fragment_shader_path);
 	unsigned int fragment_shader_id = compile_shaders(
         GL_FRAGMENT_SHADER, fragment_shader
     );
@@ -60,8 +60,8 @@ unsigned int shader_get_program_general(
 
 unsigned int shader_get_program_2d() {
     return shader_get_program_general(
-        "shaders/vertex_2d.glsl",
-        "shaders/fragment_2d.glsl"
+        "shaders/gui_vertex.glsl",
+        "shaders/gui_fragment.glsl"
     );
 }
 
@@ -184,6 +184,7 @@ void shader_load_matrix(
 
 
 void shader_push(unsigned int shader_program_id) {
+    printf("Active shader: %d\n", shader_program_id);
     glUseProgram(shader_program_id);
 }
 

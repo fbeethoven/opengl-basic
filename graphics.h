@@ -32,6 +32,7 @@ typedef struct Entity {
     float rotation_z;
     float scale;
     int active;
+    int fill;
 } Entity;
 
 
@@ -49,7 +50,9 @@ typedef struct Renderer {
 	int shader;
     Entity entities[10];
 
-    int fill;
+	int gui_shader;
+    Entity gui_entities[10];
+
 } Renderer;
 
 
@@ -94,10 +97,11 @@ void store_float_in_attributes(
     float *data
 );
 
-
-// GObject *graphics_new_object();
-
-// void graphics_free_object(GObject *object);
+void bind_indices_buffer(
+    unsigned int *buffer_id,
+    int buffer_size,
+    unsigned int *data
+);
 
 
 #endif  // GRAPHICS_H

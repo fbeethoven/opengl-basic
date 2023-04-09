@@ -53,7 +53,7 @@ void store_float_in_attributes(
 }
 
 
-static void bind_indices_buffer(
+void bind_indices_buffer(
     unsigned int *buffer_id,
     int buffer_size,
     unsigned int *data
@@ -245,8 +245,8 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     rh->projection_matrix = create_projection_matrix(ctx, rh);
     // rh->projection_matrix.m33 = 1.0;
 
-    // rh->shader = shader_get_program();
-    rh->shader = shader_get_program_general(
+    rh->shader = shader_get_program();
+    rh->gui_shader = shader_get_program_general(
         "shaders/gui_vertex.glsl", "shaders/gui_fragment.glsl"
     );
     log_if_err("There was an issue on renderer init\n");
@@ -272,7 +272,6 @@ void prepare(Renderer *rh) {
 
 
 void render(Renderer *rh, Camera *camera) {
-    // print_mat4("Projection Matrix:", &rh->projection_matrix);
     prepare(rh);
     shader_push(rh->shader);
 
@@ -285,8 +284,6 @@ void render(Renderer *rh, Camera *camera) {
         camera->centre,
         newVec3(0.0, 1.0, 0.0)
     );
-
-
 
     shader_load_matrix(
         rh->shader,
@@ -329,7 +326,7 @@ void render(Renderer *rh, Camera *camera) {
                 "transformation_matrix",
                 &transformation_matrix
             );
-        if ( (rh->fill & 1) == 0) {
+        if ( (entity.fill & 1) == 0) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
         else {
@@ -342,6 +339,57 @@ void render(Renderer *rh, Camera *camera) {
             GL_TRIANGLES, entity.model->vertex_count,
             GL_UNSIGNED_INT, 0
         );
+	}
+
+    glDisable(GL_DEPTH_TEST);
+
+    shader_push(rh->gui_shader);
+
+    for (int i=0; i<10; i++) {
+        Entity entity = rh->gui_entities[i];
+
+        if (entity.active == 0) {
+            continue;
+        }
+        printf("GUI ENTITY %d\n", i);
+        printf("Shader: %d, Gui shader: %d\n", rh->shader, rh->gui_shader);
+        log_if_err("Issue before gui entities\n");
+
+        glBindVertexArray(entity.model->vao);
+        log_if_err("Issue bindin Vertex Array\n");
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        log_if_err("Issue with Vertex Attribs\n");
+
+        Mat4 transformation_matrix = create_transformation_matrix(
+            entity.position,
+            entity.rotation_x,
+            entity.rotation_y,
+            entity.rotation_z,
+            entity.scale);
+            shader_load_matrix(
+                rh->gui_shader,
+                "transformation_matrix",
+                &transformation_matrix
+            );
+        
+        if ( (entity.fill & 1) == 0) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+        log_if_err("Issue Polygons\n");
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        log_if_err("Issue before drawing\n");
+        glDrawElements(
+            GL_TRIANGLES, entity.model->vertex_count,
+            GL_UNSIGNED_INT, 0
+        );
+        log_if_err("Issue after gui entities\n");
 	}
 
     glDisableVertexAttribArray(0);

@@ -46,6 +46,11 @@ Font font;
 GlyphInfo getGlyphInfo(uint32_t character, float offsetX, float offsetY) {
     stbtt_aligned_quad quad;
 
+    // float x_num = 1.0;
+    // float y_num = 1.0;
+    float x_num = 356.0;
+    float y_num = 160.0;
+
     stbtt_GetPackedQuad(
         font.char_info,
         font.atlasWidth,
@@ -56,10 +61,10 @@ GlyphInfo getGlyphInfo(uint32_t character, float offsetX, float offsetY) {
         &quad,
         1
     );
-    float xmin = quad.x0;
-    float xmax = quad.x1;
-    float ymin = -quad.y1;
-    float ymax = -quad.y0;
+    float xmin = quad.x0/x_num;
+    float xmax = quad.x1/x_num;
+    float ymin = -quad.y1/y_num;
+    float ymax = -quad.y0/y_num;
 
     GlyphInfo info = {0};
     info.offsetX = offsetX;
@@ -100,6 +105,7 @@ void initFont() {
 
     stbtt_PackEnd(&context);
 
+    glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &font.texture);
     glBindTexture(GL_TEXTURE_2D, font.texture);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -184,6 +190,9 @@ int main() {
 
     char *text = "Find all things without being catch 0/10";
     log_if_err("Issue before Font initiation\n");
+    BaseModel font_model = {0};
+    glGenVertexArrays(1, &font_model.vao);
+    glBindVertexArray(font_model.vao);
     initFont();
     log_if_err("Issue with Font initiation\n");
 
@@ -210,27 +219,6 @@ int main() {
         vertices[counter + 2] = glyph_info.positions[2];
         vertices[counter + 3] = glyph_info.positions[3];
 
-        printf("POSITION 0: %f %f %f\n",
-            glyph_info.positions[0].x,
-            glyph_info.positions[0].y,
-            glyph_info.positions[0].z
-        );
-        printf("POSITION 1: %f %f %f\n",
-            glyph_info.positions[1].x,
-            glyph_info.positions[1].y,
-            glyph_info.positions[1].z
-        );
-        printf("POSITION 2: %f %f %f\n",
-            glyph_info.positions[2].x,
-            glyph_info.positions[2].y,
-            glyph_info.positions[2].z
-        );
-        printf("POSITION 3: %f %f %f\n",
-            glyph_info.positions[3].x,
-            glyph_info.positions[3].y,
-            glyph_info.positions[3].z
-        );
-
         text_uvs[counter] = glyph_info.uvs[0];
         text_uvs[counter + 1] = glyph_info.uvs[1];
         text_uvs[counter + 2] = glyph_info.uvs[2];
@@ -249,26 +237,6 @@ int main() {
         text_coord[6] = glyph_info.uvs[3].x;
         text_coord[7] = glyph_info.uvs[3].y;
         
-
-
-        printf("POSITION 0: %f %f \n",
-            glyph_info.uvs[0].x,
-            glyph_info.uvs[0].y
-        );
-        printf("POSITION 1: %f %f \n",
-            glyph_info.uvs[1].x,
-            glyph_info.uvs[1].y
-        );
-        printf("POSITION 2: %f %f \n",
-            glyph_info.uvs[2].x,
-            glyph_info.uvs[2].y
-        );
-        printf("POSITION 3: %f %f \n",
-            glyph_info.uvs[3].x,
-            glyph_info.uvs[3].y
-        );
-
-
         indexes[indices_counter] = lastIndex;
         indexes[indices_counter + 1] = lastIndex + 1;
         indexes[indices_counter + 2] = lastIndex + 2;
@@ -280,14 +248,6 @@ int main() {
         counter += 4;
         indices_counter += 6;
     }
-    printf("INDICES COUNTER: %d\n", indices_counter);
-    printf("VERTICES COUNTER: %d\n", 3*counter);
-    printf(" 4xlenx3: %d\n", (int)(4*strlen(text)*3));
-    printf("UVs COUNTER: %d\n", 2*counter);
-    printf(" 4xlenx2: %d\n", (int)(4*strlen(text)*2));
-    log_if_err("Issue before vaos and  vbo\n");
-
-
 
     float vertices1[] = {
         -0.5f,-0.5f, 0.0f,
@@ -308,26 +268,48 @@ int main() {
         0, 2, 3
     };
 
-    BaseModel rect = {0};
-    load_data_to_model(
-        &rect, (float *)vertices1, indices1,
-        3 * sizeof(float) * 4, sizeof(indices1)
-    );
-    rect.vertex_count = sizeof(indices1)/sizeof(indices1[0]);
-    load_texture_to_model(
-        // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
-        &rect, "assets/textures/marble-floor.jpg", text_coord1, 
-        sizeof(text_coord1)
-    );
 
-    BaseModel font_model = {0};
-    load_data_to_model(
-        &font_model, (float *)vertices, indexes,
-        3*counter*sizeof(float), sizeof(unsigned int) * indices_counter
-    );
+    // BaseModel rect = {0};
+    // load_data_to_model(
+    //     &rect, (float *)vertices1, indices1,
+    //     3 * sizeof(float) * 4, sizeof(indices1)
+    // );
+    // rect.vertex_count = sizeof(indices1)/sizeof(indices1[0]);
+    // load_texture_to_model(
+    //     // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
+    //     &rect, "assets/textures/marble-floor.jpg", text_coord1, 
+    //     sizeof(text_coord1)
+    // );
+
+    float max_x = 0;
+    float min_x = 0;
+    float max_y = 0;
+    float min_y = 0;
+    for (int i=0; i<counter; i++) {
+        if ( vertices[i].x < min_x) {
+            min_x = vertices[i].x;
+        }
+        else if ( vertices[i].x > max_x) {
+            max_x = vertices[i].x;
+        }
+        if ( vertices[i].y < min_y) {
+            min_y = vertices[i].y;
+        }
+        else if ( vertices[i].y > max_y) {
+            max_y = vertices[i].y;
+        }
+    }
 
     glBindVertexArray(font_model.vao);
-    glEnableVertexAttribArray(1);
+    bind_indices_buffer(
+        &font_model.ibo,
+        sizeof(unsigned int)* indices_counter,
+        indexes
+    );
+
+    store_float_in_attributes(
+        &font_model.vbo, 0, 3, 3*counter*sizeof(float), (float *)vertices
+    );
 
     store_float_in_attributes(
         &font_model.uv, 1, 2,
@@ -373,12 +355,12 @@ int main() {
     );
     suzanne.vertex_count = suzanne_data.indices_count;
 
-    Entity *entity = &renderer.entities[9];
+    Entity *entity = &renderer.gui_entities[0];
     entity->model = &font_model;
-    Vec3 entity_position_1 = newVec3(5, 0, -5);
+    Vec3 entity_position_1 = newVec3(0, 0, 0);
     entity->position = &entity_position_1;
     entity->active = 1;
-    entity->scale = 0.05;
+    entity->scale = 1;
 
     entity = &renderer.entities[1];
     entity->model = &world_model;
@@ -421,6 +403,9 @@ int main() {
 
         render(&renderer, &camera);
 
+        printf("MAX X: %f MIN X: %f\n", max_x, min_x);
+        printf("MAX Y: %f MIN Y: %f\n", max_y, min_y);
+
 
         glfwSwapBuffers(ctx.window);
         glfwPollEvents();
@@ -447,12 +432,12 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     if (glfwGetKey(ctx->window, GLFW_KEY_P ) == GLFW_PRESS){
-        if ( (renderer->fill & (1<<1)) == 0) {
-            renderer->fill |= (1<<1);
-            renderer->fill ^= 1;
+        if ( (entity->fill & (1<<1)) == 0) {
+            entity->fill |= (1<<1);
+            entity->fill ^= 1;
         }
     } else {
-        renderer->fill &= ~(1<<1);
+        entity->fill &= ~(1<<1);
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
         increase_rotation(player, 0.0, rotation_factor * speed, 0.0);
@@ -541,5 +526,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     printf("scale: %f\n", entity->scale);
     printf("pitch: %f\n", camera->pitch);
     printf("yaw: %f\n", camera->yaw);
+
 }
 
