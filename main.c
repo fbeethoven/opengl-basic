@@ -1,13 +1,12 @@
-/* Modified fom: https://learnopengl.com/Getting-started/Hello-Window */
 #define GLAD_GL_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 
 #include "common.h"
-#include "external/stb_truetype.h"
 #include "graphics.h"
 #include "mesh.h"
 #include "utils/file_handler.h"
+#include "font.h"
 
 
 float speed;
@@ -17,164 +16,11 @@ int pulse_n;
 float distance_from_player;
 
 
-// TODO: Move to image.h
-typedef struct GlyphInfo {
-    Vec3 positions[4];
-    Vec2 uvs[4];
-    float offsetX, offsetY;
-} GlyphInfo;
-
-
-typedef struct Font{
-    U32 size;
-    U32 atlasWidth;
-    U32 atlasHeight;
-    U32 oversampleX;
-    U32 oversampleY;
-    U32 firstChar;
-    U32 charCount;
-    stbtt_packedchar char_info[127];
-    U32 texture;
-} Font;
-
-
-Font font;
-
-
-GlyphInfo getGlyphInfo(uint32_t character, float offsetX, float offsetY) {
-    stbtt_aligned_quad quad;
-
-    // float x_num = 1.0;
-    // float y_num = 1.0;
-    float x_num = 356.0;
-    float y_num = 160.0;
-
-    stbtt_GetPackedQuad(
-        font.char_info,
-        font.atlasWidth,
-        font.atlasHeight,
-        character - font.firstChar,
-        &offsetX,
-        &offsetY,
-        &quad,
-        1
-    );
-    float xmin = quad.x0/x_num;
-    float xmax = quad.x1/x_num;
-    float ymin = -quad.y1/y_num;
-    float ymax = -quad.y0/y_num;
-
-    GlyphInfo info = {0};
-    info.offsetX = offsetX;
-    info.offsetY = offsetY;
-    info.positions[0] = newVec3(xmin, ymin, 0.0);
-    info.positions[1] = newVec3(xmin, ymax, 0.0);
-    info.positions[2] = newVec3(xmax, ymax, 0.0);
-    info.positions[3] = newVec3(xmax, ymin, 0.0);
-    info.uvs[0] = newVec2(quad.s0, quad.t1);
-    info.uvs[1] = newVec2(quad.s0, quad.t0);
-    info.uvs[2] = newVec2(quad.s1, quad.t0);
-    info.uvs[3] = newVec2(quad.s1, quad.t1);
-
-    return info;
-}
-
-
-void initFont() {
-    char *fontData = read_file("assets/fonts/VictorMono-Regular.ttf");
-    U8 atlasData[font.atlasWidth * font.atlasHeight];
-
-    stbtt_pack_context context;
-    if (!stbtt_PackBegin(
-        &context, atlasData, font.atlasWidth, font.atlasHeight, 0, 1, 0)
-    ) {
-        printf("Failed to initialize font");
-        exit(1);
-    }
-
-    stbtt_PackSetOversampling(&context, font.oversampleX, font.oversampleY);
-    if (!stbtt_PackFontRange(
-        &context, (unsigned char *)fontData, 0, font.size, font.firstChar,
-        font.charCount, font.char_info)
-    ) {
-        printf("Failed to pack font");
-        exit(1);
-    }
-
-    stbtt_PackEnd(&context);
-
-    glActiveTexture(GL_TEXTURE0);
-    glGenTextures(1, &font.texture);
-    glBindTexture(GL_TEXTURE_2D, font.texture);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGB, font.atlasWidth, font.atlasHeight,
-        0, GL_RED, GL_UNSIGNED_BYTE, atlasData
-    );
-    // glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    log_if_err("Could not initialize font\n");
-}
-
-
-void font_buffer_reset(Mesh *mesh) {
-    mesh->vertices_len = 0;
-    mesh->uvs_len = 0;
-    mesh->indices_len = 0;
-}
-
-
-void font_buffer_push(Mesh *mesh, char *msg, Vec2 position) {
-    printf("We want to print: %s\n", msg);
-    float offsetX = position.x, offsetY = position.y;
-    int counter = mesh->vertices_len;
-    int indices_counter = mesh->indices_len;
-    char c;
-    for (int i=0; i<strlen(msg); i++) {
-        c = msg[i];
-        GlyphInfo glyph_info = getGlyphInfo(c, offsetX, offsetY);
-        offsetX = glyph_info.offsetX;
-        offsetY = glyph_info.offsetY;
-
-        mesh->vertices[counter] = glyph_info.positions[0];
-        mesh->vertices[counter + 1] = glyph_info.positions[1];
-        mesh->vertices[counter + 2] = glyph_info.positions[2];
-        mesh->vertices[counter + 3] = glyph_info.positions[3];
-
-        mesh->uvs[counter] = glyph_info.uvs[0];
-        mesh->uvs[counter + 1] = glyph_info.uvs[1];
-        mesh->uvs[counter + 2] = glyph_info.uvs[2];
-        mesh->uvs[counter + 3] = glyph_info.uvs[3];
-
-        mesh->indices[indices_counter] = counter;
-        mesh->indices[indices_counter + 1] = counter + 1;
-        mesh->indices[indices_counter + 2] = counter + 2;
-        mesh->indices[indices_counter + 3] = counter;
-        mesh->indices[indices_counter + 4] = counter + 2;
-        mesh->indices[indices_counter + 5] = counter + 3;
-
-        counter += 4;
-        indices_counter += 6;
-    }
-    mesh->vertices_len = counter;
-    mesh->uvs_len = counter;
-    mesh->indices_len = indices_counter;
-}
-
-
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
 
 int main() {
-    font.size = 20;
-    font.atlasWidth = 1024;
-    font.atlasHeight = 1024;
-    font.oversampleX = 2;
-    font.oversampleY = 2;
-    font.firstChar = ' ';
-    font.charCount = '~' - ' ';
-    font.texture = 0;
-
+    Font font = {0};
 
     speed = 0.5;
     entity_index = 0;
@@ -231,12 +77,11 @@ int main() {
 
 
 
-    char *text = "Find all things without being catch 0/10";
     log_if_err("Issue before Font initiation\n");
     BaseModel font_model = {0};
     glGenVertexArrays(1, &font_model.vao);
     glBindVertexArray(font_model.vao);
-    initFont();
+    font_init(&font, "assets/fonts/VictorMono-Regular.ttf");
     log_if_err("Issue with Font initiation\n");
 
     Vec3 vertices[2000];
@@ -248,11 +93,9 @@ int main() {
     font_mesh.uvs = text_uvs;
     font_mesh.indices = indexes;
 
+    font.font_mesh = &font_mesh;
     renderer.font_mesh = &font_mesh;
-
-    font_buffer_push(&font_mesh, "First Test", newVec2(0.0, 0.0));
-    font_buffer_push(&font_mesh, "Second Test", newVec2(-100.0, -100.0));
-
+    renderer.font = &font;
 
     // uint16_t lastIndex = 0;
     // float offsetX = 0, offsetY = 0;
@@ -600,21 +443,21 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     camera->centre = *player->position;
 
-    font_buffer_reset(renderer->font_mesh);
+    font_buffer_reset(renderer->font);
     float y_step = 25.0;
     float base_x = -350.0;
     float base_y = -135.0;
     char msg[500];
     sprintf(msg, "scale: %0.3f", entity->scale);
-    font_buffer_push(renderer->font_mesh, msg, newVec2(base_x, base_y));
+    font_buffer_push(renderer->font, msg, newVec2(base_x, base_y));
 
     base_y += y_step;
     sprintf(msg, "pitch: %0.3f", camera->pitch);
-    font_buffer_push(renderer->font_mesh, msg, newVec2(base_x, base_y));
+    font_buffer_push(renderer->font, msg, newVec2(base_x, base_y));
 
     base_y += y_step;
     sprintf(msg, "yaw: %.3f", camera->yaw);
-    font_buffer_push(renderer->font_mesh, msg, newVec2(base_x, base_y));
+    font_buffer_push(renderer->font, msg, newVec2(base_x, base_y));
 
 }
 

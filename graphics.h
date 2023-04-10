@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "mesh.h"
+#include "font.h"
 
 
 typedef struct GraphicsContext {
@@ -55,6 +56,7 @@ typedef struct Renderer {
     Entity gui_entities[10];
 
     Mesh *font_mesh;
+    Font *font;
 
 } Renderer;
 
@@ -66,8 +68,6 @@ typedef struct Camera {
     Vec3 centre;
 } Camera;
 
-
-void log_if_err(char *err_msg);
 
 void camera_move(Camera *camera, float dx, float dy, float dz);
 

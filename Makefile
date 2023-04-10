@@ -3,7 +3,7 @@ LIBS = -lglfw -ldl -lm
 
 INCLUDES = -I external
 BIN = build
-OBJ = mesh.c shader.c graphics.c common.c image.c utils/file_handler.c
+OBJ = font.c mesh.c shader.c graphics.c common.c image.c utils/file_handler.c
 PROG = $(BIN)/p.exe
 
 FEAT = mesh

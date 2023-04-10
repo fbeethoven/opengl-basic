@@ -387,3 +387,12 @@ Mat4 mat4_look_at(Vec3 eye, Vec3 centre, Vec3 up) {
     return C;
 }
 
+
+void log_if_err(char *err_msg) {
+    int err = glGetError();
+    if (err != GL_NO_ERROR) {
+        printf("[ERROR: %d] GL Error: %s", err, err_msg);
+        exit(1);
+    }
+}
+

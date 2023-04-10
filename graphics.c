@@ -3,14 +3,6 @@
 #include "image.h"
 
 
-void log_if_err(char *err_msg) {
-    int err = glGetError();
-    if (err != GL_NO_ERROR) {
-        printf("[ERROR: %d] GL Error: %s", err, err_msg);
-        exit(1);
-    }
-}
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
