@@ -16,6 +16,12 @@ void draw_quad(Mesh *mesh, Vec3 position) {
     mesh->uvs[u_c + 2] = newVec2(1.0, 0.0);
     mesh->uvs[u_c + 3] = newVec2(1.0, 1.0);
 
+    Vec3 normal_default = newVec3(0.0, 1.0, 0.0);
+    mesh->normal[v_c] = normal_default;
+    mesh->normal[v_c + 1] = normal_default;
+    mesh->normal[v_c + 2] = normal_default;
+    mesh->normal[v_c + 3] = normal_default;
+
     mesh->indices[i_c] = v_c;
     mesh->indices[i_c + 1] = v_c + 1;
     mesh->indices[i_c + 2] = v_c + 2;

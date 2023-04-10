@@ -8,6 +8,7 @@
 typedef struct Mesh {
     Vec3 *vertices;
     Vec2 *uvs;
+    Vec3 *normal;
     unsigned int *indices;
 
     int vertices_len;

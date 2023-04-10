@@ -44,8 +44,8 @@ int main() {
     camera.yaw = 0.0;
 
     Light light = {0};
-    light.position = newVec3(0.0, 0.0, 5.0);
-    light.color = newVec3(1.0, 0.0, 0.0);
+    light.position = newVec3(0.0, 5.0, 5.0);
+    light.color = newVec3(0.5, 0.5, 1.0);
 
     renderer.light = &light;
 
@@ -56,11 +56,13 @@ int main() {
 
     Vec3 mesh_vertices[64*64];
     Vec2 uvs[64*64];
+    Vec3 mesh_normal[64*64];
     unsigned int mesh_indices[3*64*64];
 
     mesh.vertices = mesh_vertices;
     mesh.uvs = uvs;
     mesh.indices = mesh_indices;
+    mesh.normal = mesh_normal;
     mesh_init(&mesh);
 
 
@@ -78,6 +80,17 @@ int main() {
         (float *)mesh.uvs, 
         2 * sizeof(float) * mesh.uvs_len
     );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(world_model.vao);
+    store_float_in_attributes(
+        &world_model.normal,
+        2,
+        3,
+        3 * mesh.vertices_len * sizeof(float),
+        (float *) mesh.normal
+    );
+    log_if_err("Issue after loading normals\n");
+
     world_model.vertex_count = mesh.indices_len;
 
     
@@ -159,6 +172,11 @@ int main() {
         suzanne_data.vertices_count* sizeof(float),
         suzanne_data.indices_count * sizeof(unsigned int)
     );
+    load_texture_to_model(
+        // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
+        &suzanne, "assets/textures/wall.jpg", suzanne_data.uvs, 
+        2 * suzanne_data.uvs_count * sizeof(float)
+    );
     log_if_err("Issue before loading normals\n");
     glBindVertexArray(suzanne.vao);
     store_float_in_attributes(
@@ -186,7 +204,7 @@ int main() {
     entity->model = &world_model;
     Vec3 entity_position_world = newVec3(0, 0, 0);
     entity->position = &entity_position_world;
-    entity->active = 0;
+    entity->active = 1;
     entity->scale = 1.0;
 
     // entity = &renderer.entities[1];
@@ -198,10 +216,10 @@ int main() {
 
     entity = &renderer.entities[0];
     entity->model = &suzanne;
-    Vec3 entity_position_2 = newVec3(0, 0, 0);
+    Vec3 entity_position_2 = newVec3(0, 1, 0);
     entity->position = &entity_position_2;
     entity->active = 1;
-    entity->scale = 5.0;
+    entity->scale = 1.0;
 
     // entity = &renderer.entities[2];
     // entity->model = &suzanne;
