@@ -63,3 +63,8 @@ void *_arr_pop(ArrayList *arr, U64 n) {
     return item;
 }
 
+void arr_free(ArrayList *arr) {
+    free(arr->data);
+    free(arr);
+}
+

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "file_handler.h"
+#include "../memory.h"
 
 
 int push_float(
@@ -32,7 +33,7 @@ int push_normal(IntermediateModel *dest, float x) {
 
 int push_text_coords(IntermediateModel *dest, float x) {
     return push_float(
-        dest->tex_coords, x, TexCapacity, &dest->tex_coords_count
+        dest->uvs, x, TexCapacity, &dest->uvs_count
     );
 }
 
@@ -117,8 +118,8 @@ void parse_obj_file_simple(char *file_path, IntermediateModel *dest) {
     split_space.separator = ' ';
 
     while (split_next(&split_line, data) >= 0) {
+        splitter_reset(&split_space);
         if (split_line.buffer[0] == 'v') {
-            splitter_reset(&split_space);
             split_next(&split_space, split_line.buffer);
 
             split_next(&split_space, split_line.buffer);
@@ -131,7 +132,6 @@ void parse_obj_file_simple(char *file_path, IntermediateModel *dest) {
             push_vertice(dest, atof(split_space.buffer));
         }
         else if ( split_line.buffer[0] == 'f') {
-            splitter_reset(&split_space);
             split_next(&split_space, split_line.buffer);
 
             split_next(&split_space, split_line.buffer);
@@ -148,17 +148,58 @@ void parse_obj_file_simple(char *file_path, IntermediateModel *dest) {
 }
 
 
+void handle_face_vertex(
+    char *face_vertex,
+    IntermediateModel *dest,
+    ArrayList *normals,
+    ArrayList *uvs,
+    ArrayList *indices
+) {
+    StrSplitter split_bar = {0};
+    split_bar.separator = '/';
+
+    split_next(&split_bar, face_vertex);
+    unsigned int vertex_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
+    *arr_push(indices, unsigned int) = vertex_pointer;
+
+    split_next(&split_bar, face_vertex);
+    unsigned int uv_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
+    dest->uvs[2*vertex_pointer] = (
+        ((float *)uvs->data)[2*uv_pointer]
+    );
+    dest->uvs[2*vertex_pointer + 1] = (
+        ((float *)uvs->data)[2*uv_pointer + 1]
+    );
+
+    split_next(&split_bar, face_vertex);
+    unsigned int normal_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
+    dest->normals[3*vertex_pointer] = (
+        ((float *)normals->data)[3*normal_pointer]
+    );
+    dest->normals[3*vertex_pointer + 1] = ( 
+        ((float *)normals->data)[3*normal_pointer + 1]
+    );
+    dest->normals[3*vertex_pointer + 2] = ( 
+        ((float *)normals->data)[3*normal_pointer + 2]
+    );
+}
+
+
 void parse_obj_file(char *file_path, IntermediateModel *dest) {
+    ArrayList *vertices = new_array_list(float);
+    ArrayList *normals = new_array_list(float);
+    ArrayList *uvs = new_array_list(float);
+    ArrayList *indices = new_array_list(unsigned int);
+
+
     char *data = read_file(file_path);
     StrSplitter split_line = {0};
     split_line.separator = '\n';
     StrSplitter split_space = {0};
     split_space.separator = ' ';
 
-    StrSplitter split_bar = {0};
-    split_bar.separator = '/';
-
     int lines = 0;
+    int undefined_arrays = 0;
 
     while (split_next(&split_line, data) >= 0) {
         splitter_reset(&split_space);
@@ -167,54 +208,76 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
         if (strcmp(split_space.buffer, "v") == 0) {
 
             split_next(&split_space, split_line.buffer);
-            push_vertice(dest, atof(split_space.buffer));
+            *arr_push(vertices, float) = atof(split_space.buffer);
 
             split_next(&split_space, split_line.buffer);
-            push_vertice(dest, atof(split_space.buffer));
+            *arr_push(vertices, float) = atof(split_space.buffer);
 
             split_next(&split_space, split_line.buffer);
-            push_vertice(dest, atof(split_space.buffer));
+            *arr_push(vertices, float) = atof(split_space.buffer);
         }
         else if (strcmp(split_space.buffer, "vt") == 0) {
 
             split_next(&split_space, split_line.buffer);
-            push_text_coords(dest, atof(split_space.buffer));
+            *arr_push(uvs, float) = atof(split_space.buffer);
 
             split_next(&split_space, split_line.buffer);
-            push_text_coords(dest, atof(split_space.buffer));
+            *arr_push(uvs, float) = atof(split_space.buffer);
 
         }
         if (strcmp(split_space.buffer, "vn") == 0) {
 
             split_next(&split_space, split_line.buffer);
-            push_normal(dest, atof(split_space.buffer));
+            *arr_push(normals, float) = atof(split_space.buffer);
 
             split_next(&split_space, split_line.buffer);
-            push_normal(dest, atof(split_space.buffer));
+            *arr_push(normals, float) = atof(split_space.buffer);
 
             split_next(&split_space, split_line.buffer);
-            push_normal(dest, atof(split_space.buffer));
+            *arr_push(normals, float) = atof(split_space.buffer);
         }
         else if (strcmp(split_space.buffer, "f") == 0) {
 
-            split_next(&split_space, split_line.buffer);
-            splitter_reset(&split_bar);
-            split_next(&split_bar, split_space.buffer);
-            push_index(dest, (unsigned int) atoi(split_bar.buffer));
+            if (!undefined_arrays) {
+                dest->uvs = (
+                    (float *)malloc(2 * vertices->counter * sizeof(float))
+                );
+                dest->uvs_count = 2 * vertices->counter;
+                dest->normals = (
+                    (float *)malloc(3 * vertices->counter * sizeof(float))
+                );
+                dest->normals_count = 3 * vertices->counter;
+                dest->vertices = vertices->data;
+                dest->vertices_count = vertices->counter;
+
+                undefined_arrays = 1;
+            }
 
             split_next(&split_space, split_line.buffer);
-            splitter_reset(&split_bar);
-            split_next(&split_bar, split_space.buffer);
-            push_index(dest, (unsigned int) atoi(split_bar.buffer));
+            handle_face_vertex(
+                split_space.buffer, dest, normals, uvs, indices
+            );
 
             split_next(&split_space, split_line.buffer);
-            splitter_reset(&split_bar);
-            split_next(&split_bar, split_space.buffer);
-            push_index(dest, (unsigned int) atoi(split_bar.buffer));
+            handle_face_vertex(
+                split_space.buffer, dest, normals, uvs, indices
+            );
+
+            split_next(&split_space, split_line.buffer);
+            handle_face_vertex(
+                split_space.buffer, dest, normals, uvs, indices
+            );
         }
         lines++;
     }
 
+    dest->indices = indices->data;
+    dest->indices_count = indices->counter;
+
+    free(indices);
+    free(vertices);
+    arr_free(normals);
+    arr_free(uvs);
     free(data);
 
     printf(
@@ -223,7 +286,23 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
     );
     printf(
         " %d normal vectors, %d texture coordinates\n", 
-        dest->normals_count, dest->tex_coords_count
+        dest->normals_count, dest->uvs_count
     );
+}
+
+
+void intermediate_model_init(IntermediateModel *model) {
+    model->vertices = (float *)malloc(3*sizeof(float)*VerticesCapacity);
+    model->normals = (float *)malloc(3*sizeof(float)*NormalsCapacity);
+    model->uvs = (float *)malloc(3*sizeof(float)*TexCapacity);
+    model->indices = (unsigned int *)malloc(3*sizeof(float)*IndicesCapacity);
+}
+
+
+void intermediate_model_free(IntermediateModel *model) {
+    free(model->vertices);
+    free(model->normals);
+    free(model->uvs);
+    free(model->indices);
 }
 

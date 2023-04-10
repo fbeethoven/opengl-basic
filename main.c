@@ -116,6 +116,7 @@ int main() {
 
     BaseModel cube_model = {0};
     IntermediateModel cube_data = {0};
+    intermediate_model_init(&cube_data);
     parse_obj_file_simple("assets/models/cube.obj", &cube_data);
     load_data_to_model(
         &cube_model, cube_data.vertices, cube_data.indices,
@@ -123,6 +124,7 @@ int main() {
         cube_data.indices_count * sizeof(unsigned int)
     );
     cube_model.vertex_count = cube_data.indices_count;
+    intermediate_model_free(&cube_data);
     load_texture_to_model(
         // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
         &cube_model, "assets/textures/wall.jpg", text_coord1, 
@@ -131,6 +133,7 @@ int main() {
 
     BaseModel tea_model = {0};
     IntermediateModel tmp = {0};
+    intermediate_model_init(&tmp);
     parse_obj_file_simple("assets/models/utah_teapot.obj", &tmp);
     load_data_to_model(
         &tea_model, tmp.vertices, tmp.indices,
@@ -138,6 +141,7 @@ int main() {
         tmp.indices_count * sizeof(unsigned int)
     );
     tea_model.vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
 
 
     BaseModel suzanne = {0};
@@ -149,6 +153,7 @@ int main() {
         suzanne_data.indices_count * sizeof(unsigned int)
     );
     suzanne.vertex_count = suzanne_data.indices_count;
+    intermediate_model_free(&suzanne_data);
 
 
     Entity *entity = &renderer.gui_entities[0];
@@ -173,7 +178,7 @@ int main() {
     // entity->scale = 5.0;
 
     entity = &renderer.entities[0];
-    entity->model = &cube_model;
+    entity->model = &suzanne;
     Vec3 entity_position_2 = newVec3(0, 0, 0);
     entity->position = &entity_position_2;
     entity->active = 1;
