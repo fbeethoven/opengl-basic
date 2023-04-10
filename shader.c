@@ -2,30 +2,34 @@
 #include "utils/file_handler.h"
 
 
-
-
 static unsigned int compile_shaders(
-    GLenum shader_type, const char *shader_source
+    GLenum shader_type, const char *shader_source, char *debug_name
 ) {
 	int status_success;
-
 	unsigned int shader_id;
-	shader_id = glCreateShader(shader_type);
+    char infoLog[512];
 
-	glShaderSource(shader_id, 1, &shader_source, NULL);
-	glCompileShader(shader_id);
-	glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status_success);
-	char infoLog[512];
+    for (int i=0; i<5; i++) {
+        shader_id = glCreateShader(shader_type);
 
-	if(!status_success){
-		glGetShaderInfoLog(shader_id, 512, NULL, infoLog);
-        printf("ERROR::SHADER::COMPILATION::FAILED\n");
+        glShaderSource(shader_id, 1, &shader_source, NULL);
+        glCompileShader(shader_id);
+        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status_success);
+        if (status_success) {
+            break;
+        }
+    }
+    if(!status_success){
+        glGetShaderInfoLog(shader_id, 512, NULL, infoLog);
+        printf(
+            "[ERROR:SHADER] Could not compile shader from %s\n",
+            debug_name
+        );
         printf("  %s\n", infoLog);
-	}
+    }
 
     return shader_id;
 }
-
 
 
 unsigned int shader_get_program_general(
@@ -35,14 +39,14 @@ unsigned int shader_get_program_general(
 
     char* vertex_shader = read_file(vertex_shader_path);
 	unsigned int vertex_shader_id = compile_shaders(
-        GL_VERTEX_SHADER, vertex_shader
+        GL_VERTEX_SHADER, vertex_shader, vertex_shader_path
     );
 	glAttachShader(shader_program_id, vertex_shader_id);
 	free(vertex_shader);
 
     char* fragment_shader = read_file(fragment_shader_path);
 	unsigned int fragment_shader_id = compile_shaders(
-        GL_FRAGMENT_SHADER, fragment_shader
+        GL_FRAGMENT_SHADER, fragment_shader, fragment_shader_path
     );
 	glAttachShader(shader_program_id, fragment_shader_id);
 	free(fragment_shader);

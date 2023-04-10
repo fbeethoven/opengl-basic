@@ -307,7 +307,7 @@ void render(Renderer *rh, Camera *camera) {
         log_if_err("Issue Polygons\n");
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        glBindTexture(GL_TEXTURE_2D, rh->font->texture_id);
         log_if_err("Issue before drawing\n");
         glDrawElements(
             GL_TRIANGLES, rh->font->font_mesh->indices_len,
