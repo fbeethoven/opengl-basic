@@ -73,65 +73,14 @@ int main() {
     );
     world_model.vertex_count = mesh.indices_len;
 
-
-
-
-
-    log_if_err("Issue before Font initiation\n");
-    BaseModel font_model = {0};
-    glGenVertexArrays(1, &font_model.vao);
-    glBindVertexArray(font_model.vao);
-    font_init(&font, "assets/fonts/VictorMono-Regular.ttf");
-    log_if_err("Issue with Font initiation\n");
-
-    Vec3 vertices[2000];
-    Vec2 text_uvs[2000];
-    unsigned int indexes[2000];
-
-    Mesh font_mesh = {0};
-    font_mesh.vertices = vertices;
-    font_mesh.uvs = text_uvs;
-    font_mesh.indices = indexes;
-
-    font.font_mesh = &font_mesh;
-    renderer.font_mesh = &font_mesh;
-    renderer.font = &font;
-
-    // uint16_t lastIndex = 0;
-    // float offsetX = 0, offsetY = 0;
-    // int counter = 0;
-    // int indices_counter = 0;
-    // char c;
-    // for (int i=0; i<strlen(text); i++) {
-    //     c = text[i];
-    //     GlyphInfo glyph_info = getGlyphInfo(c, offsetX, offsetY);
-    //     offsetX = glyph_info.offsetX;
-    //     offsetY = glyph_info.offsetY;
-
-    //     vertices[counter] = glyph_info.positions[0];
-    //     vertices[counter + 1] = glyph_info.positions[1];
-    //     vertices[counter + 2] = glyph_info.positions[2];
-    //     vertices[counter + 3] = glyph_info.positions[3];
-
-    //     text_uvs[counter] = glyph_info.uvs[0];
-    //     text_uvs[counter + 1] = glyph_info.uvs[1];
-    //     text_uvs[counter + 2] = glyph_info.uvs[2];
-    //     text_uvs[counter + 3] = glyph_info.uvs[3];
-
-
-    //     indexes[indices_counter] = lastIndex;
-    //     indexes[indices_counter + 1] = lastIndex + 1;
-    //     indexes[indices_counter + 2] = lastIndex + 2;
-    //     indexes[indices_counter + 3] = lastIndex;
-    //     indexes[indices_counter + 4] = lastIndex + 2;
-    //     indexes[indices_counter + 5] = lastIndex + 3;
-
-    //     lastIndex += 4;
-    //     counter += 4;
-    //     indices_counter += 6;
-    // }
-
-        
+    
+    // float vertices1[] = {
+    //     -0.5f,-0.5f, 0.0f,
+    //     -0.5f,0.5f, 0.0f,
+    //     0.5f,0.5f, 0.0f,
+    //     0.5f,-0.5f, 0.0f
+    // };
+    
     float text_coord1[] = {
         0.0f,0.0f,
         0.0f,1.0f,
@@ -139,18 +88,10 @@ int main() {
         1.0f,0.0f
 	};
 
-    // float vertices1[] = {
-    //     -0.5f,-0.5f, 0.0f,
-    //     -0.5f,0.5f, 0.0f,
-    //     0.5f,0.5f, 0.0f,
-    //     0.5f,-0.5f, 0.0f
-    // };
-
     // unsigned int indices1[] = {
     //     0, 1, 2,
     //     0, 2, 3
     // };
-
 
     // BaseModel rect = {0};
     // load_data_to_model(
@@ -166,78 +107,10 @@ int main() {
 
 
 
-
-
-
-    // float max_x = 0;
-    // float min_x = 0;
-    // float max_y = 0;
-    // float min_y = 0;
-    // for (int i=0; i<counter; i++) {
-    //     if ( vertices[i].x < min_x) {
-    //         min_x = vertices[i].x;
-    //     }
-    //     else if ( vertices[i].x > max_x) {
-    //         max_x = vertices[i].x;
-    //     }
-    //     if ( vertices[i].y < min_y) {
-    //         min_y = vertices[i].y;
-    //     }
-    //     else if ( vertices[i].y > max_y) {
-    //         max_y = vertices[i].y;
-    //     }
-    // }
-
-    glBindVertexArray(font_model.vao);
-    glGenBuffers(1, &font_model.ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font_model.ibo);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        2000,
-        0,
-        GL_DYNAMIC_DRAW
-    );
-    // bind_indices_buffer(
-    //     &font_model.ibo,
-    //     sizeof(unsigned int)* font_mesh.indices_len,
-    //     font_mesh.indices
-    // );
-
-    // store_float_in_attributes(
-    //     &font_model.vbo, 0, 3,
-    //     3*font_mesh.vertices_len*sizeof(float), (float *)font_mesh.vertices
-    // );
-    glGenBuffers(1, &font_model.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, font_model.vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        2000,
-        0,
-        GL_DYNAMIC_DRAW
-    );
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // store_float_in_attributes(
-    //     &font_model.uv, 1, 2,
-    //     2 * sizeof(float) * font_mesh.uvs_len, (float *)font_mesh.uvs
-    // );
-    glGenBuffers(1, &font_model.uv);
-	glBindBuffer(GL_ARRAY_BUFFER, font_model.uv);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        2000,
-        0,
-        GL_DYNAMIC_DRAW
-    );
-    glVertexAttribPointer(
-        1, 2, GL_FLOAT,
-        GL_FALSE, 2 * sizeof(float), 0
-    );
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    font_model.vertex_count = font_mesh.indices_len;
-    font_model.texture_id = font.texture;
+    log_if_err("Issue before Font initiation\n");
+    font_init(&font, "assets/fonts/VictorMono-Regular.ttf");
+    renderer.font = &font;
+    log_if_err("Issue with Font initiation\n");
 
 
     BaseModel cube_model = {0};
@@ -276,8 +149,9 @@ int main() {
     );
     suzanne.vertex_count = suzanne_data.indices_count;
 
+
     Entity *entity = &renderer.gui_entities[0];
-    entity->model = &font_model;
+    entity->model = (BaseModel *) &font.vao;
     Vec3 entity_position_1 = newVec3(0.0, 0.0, 0.0);
     entity->position = &entity_position_1;
     entity->active = 1;
@@ -323,10 +197,6 @@ int main() {
         handle_input(&ctx, &renderer, &camera);
 
         render(&renderer, &camera);
-
-        // printf("MAX X: %f MIN X: %f\n", max_x, min_x);
-        // printf("MAX Y: %f MIN Y: %f\n", max_y, min_y);
-
 
         glfwSwapBuffers(ctx.window);
         glfwPollEvents();
@@ -444,20 +314,20 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     camera->centre = *player->position;
 
     font_buffer_reset(renderer->font);
-    float y_step = 25.0;
-    float base_x = -350.0;
-    float base_y = -135.0;
+//     float y_step = 25.0;
+//     float base_x = -350.0;
+//     float base_y = -135.0;
     char msg[500];
     sprintf(msg, "scale: %0.3f", entity->scale);
-    font_buffer_push(renderer->font, msg, newVec2(base_x, base_y));
+    font_buffer_push(renderer->font, msg);
 
-    base_y += y_step;
+//    base_y += y_step;
     sprintf(msg, "pitch: %0.3f", camera->pitch);
-    font_buffer_push(renderer->font, msg, newVec2(base_x, base_y));
+    font_buffer_push(renderer->font, msg);
 
-    base_y += y_step;
+ //    base_y += y_step;
     sprintf(msg, "yaw: %.3f", camera->yaw);
-    font_buffer_push(renderer->font, msg, newVec2(base_x, base_y));
+    font_buffer_push(renderer->font, msg);
 
 }
 

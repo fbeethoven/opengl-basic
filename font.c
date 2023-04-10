@@ -50,6 +50,10 @@ void font_init(Font *font, char *font_file_path) {
     font->charCount = '~' - ' ';
     font->texture = 0;
 
+    font->y_step = 25.0;
+    font->base_x = -350.0;
+    font->base_y = -135.0;
+
 
     glGenVertexArrays(1, &font->vao);
     glBindVertexArray(font->vao);
@@ -89,6 +93,60 @@ void font_init(Font *font, char *font_file_path) {
     // glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
     glGenerateMipmap(GL_TEXTURE_2D);
     log_if_err("Could not initialize font\n");
+
+    Vec3 *vertices = (Vec3 *) malloc(FontCapacity * sizeof(Vec3));
+    Vec2 *text_uvs = (Vec2 *) malloc(FontCapacity * sizeof(Vec2));
+    unsigned int *indexes = (
+        (unsigned int *) malloc(FontCapacity * sizeof(unsigned int))
+    );
+
+    Mesh *font_mesh = (Mesh *) malloc(sizeof(Mesh));
+    font_mesh->vertices = vertices;
+    font_mesh->uvs = text_uvs;
+    font_mesh->indices = indexes;
+
+    font->font_mesh = font_mesh;
+
+
+    glBindVertexArray(font->vao);
+    glGenBuffers(1, &font->ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font->ibo);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        FontCapacity,
+        0,
+        GL_DYNAMIC_DRAW
+    );
+
+    glGenBuffers(1, &font->vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, font->vbo);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        FontCapacity,
+        0,
+        GL_DYNAMIC_DRAW
+    );
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+    glGenBuffers(1, &font->uv);
+	glBindBuffer(GL_ARRAY_BUFFER, font->uv);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        FontCapacity,
+        0,
+        GL_DYNAMIC_DRAW
+    );
+    glVertexAttribPointer(
+        1, 2, GL_FLOAT,
+        GL_FALSE, 2 * sizeof(float), 0
+    );
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+    font->vertex_count = font->font_mesh->indices_len;
+    font->texture_id = font->texture;
 }
 
 
@@ -96,10 +154,44 @@ void font_buffer_reset(Font *font) {
     font->font_mesh->vertices_len = 0;
     font->font_mesh->uvs_len = 0;
     font->font_mesh->indices_len = 0;
+
+    font->y_step = 25.0;
+    font->base_x = -350.0;
+    font->base_y = -135.0;
 }
 
 
-void font_buffer_push(Font *font, char *msg, Vec2 position) {
+void font_update_buffer(Font *font) {
+    glBufferSubData(
+        GL_ARRAY_BUFFER,
+        0,
+        font->font_mesh->vertices_len * 3 * sizeof(float),
+        (float *)font->font_mesh->vertices
+    );
+    glBindBuffer(GL_ARRAY_BUFFER, font->uv);
+    glBufferSubData(
+        GL_ARRAY_BUFFER,
+        0,
+        font->font_mesh->uvs_len * 2 * sizeof(float),
+        (float *)font->font_mesh->uvs
+    );
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font->ibo);
+    glBufferSubData(
+        GL_ELEMENT_ARRAY_BUFFER,
+        0,
+        font->font_mesh->indices_len * 2 * sizeof(float),
+        (unsigned int *)font->font_mesh->indices
+    );
+    log_if_err("Issue with subdata\n");
+
+}
+
+void font_buffer_push(Font *font, char *msg) {
+    _font_buffer_push(font, msg, newVec2(font->base_x, font->base_y));
+    font->base_y += font->y_step;
+}
+
+void _font_buffer_push(Font *font, char *msg, Vec2 position) {
     Mesh *mesh = font->font_mesh;
     float offsetX = position.x, offsetY = position.y;
     int counter = mesh->vertices_len;
@@ -135,3 +227,12 @@ void font_buffer_push(Font *font, char *msg, Vec2 position) {
     mesh->uvs_len = counter;
     mesh->indices_len = indices_counter;
 }
+
+
+void font_free(Font *font) {
+    free(font->font_mesh->vertices);
+    free(font->font_mesh->uvs);
+    free(font->font_mesh->indices);
+    free(font->font_mesh);
+}
+

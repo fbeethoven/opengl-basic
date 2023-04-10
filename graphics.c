@@ -8,14 +8,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 
-// void graphics_free_object(GObject *object){
-//     glDeleteVertexArrays(1, &object->vao);
-//     glDeleteBuffers(1, &object->vbo);
-//     glDeleteBuffers(1, &object->ibo);
-//     glDeleteProgram(object->shader_program_id);
-// }
-
-
 void camera_move(Camera *camera, float dx, float dy, float dz) {
     camera->position.x += dx;
     camera->position.y += dy;
@@ -35,7 +27,7 @@ void store_float_in_attributes(
         GL_ARRAY_BUFFER,
         buffer_size,
         data,
-        GL_DYNAMIC_DRAW
+        GL_STATIC_DRAW
     );
     glVertexAttribPointer(
         attribute_index, coordinate_size, GL_FLOAT,
@@ -56,7 +48,7 @@ void bind_indices_buffer(
         GL_ELEMENT_ARRAY_BUFFER,
         buffer_size,
         data,
-        GL_DYNAMIC_DRAW
+        GL_STATIC_DRAW
     );
 }
 
@@ -143,65 +135,6 @@ int graphics_init(GraphicsContext *ctx) {
 }
 
 
-// void graphics_render_rect(GraphicsContext *ctx, GObject *object) {
-//     glBindVertexArray(object->vao);
-//     // glBindBuffer(GL_ARRAY_BUFFER, object->vbo);
-//     glUseProgram(object->shader_program_id);
-//     glDrawElements(GL_TRIANGLES, 2, GL_UNSIGNED_INT, 0);
-//     glUseProgram(0);
-//     glBindVertexArray(0);
-// }
-
-// GObject *graphics_new_rect(
-//     GraphicsContext *ctx,
-//     Vec3 *topright, Vec3 *topleft, Vec3 *botleft, Vec3 *botright
-// ) {
-//     glEnable(GL_DEPTH_TEST);
-//     GObject *new_object = (GObject*) malloc(sizeof(GObject));
-//     memset(new_object, 0, sizeof(GObject));
-// 
-// 
-//     printf("RENDER DEBUG\n");
-//     printf("x: %f, y: %f, z: %f\n", topright->x, topright->y, topright->z);
-// 
-//     float vertices[] = {
-//         topright->x, topright->y, topright->z,
-//         topleft->x, topleft->y, topleft->z,
-//         botleft->x, botleft->y, botleft->z,
-//         botright->x, botright->y, botright->z
-//     };
-// 
-//     unsigned int indices[] = {
-//         0, 1, 2,
-//         2, 3, 0
-//     };
-// 
-//     new_object->shader_program_id = shader_get_program_2d();
-// 
-//     // glCreateVertexArrays(1, &new_object->vao);
-//     glGenVertexArrays(1, &new_object->vao);
-//     glBindVertexArray(new_object->vao);
-// 
-//     glGenBuffers(1, &new_object->vbo);
-// 	glBindBuffer(GL_ARRAY_BUFFER, new_object->vbo);
-//     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-// 
-// 
-//     glGenBuffers(1, &new_object->ibo);
-//     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, new_object->ibo);
-//     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-// 
-// 
-//     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-//     glEnableVertexAttribArray(0);
-// 
-//     glBindBuffer(GL_ARRAY_BUFFER, 0);
-//     glBindVertexArray(0);
-// 
-//     return new_object;
-// }
-
-
 static Mat4 create_projection_matrix(
     GraphicsContext *ctx, Renderer* rh
 ) {
@@ -235,7 +168,6 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 	rh->BLUE = 0.3f;
 
     rh->projection_matrix = create_projection_matrix(ctx, rh);
-    // rh->projection_matrix.m33 = 1.0;
 
     rh->shader = shader_get_program();
     rh->gui_shader = shader_get_program_general(
@@ -267,10 +199,6 @@ void render(Renderer *rh, Camera *camera) {
     prepare(rh);
     shader_push(rh->shader);
 
-    // Mat4 view_matrix = create_view_matrix(
-    //     &camera->position, camera->pitch, camera->yaw
-    // );
-    
     Mat4 view_matrix = mat4_look_at(
         camera->position, 
         camera->centre,
@@ -287,7 +215,6 @@ void render(Renderer *rh, Camera *camera) {
         Entity entity = rh->entities[i];
 
         if (entity.active == 0) {
-            // printf("Entity number %d: is not active\n", i);
             continue;
         }
         printf("Entity %d Debug INFO:\n", i);
@@ -343,14 +270,6 @@ void render(Renderer *rh, Camera *camera) {
         if (entity.active == 0) {
             continue;
         }
-        printf("GUI ENTITY %d\n", i);
-        printf("Shader: %d, Gui shader: %d\n", rh->shader, rh->gui_shader);
-        printf(
-            "vao %d, vbo %d, ibo %d\n",
-            entity.model->vao,
-            entity.model->vbo,
-            entity.model->ibo
-        );
         log_if_err("Issue before gui entities\n");
 
         glBindVertexArray(entity.model->vao);
@@ -361,36 +280,11 @@ void render(Renderer *rh, Camera *camera) {
         log_if_err("Issue with Vertex Attribs\n");
 
 
-
-
         log_if_err("Issue before subdata\n");
         glBindBuffer(GL_ARRAY_BUFFER, entity.model->vbo);
         log_if_err("Issue while binding buffer\n");
-        printf(
-            "Size of vertices: %d\n",
-            rh->font_mesh->vertices_len
-        );
-        glBufferSubData(
-            GL_ARRAY_BUFFER,
-            0,
-            rh->font_mesh->vertices_len * 3 * sizeof(float),
-            (float *)rh->font_mesh->vertices
-        );
-        glBindBuffer(GL_ARRAY_BUFFER, entity.model->uv);
-        glBufferSubData(
-            GL_ARRAY_BUFFER,
-            0,
-            rh->font_mesh->uvs_len * 2 * sizeof(float),
-            (float *)rh->font_mesh->uvs
-        );
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, entity.model->ibo);
-        glBufferSubData(
-            GL_ELEMENT_ARRAY_BUFFER,
-            0,
-            rh->font_mesh->indices_len * 2 * sizeof(float),
-            (unsigned int *)rh->font_mesh->indices
-        );
-        log_if_err("Issue with subdata\n");
+
+        font_update_buffer(rh->font);
 
         Mat4 transformation_matrix = create_transformation_matrix(
             entity.position,
@@ -416,7 +310,7 @@ void render(Renderer *rh, Camera *camera) {
         glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
         log_if_err("Issue before drawing\n");
         glDrawElements(
-            GL_TRIANGLES, rh->font_mesh->indices_len,
+            GL_TRIANGLES, rh->font->font_mesh->indices_len,
             GL_UNSIGNED_INT, 0
         );
         log_if_err("Issue after gui entities\n");

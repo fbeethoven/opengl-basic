@@ -8,6 +8,9 @@
 #include "utils/file_handler.h"
 
 
+#define FontCapacity 20000
+
+
 
 typedef struct GlyphInfo {
     Vec3 positions[4];
@@ -16,7 +19,7 @@ typedef struct GlyphInfo {
 } GlyphInfo;
 
 
-typedef struct Font{
+typedef struct Font {
     U32 size;
     U32 atlasWidth;
     U32 atlasHeight;
@@ -36,6 +39,10 @@ typedef struct Font{
     unsigned int uv;
     int vertex_count;
     unsigned int texture_id;
+
+    float y_step;
+    float base_x;
+    float base_y;
 } Font;
 
 
@@ -45,7 +52,10 @@ GlyphInfo getGlyphInfo(
 
 void font_init(Font *font, char *font_file_path);
 void font_buffer_reset(Font *font);
-void font_buffer_push(Font *font, char *msg, Vec2 position);
+void font_buffer_push(Font *font, char *msg);
+void _font_buffer_push(Font *font, char *msg, Vec2 position);
+void font_free(Font *font);
+void font_update_buffer(Font *font);
 
 
 #endif  // FONT_H

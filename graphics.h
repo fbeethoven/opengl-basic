@@ -55,7 +55,6 @@ typedef struct Renderer {
 	int gui_shader;
     Entity gui_entities[10];
 
-    Mesh *font_mesh;
     Font *font;
 
 } Renderer;
