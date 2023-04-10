@@ -2,6 +2,7 @@
 #define GRAPHICS_H
 
 #include "common.h"
+#include "mesh.h"
 
 
 typedef struct GraphicsContext {
@@ -52,6 +53,8 @@ typedef struct Renderer {
 
 	int gui_shader;
     Entity gui_entities[10];
+
+    Mesh *font_mesh;
 
 } Renderer;
 

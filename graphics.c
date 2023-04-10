@@ -43,7 +43,7 @@ void store_float_in_attributes(
         GL_ARRAY_BUFFER,
         buffer_size,
         data,
-        GL_STATIC_DRAW
+        GL_DYNAMIC_DRAW
     );
     glVertexAttribPointer(
         attribute_index, coordinate_size, GL_FLOAT,
@@ -64,7 +64,7 @@ void bind_indices_buffer(
         GL_ELEMENT_ARRAY_BUFFER,
         buffer_size,
         data,
-        GL_STATIC_DRAW
+        GL_DYNAMIC_DRAW
     );
 }
 
@@ -353,6 +353,12 @@ void render(Renderer *rh, Camera *camera) {
         }
         printf("GUI ENTITY %d\n", i);
         printf("Shader: %d, Gui shader: %d\n", rh->shader, rh->gui_shader);
+        printf(
+            "vao %d, vbo %d, ibo %d\n",
+            entity.model->vao,
+            entity.model->vbo,
+            entity.model->ibo
+        );
         log_if_err("Issue before gui entities\n");
 
         glBindVertexArray(entity.model->vao);
@@ -361,6 +367,38 @@ void render(Renderer *rh, Camera *camera) {
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         log_if_err("Issue with Vertex Attribs\n");
+
+
+
+
+        log_if_err("Issue before subdata\n");
+        glBindBuffer(GL_ARRAY_BUFFER, entity.model->vbo);
+        log_if_err("Issue while binding buffer\n");
+        printf(
+            "Size of vertices: %d\n",
+            rh->font_mesh->vertices_len
+        );
+        glBufferSubData(
+            GL_ARRAY_BUFFER,
+            0,
+            rh->font_mesh->vertices_len * 3 * sizeof(float),
+            (float *)rh->font_mesh->vertices
+        );
+        glBindBuffer(GL_ARRAY_BUFFER, entity.model->uv);
+        glBufferSubData(
+            GL_ARRAY_BUFFER,
+            0,
+            rh->font_mesh->uvs_len * 2 * sizeof(float),
+            (float *)rh->font_mesh->uvs
+        );
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, entity.model->ibo);
+        glBufferSubData(
+            GL_ELEMENT_ARRAY_BUFFER,
+            0,
+            rh->font_mesh->indices_len * 2 * sizeof(float),
+            (unsigned int *)rh->font_mesh->indices
+        );
+        log_if_err("Issue with subdata\n");
 
         Mat4 transformation_matrix = create_transformation_matrix(
             entity.position,
@@ -386,7 +424,7 @@ void render(Renderer *rh, Camera *camera) {
         glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
         log_if_err("Issue before drawing\n");
         glDrawElements(
-            GL_TRIANGLES, entity.model->vertex_count,
+            GL_TRIANGLES, rh->font_mesh->indices_len,
             GL_UNSIGNED_INT, 0
         );
         log_if_err("Issue after gui entities\n");
