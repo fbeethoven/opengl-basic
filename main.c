@@ -43,6 +43,13 @@ int main() {
     camera.pitch = 0.1745;
     camera.yaw = 0.0;
 
+    Light light = {0};
+    light.position = newVec3(0.0, 0.0, 5.0);
+    light.color = newVec3(1.0, 0.0, 0.0);
+
+    renderer.light = &light;
+
+
 
     // mesh usage example
     Mesh mesh = {0};
@@ -152,6 +159,18 @@ int main() {
         suzanne_data.vertices_count* sizeof(float),
         suzanne_data.indices_count * sizeof(unsigned int)
     );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(suzanne.vao);
+    store_float_in_attributes(
+        &suzanne.normal,
+        2,
+        3,
+        3 * suzanne_data.normals_count * sizeof(float),
+        suzanne_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
+
+
     suzanne.vertex_count = suzanne_data.indices_count;
     intermediate_model_free(&suzanne_data);
 
@@ -167,7 +186,7 @@ int main() {
     entity->model = &world_model;
     Vec3 entity_position_world = newVec3(0, 0, 0);
     entity->position = &entity_position_world;
-    entity->active = 1;
+    entity->active = 0;
     entity->scale = 1.0;
 
     // entity = &renderer.entities[1];

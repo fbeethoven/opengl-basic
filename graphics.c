@@ -1,4 +1,5 @@
 #include "graphics.h"
+#include "common.h"
 #include "shader.h"
 #include "image.h"
 
@@ -186,12 +187,13 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 
 
 void prepare(Renderer *rh) {
+    log_if_err("There was an issue BEFORE Preparing\n");
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(rh->RED, rh->GREEN, rh->BLUE, 1);
-        log_if_err("There was an issue Preparing\n");
+    log_if_err("There was an issue Preparing\n");
 }
 
 
@@ -233,18 +235,26 @@ void render(Renderer *rh, Camera *camera) {
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        log_if_err("There was an issue with attributes\n");
         
         Mat4 transformation_matrix = create_transformation_matrix(
             entity.position,
             entity.rotation_x,
             entity.rotation_y,
             entity.rotation_z,
-            entity.scale);
-            shader_load_matrix(
-                rh->shader,
-                "transformation_matrix",
-                &transformation_matrix
-            );
+            entity.scale
+        );
+        shader_load_matrix(
+            rh->shader,
+            "transformation_matrix",
+            &transformation_matrix
+        );
+
+        log_if_err("Issue before loading light\n");
+        shader_load_light(rh->shader, rh->light);
+        log_if_err("There was a problem loading lights");
+
         if ( (entity.fill & 1) == 0) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
@@ -260,6 +270,7 @@ void render(Renderer *rh, Camera *camera) {
         );
 	}
 
+    glDisableVertexAttribArray(2);
     glDisable(GL_DEPTH_TEST);
 
     shader_push(rh->gui_shader);
@@ -279,7 +290,6 @@ void render(Renderer *rh, Camera *camera) {
         glEnableVertexAttribArray(1);
         log_if_err("Issue with Vertex Attribs\n");
 
-
         log_if_err("Issue before subdata\n");
         glBindBuffer(GL_ARRAY_BUFFER, entity.model->vbo);
         log_if_err("Issue while binding buffer\n");
@@ -291,12 +301,13 @@ void render(Renderer *rh, Camera *camera) {
             entity.rotation_x,
             entity.rotation_y,
             entity.rotation_z,
-            entity.scale);
-            shader_load_matrix(
-                rh->gui_shader,
-                "transformation_matrix",
-                &transformation_matrix
-            );
+            entity.scale
+        );
+        shader_load_matrix(
+            rh->gui_shader,
+            "transformation_matrix",
+            &transformation_matrix
+        );
         
         if ( (entity.fill & 1) == 0) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -308,7 +319,8 @@ void render(Renderer *rh, Camera *camera) {
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rh->font->texture_id);
-        log_if_err("Issue before drawing\n");
+        log_if_err("Issue before drawing gui entities\n");
+
         glDrawElements(
             GL_TRIANGLES, rh->font->font_mesh->indices_len,
             GL_UNSIGNED_INT, 0
@@ -322,6 +334,8 @@ void render(Renderer *rh, Camera *camera) {
     glBindVertexArray(0);
 
     shader_pop();
+
+    log_if_err("Issue after pipeline\n");
 }
 
 
