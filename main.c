@@ -108,7 +108,8 @@ int main() {
 
 
     log_if_err("Issue before Font initiation\n");
-    font_init(&font, "assets/fonts/VictorMono-Regular.ttf");
+    float aspect_ratio = (float)ctx.width / (float)ctx.height;
+    font_init(&font, "assets/fonts/VictorMono-Regular.ttf", aspect_ratio);
     renderer.font = &font;
     log_if_err("Issue with Font initiation\n");
 
@@ -210,6 +211,12 @@ int main() {
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // glfwGetCursorPos(window, &xpos, &ypos);
     // double xpos, ypos;
+    
+    glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
+    double time = glfwGetTime();
+    double second_per_frame = time - ctx->previous_time;
+    ctx->previous_time = time;
+    
     Entity *entity = &renderer->entities[entity_index];
     Entity *player = &renderer->entities[0];
     float d_player_move = 0.0;
@@ -313,21 +320,26 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     camera->centre = *player->position;
 
-    font_buffer_reset(renderer->font);
-//     float y_step = 25.0;
-//     float base_x = -350.0;
-//     float base_y = -135.0;
+    float aspect_ratio = (float)ctx->width / (float)ctx->height;
+    float font_aspect_ratio = renderer->font->base_x / renderer->font->base_y;
+    font_buffer_reset(renderer->font, aspect_ratio);
     char msg[500];
-    sprintf(msg, "scale: %0.3f", entity->scale);
+    sprintf(msg, "Distance from player (zoom): %0.3f", distance_from_player);
     font_buffer_push(renderer->font, msg);
 
-//    base_y += y_step;
     sprintf(msg, "pitch: %0.3f", camera->pitch);
     font_buffer_push(renderer->font, msg);
 
- //    base_y += y_step;
     sprintf(msg, "yaw: %.3f", camera->yaw);
     font_buffer_push(renderer->font, msg);
 
+    sprintf(
+        msg, "aspect ratio: %.3f, font_aspect_ratio: %.3f",
+        aspect_ratio, font_aspect_ratio
+    );
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(msg, "FPS: %.3f", 1.0/second_per_frame);
+    font_buffer_push(renderer->font, msg);
 }
 

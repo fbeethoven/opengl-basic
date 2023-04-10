@@ -9,6 +9,7 @@
 typedef struct GraphicsContext {
     int width;
     int height;
+    double previous_time;
     GLFWwindow* window;
 } GraphicsContext;
 

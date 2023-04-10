@@ -6,8 +6,8 @@ GlyphInfo getGlyphInfo(
 ) {
     stbtt_aligned_quad quad;
 
-    float x_num = 356.0;
-    float y_num = 160.0;
+    float x_num = 400.0 * font->aspect_ratio;
+    float y_num = 300.0;
 
     stbtt_GetPackedQuad(
         font->char_info,
@@ -40,7 +40,7 @@ GlyphInfo getGlyphInfo(
 }
 
 
-void font_init(Font *font, char *font_file_path) {
+void font_init(Font *font, char *font_file_path, float aspect_ratio) {
     font->size = 20;
     font->atlasWidth = 1024;
     font->atlasHeight = 1024;
@@ -50,9 +50,11 @@ void font_init(Font *font, char *font_file_path) {
     font->charCount = '~' - ' ';
     font->texture = 0;
 
-    font->y_step = 25.0;
-    font->base_x = -350.0;
-    font->base_y = -135.0;
+    font->y_step = 20.0;
+    font->base_x = -400.0 * aspect_ratio;
+    font->base_y = -280.0;
+
+    font->aspect_ratio = aspect_ratio;
 
 
     glGenVertexArrays(1, &font->vao);
@@ -150,14 +152,16 @@ void font_init(Font *font, char *font_file_path) {
 }
 
 
-void font_buffer_reset(Font *font) {
+void font_buffer_reset(Font *font, float aspect_ratio) {
     font->font_mesh->vertices_len = 0;
     font->font_mesh->uvs_len = 0;
     font->font_mesh->indices_len = 0;
 
-    font->y_step = 25.0;
-    font->base_x = -350.0;
-    font->base_y = -135.0;
+    font->y_step = 20.0;
+    font->base_x = -400.0 * aspect_ratio;
+    font->base_y = -280.0;
+
+    font->aspect_ratio = aspect_ratio;
 }
 
 

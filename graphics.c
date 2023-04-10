@@ -163,9 +163,9 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 	rh->NEAR_PLANE = 0.1f;
 	rh->FAR_PLANE = 1000;
 
-	rh->RED = 0.0f;
-	rh->GREEN = 0.5f;
-	rh->BLUE = 0.3f;
+	rh->RED = 0.4f;
+	rh->GREEN = 0.4f;
+	rh->BLUE = 0.4f;
 
     rh->projection_matrix = create_projection_matrix(ctx, rh);
 
