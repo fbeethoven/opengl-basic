@@ -44,8 +44,8 @@ int main() {
     camera.yaw = 0.0;
 
     Light light = {0};
-    light.position = newVec3(0.0, 5.0, 5.0);
-    light.color = newVec3(0.5, 0.5, 1.0);
+    light.position = newVec3(0.0, -1.0, 0.0);
+    light.color = newVec3(0.8, 0.8, 1.0);
 
     renderer.light = &light;
 
@@ -167,6 +167,7 @@ int main() {
     BaseModel suzanne = {0};
     IntermediateModel suzanne_data = {0};
     parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
+    //parse_obj_file("assets/models/dragon.obj", &suzanne_data);
     load_data_to_model(
         &suzanne, suzanne_data.vertices, suzanne_data.indices,
         suzanne_data.vertices_count* sizeof(float),
@@ -175,7 +176,7 @@ int main() {
     load_texture_to_model(
         // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
         &suzanne, "assets/textures/wall.jpg", suzanne_data.uvs, 
-        2 * suzanne_data.uvs_count * sizeof(float)
+        suzanne_data.uvs_count * sizeof(float)
     );
     log_if_err("Issue before loading normals\n");
     glBindVertexArray(suzanne.vao);
@@ -183,7 +184,7 @@ int main() {
         &suzanne.normal,
         2,
         3,
-        3 * suzanne_data.normals_count * sizeof(float),
+        suzanne_data.normals_count * sizeof(float),
         suzanne_data.normals
     );
     log_if_err("Issue after loading normals\n");

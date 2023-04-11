@@ -212,6 +212,10 @@ void render(Renderer *rh, Camera *camera) {
         "view_matrix",
         &view_matrix
     );
+    log_if_err("Issue before loading light\n");
+    shader_load_light(rh->shader, rh->light);
+    log_if_err("There was a problem loading lights");
+
 
     for (int i=0; i<10; i++) {
         Entity entity = rh->entities[i];
@@ -250,10 +254,6 @@ void render(Renderer *rh, Camera *camera) {
             "transformation_matrix",
             &transformation_matrix
         );
-
-        log_if_err("Issue before loading light\n");
-        shader_load_light(rh->shader, rh->light);
-        log_if_err("There was a problem loading lights");
 
         if ( (entity.fill & 1) == 0) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

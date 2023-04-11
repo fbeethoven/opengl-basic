@@ -25,11 +25,9 @@ void main() {
     out_text_coords = text_coords;
 
     vec3 surface_normal_abs = (transformation_matrix * vec4(normal, 1.0)).xyz;
-    // surface_normal = normalize(surface_normal_abs);
-    surface_normal = surface_normal_abs;
+    surface_normal = normalize(surface_normal_abs);
 
-    vec3 to_light_abs = light_position - world_position.xyz;
-    // to_light = normalize(to_light_abs);
-    to_light = to_light_abs;
+    // vec3 to_light_abs = light_position - world_position.xyz;
+    to_light = normalize(-light_position);
     out_light_color = light_color;
 }

@@ -160,6 +160,7 @@ void handle_face_vertex(
 
     split_next(&split_bar, face_vertex);
     unsigned int vertex_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
+
     *arr_push(indices, unsigned int) = vertex_pointer;
 
     split_next(&split_bar, face_vertex);
@@ -168,7 +169,7 @@ void handle_face_vertex(
         ((float *)uvs->data)[2*uv_pointer]
     );
     dest->uvs[2*vertex_pointer + 1] = (
-        ((float *)uvs->data)[2*uv_pointer + 1]
+        1.0 - ((float *)uvs->data)[2*uv_pointer + 1]
     );
 
     split_next(&split_bar, face_vertex);
@@ -190,7 +191,6 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
     ArrayList *normals = new_array_list(float);
     ArrayList *uvs = new_array_list(float);
     ArrayList *indices = new_array_list(unsigned int);
-
 
     char *data = read_file(file_path);
     StrSplitter split_line = {0};
@@ -239,16 +239,17 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
         else if (strcmp(split_space.buffer, "f") == 0) {
 
             if (!undefined_arrays) {
+                unsigned int total_vertices = vertices->counter / 3;
                 dest->uvs = (
-                    (float *)malloc(2 * vertices->counter * sizeof(float))
+                    (float *)malloc(2 * total_vertices * sizeof(float))
                 );
-                dest->uvs_count = 2 * vertices->counter;
+                dest->uvs_count = 2 * total_vertices;
                 dest->normals = (
-                    (float *)malloc(3 * vertices->counter * sizeof(float))
+                    (float *)malloc(3 * total_vertices * sizeof(float))
                 );
-                dest->normals_count = 3 * vertices->counter;
+                dest->normals_count = 3 * total_vertices;
                 dest->vertices = vertices->data;
-                dest->vertices_count = vertices->counter;
+                dest->vertices_count = 3 * total_vertices;
 
                 undefined_arrays = 1;
             }
