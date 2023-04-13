@@ -97,4 +97,6 @@ Mat4 create_transformation_matrix_2d(
 void print_mat4(char *msg, Mat4 *matrix);
 Mat4 mat4_look_at(Vec3 eye, Vec3 centre, Vec3 up);
 
+void log_if_err(char *err_msg);
+
 #endif  // COMMON_H

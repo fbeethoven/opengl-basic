@@ -41,4 +41,3 @@ void mesh_init(Mesh *mesh) {
     }
 }
 
-

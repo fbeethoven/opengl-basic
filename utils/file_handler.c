@@ -95,7 +95,7 @@ char *read_file(char *file_path) {
     int file_size = ftell(file);
     rewind(file);
 
-    char *data = malloc(sizeof(char) * file_size);
+    char *data = malloc(sizeof(char) * (file_size+ 1));
     if(fread(data, sizeof(char), file_size, file) != file_size) {
         fprintf(stderr, "There was an error reading input\n");
         free(data);
@@ -103,6 +103,7 @@ char *read_file(char *file_path) {
         exit(1);
     }
 
+    data[file_size] = 0;
     fclose(file);
     return data;
 }

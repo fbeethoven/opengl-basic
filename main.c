@@ -1,14 +1,13 @@
-/* Modified fom: https://learnopengl.com/Getting-started/Hello-Window */
 #define GLAD_GL_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_TRUETYPE_IMPLEMENTATION
 
 #include "common.h"
 #include "graphics.h"
 #include "mesh.h"
 #include "utils/file_handler.h"
+#include "font.h"
 
-
-#define BAD_COORDS 1
 
 float speed;
 int entity_index;
@@ -21,7 +20,9 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 
 
 int main() {
-    speed = 0.2;
+    Font font = {0};
+
+    speed = 0.5;
     entity_index = 0;
     pulse_n = 0;
 
@@ -72,48 +73,61 @@ int main() {
     );
     world_model.vertex_count = mesh.indices_len;
 
-
-    float vertices[] = {
-        -0.5f,0.5f, 0.0f,
-        -0.5f,-0.5f, 0.0f,
-        0.5f,-0.5f, 0.0f,
-        0.5f,0.5f, 0.0f
-		};
-
-    float text_coord[] = {
+    
+    // float vertices1[] = {
+    //     -0.5f,-0.5f, 0.0f,
+    //     -0.5f,0.5f, 0.0f,
+    //     0.5f,0.5f, 0.0f,
+    //     0.5f,-0.5f, 0.0f
+    // };
+    
+    float text_coord1[] = {
         0.0f,0.0f,
         0.0f,1.0f,
         1.0f,1.0f,
         1.0f,0.0f
-		};
+	};
 
-    unsigned int indices[] = {
-        0,1,3,
-        3,1,2
-    };
+    // unsigned int indices1[] = {
+    //     0, 1, 2,
+    //     0, 2, 3
+    // };
 
-    BaseModel rect = {0};
-    load_data_to_model(
-        &rect, vertices, indices,
-        sizeof(vertices), sizeof(indices)
-    );
-    load_texture_to_model(
-        &rect, "assets/fonts/charmap-oldschool_white.png", text_coord, 
-        // &rect, "assets/textures/marble-floor.jpg", text_coord, 
-        sizeof(text_coord)
-    );
-    rect.vertex_count = sizeof(indices)/sizeof(indices[0]);
+    // BaseModel rect = {0};
+    // load_data_to_model(
+    //     &rect, (float *)vertices1, indices1,
+    //     3 * sizeof(float) * 4, sizeof(indices1)
+    // );
+    // rect.vertex_count = sizeof(indices1)/sizeof(indices1[0]);
+    // load_texture_to_model(
+    //     // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
+    //     &rect, "assets/textures/marble-floor.jpg", text_coord1, 
+    //     sizeof(text_coord1)
+    // );
 
-    BaseModel model = {0};
+
+
+    log_if_err("Issue before Font initiation\n");
+    float aspect_ratio = (float)ctx.width / (float)ctx.height;
+    font_init(&font, "assets/fonts/VictorMono-Regular.ttf", aspect_ratio);
+    renderer.font = &font;
+    log_if_err("Issue with Font initiation\n");
+
+
+    BaseModel cube_model = {0};
     IntermediateModel cube_data = {0};
     parse_obj_file_simple("assets/models/cube.obj", &cube_data);
     load_data_to_model(
-        &model, cube_data.vertices, cube_data.indices,
+        &cube_model, cube_data.vertices, cube_data.indices,
         cube_data.vertices_count * sizeof(float),
         cube_data.indices_count * sizeof(unsigned int)
     );
-    model.vertex_count = cube_data.indices_count;
-
+    cube_model.vertex_count = cube_data.indices_count;
+    load_texture_to_model(
+        // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
+        &cube_model, "assets/textures/wall.jpg", text_coord1, 
+        sizeof(text_coord1)
+    );
 
     BaseModel tea_model = {0};
     IntermediateModel tmp = {0};
@@ -136,12 +150,13 @@ int main() {
     );
     suzanne.vertex_count = suzanne_data.indices_count;
 
-    Entity *entity = &renderer.entities[0];
-    entity->model = &rect;
-    Vec3 entity_position_1 = newVec3(5, 0, -5);
+
+    Entity *entity = &renderer.gui_entities[0];
+    entity->model = (BaseModel *) &font.vao;
+    Vec3 entity_position_1 = newVec3(0.0, 0.0, 0.0);
     entity->position = &entity_position_1;
     entity->active = 1;
-    entity->scale = 3.0;
+    entity->scale = 1;
 
     entity = &renderer.entities[1];
     entity->model = &world_model;
@@ -156,6 +171,13 @@ int main() {
     // entity->position = &entity_position_2;
     // entity->active = 1;
     // entity->scale = 5.0;
+
+    entity = &renderer.entities[0];
+    entity->model = &cube_model;
+    Vec3 entity_position_2 = newVec3(0, 0, 0);
+    entity->position = &entity_position_2;
+    entity->active = 1;
+    entity->scale = 5.0;
 
     // entity = &renderer.entities[2];
     // entity->model = &suzanne;
@@ -177,7 +199,6 @@ int main() {
 
         render(&renderer, &camera);
 
-
         glfwSwapBuffers(ctx.window);
         glfwPollEvents();
     }
@@ -190,6 +211,12 @@ int main() {
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // glfwGetCursorPos(window, &xpos, &ypos);
     // double xpos, ypos;
+    
+    glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
+    double time = glfwGetTime();
+    double second_per_frame = time - ctx->previous_time;
+    ctx->previous_time = time;
+    
     Entity *entity = &renderer->entities[entity_index];
     Entity *player = &renderer->entities[0];
     float d_player_move = 0.0;
@@ -203,12 +230,12 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     if (glfwGetKey(ctx->window, GLFW_KEY_P ) == GLFW_PRESS){
-        if ( (renderer->fill & (1<<1)) == 0) {
-            renderer->fill |= (1<<1);
-            renderer->fill ^= 1;
+        if ( (entity->fill & (1<<1)) == 0) {
+            entity->fill |= (1<<1);
+            entity->fill ^= 1;
         }
     } else {
-        renderer->fill &= ~(1<<1);
+        entity->fill &= ~(1<<1);
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
         increase_rotation(player, 0.0, rotation_factor * speed, 0.0);
@@ -255,7 +282,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
     else {
         if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
-            // d_camera_move += speed;
 
             distance_from_player -= speed;  
             if (distance_from_player <= 0.5) {
@@ -294,8 +320,26 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     camera->centre = *player->position;
 
-    printf("scale: %f\n", entity->scale);
-    printf("pitch: %f\n", camera->pitch);
-    printf("yaw: %f\n", camera->yaw);
+    float aspect_ratio = (float)ctx->width / (float)ctx->height;
+    float font_aspect_ratio = renderer->font->base_x / renderer->font->base_y;
+    font_buffer_reset(renderer->font, aspect_ratio);
+    char msg[500];
+    sprintf(msg, "Distance from player (zoom): %0.3f", distance_from_player);
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(msg, "pitch: %0.3f", camera->pitch);
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(msg, "yaw: %.3f", camera->yaw);
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(
+        msg, "aspect ratio: %.3f, font_aspect_ratio: %.3f",
+        aspect_ratio, font_aspect_ratio
+    );
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(msg, "FPS: %.3f", 1.0/second_per_frame);
+    font_buffer_push(renderer->font, msg);
 }
 
