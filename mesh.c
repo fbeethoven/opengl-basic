@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "graphics.h"
 
 
 void draw_quad_single(Mesh *mesh, Vec3 position) {
@@ -70,9 +71,9 @@ void draw_quad(Mesh *mesh, Vec3 center, Vec3 color, float side) {
     mesh->indices[i_c + 1] = v_c + 1;
     mesh->indices[i_c + 2] = v_c + 2;
 
-    mesh->indices[i_c + 3] = v_c + 1;
+    mesh->indices[i_c + 3] = v_c + 2;
     mesh->indices[i_c + 4] = v_c + 3;
-    mesh->indices[i_c + 5] = v_c + 2;
+    mesh->indices[i_c + 5] = v_c + 0;
 
 
     mesh->vertices_len += 4;

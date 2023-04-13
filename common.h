@@ -68,6 +68,15 @@ typedef struct Mat4 {
 Vec2 newVec2(float x, float y);
 Vec3 newVec3(float x, float y, float z);
 Vec3 Vec3_add(Vec3 *a, Vec3 *b);
+float vec3_dot(Vec3 *a, Vec3 *b);
+float vec3_distance(Vec3 *a, Vec3 *b);
+void vec3_normalize(Vec3 *vec);
+
+
+float lerp(float a, float b, float t);
+Vec2 vec2_lerp(Vec2 a, Vec2 b, float t);
+Vec3 vec3_lerp(Vec3 a, Vec3 b, float t);
+
 Vec4 newVec4(float x, float y, float z, float w);
 
 

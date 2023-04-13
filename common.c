@@ -348,6 +348,31 @@ Vec3 vec3_cross(Vec3 v0, Vec3 v1) {
 }
 
 
+float lerp(float a, float b, float t) {
+    return a + t*(b-a);
+}
+
+Vec2 vec2_lerp(Vec2 a, Vec2 b, float t) {
+    return newVec2(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
+}
+
+Vec3 vec3_lerp(Vec3 a, Vec3 b, float t) {
+    return newVec3(lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t));
+}
+
+
+float vec3_dot(Vec3 *a, Vec3 *b) {
+    float norm = a->x *b->x + a->y*b->y + a->z*b->z;
+    return norm;
+}
+
+
+float vec3_distance(Vec3 *a, Vec3 *b) {
+    Vec3 a_to_b = newVec3(b->x - a->x, b->y - a->y, b->z - a->z);
+    return sqrt(vec3_dot(&a_to_b, &a_to_b));
+}
+
+
 void vec3_normalize(Vec3 *vec) {
     float norm = vec->x*vec->x + vec->y*vec->y + vec->z*vec->z;
     norm = sqrt(norm);
@@ -392,7 +417,7 @@ void log_if_err(char *err_msg) {
     int err = glGetError();
     if (err != GL_NO_ERROR) {
         printf("[ERROR: %d] GL Error: %s", err, err_msg);
-        exit(1);
+//         exit(1);
     }
 }
 

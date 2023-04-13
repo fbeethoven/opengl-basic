@@ -5,15 +5,27 @@
 #include "common.h"
 #include "graphics.h"
 #include "mesh.h"
-#include "utils/file_handler.h"
 #include "font.h"
+#include "utils/file_handler.h"
+#include "utils/helpers.h"
 
 
 float speed;
-int entity_index;
 int pulse_n;
-
+int pulse_p;
+int pulse_e;
 float distance_from_player;
+int show_debug_info;
+
+int entity_index;
+int entity_category_index;
+char *entity_categories[3];
+
+enum EntityCategory {
+    EntityCategory_entities = 0,
+    EntityCategory_gui = 1,
+    EntityCategory_font = 2
+};
 
 
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
@@ -23,10 +35,18 @@ int main() {
     Font font = {0};
 
     speed = 0.5;
-    entity_index = 0;
+    show_debug_info = 0;
     pulse_n = 0;
-
+    pulse_e = 0;
+    pulse_p = 0;
     distance_from_player = 5.0;
+
+    entity_index = 0;
+    entity_category_index = 0;
+    entity_categories[0] = "Entity";
+    entity_categories[1] = "GUI Entity";
+    entity_categories[2] = "Font Entity";
+
 
     GraphicsContext ctx;
     if(graphics_init(&ctx) != 0) {
@@ -38,7 +58,7 @@ int main() {
 
     Camera camera = {0};
 
-    camera.position = newVec3(5.0, 0.0, 0.0);
+    camera.position = newVec3(5.0, 5.0, 0.0);
     camera.centre = newVec3(0.0, 0.0, 0.0);
     camera.pitch = 0.1745;
     camera.yaw = 0.0;
@@ -93,7 +113,7 @@ int main() {
 
     world_model.vertex_count = mesh.indices_len;
 
-    
+
     // float vertices1[] = {
     //     -0.5f,-0.5f, 0.0f,
     //     -0.5f,0.5f, 0.0f,
@@ -166,8 +186,8 @@ int main() {
 
     BaseModel suzanne = {0};
     IntermediateModel suzanne_data = {0};
-    // parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
-    parse_obj_file("assets/models/dragon.obj", &suzanne_data);
+    parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
+    // parse_obj_file("assets/models/dragon.obj", &suzanne_data);
     load_data_to_model(
         &suzanne, suzanne_data.vertices, suzanne_data.indices,
         suzanne_data.vertices_count* sizeof(float),
@@ -188,13 +208,49 @@ int main() {
         suzanne_data.normals
     );
     log_if_err("Issue after loading normals\n");
-
-
     suzanne.vertex_count = suzanne_data.indices_count;
     intermediate_model_free(&suzanne_data);
 
 
-    Entity *entity = &renderer.gui_entities[0];
+    Mesh quad_mesh = {0};
+    Vec3 vert[4];
+    quad_mesh.vertices = vert;
+    Vec2 uvs_coords[4];
+    quad_mesh.uvs = uvs_coords;
+    Vec3 normal[4];
+    quad_mesh.normal = normal;
+    Vec3 color[4];
+    quad_mesh.color = color;
+    unsigned int ind[10];
+    quad_mesh.indices = ind;
+
+    draw_quad(
+        &quad_mesh, newVec3(0.5, 0.5, 0.0), newVec3(0.0, 0.0, 1.0), 0.5
+    );
+    BaseModel quad_model = {0};
+    load_data_to_model(
+        &quad_model, (float *)quad_mesh.vertices, quad_mesh.indices,
+        3 * quad_mesh.vertices_len * sizeof(float),
+        quad_mesh.indices_len * sizeof(unsigned int)
+    );
+    load_empty_texture_to_model(
+        &quad_model, (float *)quad_mesh.uvs, 
+        2 * quad_mesh.uvs_len * sizeof(float)
+    );
+    glBindVertexArray(quad_model.vao);
+    store_float_in_attributes(
+        &quad_model.color,
+        2,
+        3,
+        3 * quad_mesh.color_len * sizeof(float),
+        (float *)quad_mesh.color
+    );
+    log_if_err("Issue loading quad color\n");
+    quad_model.vertex_count = quad_mesh.indices_len;
+
+
+    Entity *entity = &renderer.font_entities[0];
+    strcpy(entity->debug_name, "Default Font");
     entity->model = (BaseModel *) &font.vao;
     Vec3 entity_position_1 = newVec3(0.0, 0.0, 0.0);
     entity->position = &entity_position_1;
@@ -202,47 +258,36 @@ int main() {
     entity->scale = 1;
 
     entity = &renderer.entities[1];
+    strcpy(entity->debug_name, "World Floor");
     entity->model = &world_model;
     Vec3 entity_position_world = newVec3(0, 0, 0);
     entity->position = &entity_position_world;
     entity->active = 1;
     entity->scale = 1.0;
 
-    entity = &renderer.entities[2];
-    entity->model = &cube_model;
-    Vec3 rect_pos = newVec3(0, 5, 5);
+    entity = &renderer.gui_entities[0];
+    strcpy(entity->debug_name, "Manual Quad");
+    entity->model = &quad_model;
+    Vec3 rect_pos = newVec3(0, 0, 0);
     entity->position = &rect_pos;
     entity->active = 1;
     entity->scale = 1.0;
 
-    // entity = &renderer.entities[1];
-    // entity->model = &model;
-    // Vec3 entity_position_2 = newVec3(0, 0, -20);
-    // entity->position = &entity_position_2;
-    // entity->active = 1;
-    // entity->scale = 5.0;
+
+    entity = &renderer.gui_entities[1];
+    strcpy(entity->debug_name, "Automatic Quad");
+    gui_quad_in_pos(
+        &ctx, entity, newVec2(0.0, 0.0), 0.5, newVec3(1.0, 1.0, 0.0)
+    );
 
     entity = &renderer.entities[0];
+    strcpy(entity->debug_name, "Suzanne");
     entity->model = &suzanne;
     Vec3 entity_position_2 = newVec3(0, 1, 0);
     entity->position = &entity_position_2;
     entity->active = 1;
     entity->scale = 1.0;
 
-    // entity = &renderer.entities[2];
-    // entity->model = &suzanne;
-    // Vec3 entity_position_3 = newVec3(10.0, 0.0, -50.0);
-    // entity->position = &entity_position_3;
-    // entity->active = 1;
-    // entity->scale = 1.0;
-
-    // entity = &renderer.entities[3];
-    // entity->model = &tea_model;
-    // Vec3 entity_position_4 = newVec3(10.0, 0.0, -30.0);
-    // entity->position = &entity_position_4;
-    // entity->active = 1;
-    // entity->scale = 1.0;
-    
     while (!glfwWindowShouldClose(ctx.window)) {
         printf("Entity SELETED: %d\n", entity_index);
         handle_input(&ctx, &renderer, &camera);
@@ -258,9 +303,63 @@ int main() {
 }
 
 
+Entity *get_entity_selected(Renderer *renderer) {
+    if (entity_category_index == 0) {
+        return &renderer->entities[entity_index];
+    }
+    else if (entity_category_index == 1) {
+        return &renderer->gui_entities[entity_index];
+    }
+    else {
+        return &renderer->font_entities[entity_index];
+    }
+}
+
+
+void handle_debug_info(
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
+    double second_per_frame
+) {
+    float aspect_ratio = (float)ctx->width / (float)ctx->height;
+    float font_aspect_ratio = renderer->font->base_x / renderer->font->base_y;
+
+    char msg[500];
+    sprintf(msg, "Distance from player (zoom): %0.3f", distance_from_player);
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(msg, "pitch: %0.3f", camera->pitch);
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(msg, "yaw: %.3f", camera->yaw);
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(
+        msg, "aspect ratio: %.3f, font_aspect_ratio: %.3f",
+        aspect_ratio, font_aspect_ratio
+    );
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(msg, "FPS: %.3f", 1.0/second_per_frame);
+    font_buffer_push(renderer->font, msg);
+
+    sprintf(
+        msg, "Mouse x: %.3f, y: %.3f",
+        ctx->mouse_position[0], ctx->mouse_position[1]
+    );
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 0.0, 0.0));
+    sprintf(
+        msg, "%s Selected: %s",
+        entity_categories[entity_category_index],
+        get_entity_selected(renderer)->debug_name
+    );
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+}
+
+
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
-    // glfwGetCursorPos(window, &xpos, &ypos);
-    // double xpos, ypos;
+    // glfwGetCursorPos(
+    //     ctx->window, &ctx->mouse_position[0], &ctx->mouse_position[1]
+    // );
 
     float prev_width = ctx->width;
     float prev_height = ctx->height;
@@ -274,10 +373,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     double second_per_frame = time - ctx->previous_time;
     ctx->previous_time = time;
     
-    Entity *entity = &renderer->entities[entity_index];
+    Entity *entity = get_entity_selected(renderer);
     Entity *player = &renderer->entities[0];
-    float d_player_move = 0.0;
-    float rotation_factor = 0.1;
 
     if(
         glfwGetKey(ctx->window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
@@ -286,117 +383,60 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         glfwSetWindowShouldClose(ctx->window, GL_TRUE);
     }
 
-    if (glfwGetKey(ctx->window, GLFW_KEY_P ) == GLFW_PRESS){
-        if ( (entity->fill & (1<<1)) == 0) {
-            entity->fill |= (1<<1);
-            entity->fill ^= 1;
-        }
-    } else {
-        entity->fill &= ~(1<<1);
+    if (toggle_button_press(ctx, GLFW_KEY_P, &pulse_p)) {
+        entity->fill = 1 - entity->fill;
     }
-    if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
-        increase_rotation(player, 0.0, rotation_factor * speed, 0.0);
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
-        increase_rotation(player, 0.0, -rotation_factor * speed, 0.0);
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
-        d_player_move += speed;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
-        d_player_move -= speed;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_N) == GLFW_PRESS ) {
-        if (pulse_n == 0 ) {
-            pulse_n = 1;
-            entity_index++;
-            if (entity_index > 3) {
-                printf("%d", entity_index);
-                entity_index = 0;
+
+    PlayerMovementParams params = {0};
+    params.player = player;
+    params.rotation_factor = 0.1;
+    params.speed = speed;
+    params.d_player_move = 0.0;
+    params.dt = second_per_frame;
+    player_movement(ctx, &params);
+
+    if (
+        glfwGetKey(ctx->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+        glfwGetKey(ctx->window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS
+    ) {
+        if (toggle_button_press(ctx, GLFW_KEY_N, &pulse_n)){
+            entity_category_index++;
+            entity_index = 0;
+            if (entity_category_index > 2) {
+                entity_category_index = 0;
             }
         }
-    }
-    else {
-        pulse_n = 0;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-        printf("CONTROL PRESSED\n");
-        if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
-            increase_rotation(entity, -speed, 0.0, 0.0);
-        }
-        if (glfwGetKey(ctx->window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            printf("Button pressed\n");
-            increase_rotation(entity, 0.0,speed, 0.0);
-        }
-        if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            printf("Button pressed\n");
-            increase_rotation(entity, speed, 0.0, 0.0);
-        }
-        if (glfwGetKey(ctx->window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            printf("Button pressed\n");
-            increase_rotation(entity, 0.0, -speed, 0.0);
-        }
-    }
-    else {
-        if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
 
-            distance_from_player -= speed;  
-            if (distance_from_player <= 0.5) {
-                distance_from_player = 0.5;
-            }
-        }
-        if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            distance_from_player += speed;
+    }
+    else if (toggle_button_press(ctx, GLFW_KEY_N, &pulse_n)){
+        entity_index++;
+        if (get_entity_selected(renderer)->active == 0) {
+            entity_index = 0;
         }
     }
 
-
-    if (glfwGetKey(ctx->window, GLFW_KEY_H) == GLFW_PRESS) {
-        camera->yaw -= 0.05;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_L) == GLFW_PRESS) {
-        camera->yaw += 0.05;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_J) == GLFW_PRESS) {
-        camera->pitch -= 0.01;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_K) == GLFW_PRESS) {
-        camera->pitch += 0.01;
+    if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
+        show_debug_info = 1 - show_debug_info;
     }
 
-    player->position->x += d_player_move * sinf(player->rotation_y);
-    player->position->z += d_player_move * cosf(player->rotation_y);
+    CameraMovementParams camera_params = {0};
+    camera_params.camera = camera;
+    camera_params.speed = 0.05;
+    camera_params.camera_speed = 1.0;
+    camera_params.distance_from_player = distance_from_player;
+    camera_params.dt = second_per_frame;
 
-    float horizontal_distance = distance_from_player * cosf(camera->pitch);
-    float vertical_distance = distance_from_player * sinf(camera->pitch);
-    float theta = camera->yaw + player->rotation_y;
-
-    camera->position.x = player->position->x - horizontal_distance*sinf(theta);
-    camera->position.z = player->position->z - horizontal_distance*cos(theta);
-    camera->position.y = player->position->y + vertical_distance;
-
-    camera->centre = *player->position;
+    fps_player_movement(ctx, &camera_params);
+    // camera_movement(ctx, &camera_params);
+    // distance_from_player = camera_params.distance_from_player;
+    // camera_follow_player(player, &camera_params);
 
     float aspect_ratio = (float)ctx->width / (float)ctx->height;
-    float font_aspect_ratio = renderer->font->base_x / renderer->font->base_y;
     font_buffer_reset(renderer->font, aspect_ratio);
-    char msg[500];
-    sprintf(msg, "Distance from player (zoom): %0.3f", distance_from_player);
-    font_buffer_push(renderer->font, msg);
-
-    sprintf(msg, "pitch: %0.3f", camera->pitch);
-    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-
-    sprintf(msg, "yaw: %.3f", camera->yaw);
-    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-
-    sprintf(
-        msg, "aspect ratio: %.3f, font_aspect_ratio: %.3f",
-        aspect_ratio, font_aspect_ratio
-    );
-    font_buffer_push(renderer->font, msg);
-
-    sprintf(msg, "FPS: %.3f", 1.0/second_per_frame);
-    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 0.0, 0.0));
+    if (show_debug_info) {
+        handle_debug_info(ctx, renderer, camera, second_per_frame);
+    }
 }
+
+
 
