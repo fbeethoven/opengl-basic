@@ -108,6 +108,7 @@ void bind_indices_buffer(
     int buffer_size,
     unsigned int *data
 );
+void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh);
 
 
 #endif  // GRAPHICS_H

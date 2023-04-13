@@ -74,8 +74,8 @@ int main() {
     );
     load_texture_to_model(
         &world_model,
-        "assets/textures/marble-floor.jpg",
-        // "assets/textures/wall.jpg",
+        // "assets/textures/marble-floor.jpg",
+        "assets/textures/wall.jpg",
         // "assets/textures/wood-floor.jpg",
         (float *)mesh.uvs, 
         2 * sizeof(float) * mesh.uvs_len
@@ -167,15 +167,15 @@ int main() {
     BaseModel suzanne = {0};
     IntermediateModel suzanne_data = {0};
     parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
-    //parse_obj_file("assets/models/dragon.obj", &suzanne_data);
+    // parse_obj_file("assets/models/dragon.obj", &suzanne_data);
     load_data_to_model(
         &suzanne, suzanne_data.vertices, suzanne_data.indices,
         suzanne_data.vertices_count* sizeof(float),
         suzanne_data.indices_count * sizeof(unsigned int)
     );
     load_texture_to_model(
-        // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
-        &suzanne, "assets/textures/wall.jpg", suzanne_data.uvs, 
+        // &suzanne, "assets/textures/wall.jpg", suzanne_data.uvs, 
+        &suzanne, "assets/textures/wood-floor.jpg", suzanne_data.uvs, 
         suzanne_data.uvs_count * sizeof(float)
     );
     log_if_err("Issue before loading normals\n");
@@ -205,6 +205,13 @@ int main() {
     entity->model = &world_model;
     Vec3 entity_position_world = newVec3(0, 0, 0);
     entity->position = &entity_position_world;
+    entity->active = 1;
+    entity->scale = 1.0;
+
+    entity = &renderer.entities[2];
+    entity->model = &cube_model;
+    Vec3 rect_pos = newVec3(0, 5, 5);
+    entity->position = &rect_pos;
     entity->active = 1;
     entity->scale = 1.0;
 
@@ -254,8 +261,15 @@ int main() {
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // glfwGetCursorPos(window, &xpos, &ypos);
     // double xpos, ypos;
+
+    float prev_width = ctx->width;
+    float prev_height = ctx->height;
     
     glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
+    if (prev_width != ctx->width || prev_height != ctx->height) {
+        reload_projection_matrix(ctx, renderer);
+    }
+
     double time = glfwGetTime();
     double second_per_frame = time - ctx->previous_time;
     ctx->previous_time = time;
@@ -338,10 +352,10 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
 
     if (glfwGetKey(ctx->window, GLFW_KEY_H) == GLFW_PRESS) {
-        camera->yaw -= 0.01;
+        camera->yaw -= 0.05;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_L) == GLFW_PRESS) {
-        camera->yaw += 0.01;
+        camera->yaw += 0.05;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_J) == GLFW_PRESS) {
         camera->pitch -= 0.01;

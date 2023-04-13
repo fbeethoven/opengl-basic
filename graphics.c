@@ -159,6 +159,18 @@ static Mat4 create_projection_matrix(
 }
 
 
+void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh) {
+    rh->projection_matrix = create_projection_matrix(ctx, rh);
+    shader_push(rh->shader);
+    shader_load_matrix(
+        rh->shader,
+        "projection_matrix",
+        &rh->projection_matrix
+    );
+    shader_pop();
+}
+
+
 void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     rh->FOV = 1.19377;
 	rh->NEAR_PLANE = 0.1f;
