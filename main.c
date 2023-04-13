@@ -166,8 +166,8 @@ int main() {
 
     BaseModel suzanne = {0};
     IntermediateModel suzanne_data = {0};
-    parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
-    // parse_obj_file("assets/models/dragon.obj", &suzanne_data);
+    // parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
+    parse_obj_file("assets/models/dragon.obj", &suzanne_data);
     load_data_to_model(
         &suzanne, suzanne_data.vertices, suzanne_data.indices,
         suzanne_data.vertices_count* sizeof(float),
