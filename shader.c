@@ -26,6 +26,7 @@ static unsigned int compile_shaders(
             debug_name
         );
         printf("  %s\n", infoLog);
+        exit(1);
     }
 
     return shader_id;
@@ -195,5 +196,11 @@ void shader_push(unsigned int shader_program_id) {
 
 void shader_pop() {
     glUseProgram(0);
+}
+
+
+void shader_load_light(unsigned int shader_program_id, Light *light) {
+    shader_load_vec3(shader_program_id, "light_position", &light->position);
+    shader_load_vec3(shader_program_id, "light_color", &light->color);
 }
 

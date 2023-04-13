@@ -4,6 +4,7 @@
 #include "common.h"
 #include "mesh.h"
 #include "font.h"
+#include "shader.h"
 
 
 typedef struct GraphicsContext {
@@ -19,6 +20,7 @@ typedef struct BaseModel {
 	unsigned int vbo;
 	unsigned int ibo;
     unsigned int uv;
+    unsigned int normal;
 
     int vertex_count;
 
@@ -57,6 +59,7 @@ typedef struct Renderer {
     Entity gui_entities[10];
 
     Font *font;
+    Light *light;
 
 } Renderer;
 

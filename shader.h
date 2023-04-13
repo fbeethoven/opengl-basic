@@ -3,6 +3,13 @@
 
 #include "common.h"
 
+
+typedef struct Light {
+    Vec3 position;
+    Vec3 color;
+} Light;
+
+
 unsigned int shader_get_program();
 unsigned int shader_get_program_2d();
 unsigned int shader_get_program_general(
@@ -37,6 +44,8 @@ void shader_load_matrix(
     char *location,
     Mat4 *matrix
 );
+
+void shader_load_light(unsigned int shader_program_id, Light *light);
 
 
 #endif  // SHADER_H

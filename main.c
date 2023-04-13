@@ -43,17 +43,26 @@ int main() {
     camera.pitch = 0.1745;
     camera.yaw = 0.0;
 
+    Light light = {0};
+    light.position = newVec3(0.0, -1.0, 0.0);
+    light.color = newVec3(0.8, 0.8, 1.0);
+
+    renderer.light = &light;
+
+
 
     // mesh usage example
     Mesh mesh = {0};
 
     Vec3 mesh_vertices[64*64];
     Vec2 uvs[64*64];
+    Vec3 mesh_normal[64*64];
     unsigned int mesh_indices[3*64*64];
 
     mesh.vertices = mesh_vertices;
     mesh.uvs = uvs;
     mesh.indices = mesh_indices;
+    mesh.normal = mesh_normal;
     mesh_init(&mesh);
 
 
@@ -71,6 +80,17 @@ int main() {
         (float *)mesh.uvs, 
         2 * sizeof(float) * mesh.uvs_len
     );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(world_model.vao);
+    store_float_in_attributes(
+        &world_model.normal,
+        2,
+        3,
+        3 * mesh.vertices_len * sizeof(float),
+        (float *) mesh.normal
+    );
+    log_if_err("Issue after loading normals\n");
+
     world_model.vertex_count = mesh.indices_len;
 
     
@@ -116,6 +136,7 @@ int main() {
 
     BaseModel cube_model = {0};
     IntermediateModel cube_data = {0};
+    intermediate_model_init(&cube_data);
     parse_obj_file_simple("assets/models/cube.obj", &cube_data);
     load_data_to_model(
         &cube_model, cube_data.vertices, cube_data.indices,
@@ -123,6 +144,7 @@ int main() {
         cube_data.indices_count * sizeof(unsigned int)
     );
     cube_model.vertex_count = cube_data.indices_count;
+    intermediate_model_free(&cube_data);
     load_texture_to_model(
         // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
         &cube_model, "assets/textures/wall.jpg", text_coord1, 
@@ -131,6 +153,7 @@ int main() {
 
     BaseModel tea_model = {0};
     IntermediateModel tmp = {0};
+    intermediate_model_init(&tmp);
     parse_obj_file_simple("assets/models/utah_teapot.obj", &tmp);
     load_data_to_model(
         &tea_model, tmp.vertices, tmp.indices,
@@ -138,17 +161,37 @@ int main() {
         tmp.indices_count * sizeof(unsigned int)
     );
     tea_model.vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
 
 
     BaseModel suzanne = {0};
     IntermediateModel suzanne_data = {0};
     parse_obj_file("assets/models/suzanne.obj", &suzanne_data);
+    //parse_obj_file("assets/models/dragon.obj", &suzanne_data);
     load_data_to_model(
         &suzanne, suzanne_data.vertices, suzanne_data.indices,
         suzanne_data.vertices_count* sizeof(float),
         suzanne_data.indices_count * sizeof(unsigned int)
     );
+    load_texture_to_model(
+        // &rect, "assets/fonts/charmap-oldschool_white.png", text_coord1, 
+        &suzanne, "assets/textures/wall.jpg", suzanne_data.uvs, 
+        suzanne_data.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(suzanne.vao);
+    store_float_in_attributes(
+        &suzanne.normal,
+        2,
+        3,
+        suzanne_data.normals_count * sizeof(float),
+        suzanne_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
+
+
     suzanne.vertex_count = suzanne_data.indices_count;
+    intermediate_model_free(&suzanne_data);
 
 
     Entity *entity = &renderer.gui_entities[0];
@@ -173,11 +216,11 @@ int main() {
     // entity->scale = 5.0;
 
     entity = &renderer.entities[0];
-    entity->model = &cube_model;
-    Vec3 entity_position_2 = newVec3(0, 0, 0);
+    entity->model = &suzanne;
+    Vec3 entity_position_2 = newVec3(0, 1, 0);
     entity->position = &entity_position_2;
     entity->active = 1;
-    entity->scale = 5.0;
+    entity->scale = 1.0;
 
     // entity = &renderer.entities[2];
     // entity->model = &suzanne;
