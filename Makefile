@@ -1,23 +1,12 @@
 CFLAGS = -Wall -g
-LIBS = -ldl -lm
+LIBS =  -lglfw -ldl -lm
 
 INCLUDES = -I external
 BIN = build
-OBJ = shader.c graphics.c common.c image.c utils/file_handler.c
+OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c utils/file_handler.c
 PROG = $(BIN)/p.exe
 
-UNAME_S := $(shell uname -s)
-
-
-ifeq ($(UNAME_S), Linux)
-	LIBS += `pkg-config --static --libs glfw3`
-	CFLAGS += `pkg-config --cflags glfw3`
-endif
-
-ifeq ($(OS), Windows_NT)
-	LIBS += -lglfw3 -lgdi32 -lopengl32 -limm32`
-	CFLAGS += `pkg-config --cflags glfw3`
-endif
+FEAT = mesh
 
 
 .PHONY: clean dev
@@ -26,8 +15,13 @@ endif
 $(PROG): main.c
 	gcc -o $@ $(CFLAGS) $(INCLUDES) $(OBJ) main.c $(LIBS)
 
-dev: 
+
+$(FEAT): $(FEAT).c $(OBJ)
+	gcc -o $(BIN)/$(FEAT) $(CFLAGS) $(INCLUDES) $(OBJ) $(FEAT).c $(LIBS)
+
+
+dev:
 	apt install libglfw3 libglfw3-dev
-  
-clean: 
+
+clean:
 	rm $(BIN)/*

@@ -2,11 +2,15 @@
 #define GRAPHICS_H
 
 #include "common.h"
+#include "mesh.h"
+#include "font.h"
+#include "shader.h"
 
 
 typedef struct GraphicsContext {
     int width;
     int height;
+    double previous_time;
     GLFWwindow* window;
 } GraphicsContext;
 
@@ -15,20 +19,17 @@ typedef struct BaseModel {
 	unsigned int vao;
 	unsigned int vbo;
 	unsigned int ibo;
+    unsigned int uv;
+    unsigned int normal;
 
     int vertex_count;
+
+    unsigned int texture_id;
 
 } BaseModel;
 
 
-typedef struct TextureModel {
-    BaseModel base_model;
-    unsigned int texture_id;
-} TextureModel;
-
-
 typedef struct Entity {
-    // TODO: use a TextureModel instead
     BaseModel *model;
     Vec3 *position;
     float rotation_x;
@@ -36,6 +37,7 @@ typedef struct Entity {
     float rotation_z;
     float scale;
     int active;
+    int fill;
 } Entity;
 
 
@@ -53,7 +55,11 @@ typedef struct Renderer {
 	int shader;
     Entity entities[10];
 
-    int fill;
+	int gui_shader;
+    Entity gui_entities[10];
+
+    Font *font;
+    Light *light;
 
 } Renderer;
 
@@ -62,6 +68,7 @@ typedef struct Camera {
     float pitch;
     float yaw;
     Vec3 position;
+    Vec3 centre;
 } Camera;
 
 
@@ -75,6 +82,11 @@ void increase_rotation(Entity *entity, float dx, float dy, float dz);
 
 int graphics_init(GraphicsContext *ctx);
 
+void load_texture_to_model(
+    BaseModel *model, char *texture_file_path,
+    float *texture_coord, int textures_size
+);
+
 void load_data_to_model(
     BaseModel *model,
     float *vertices,  unsigned int *indices,
@@ -83,10 +95,20 @@ void load_data_to_model(
 
 void render(Renderer *rh, Camera *camera);
 
+void store_float_in_attributes(
+    unsigned int *buffer_id,
+    int attribute_index,
+    int coordinate_size,
+    int buffer_size,
+    float *data
+);
 
-// GObject *graphics_new_object();
-
-// void graphics_free_object(GObject *object);
+void bind_indices_buffer(
+    unsigned int *buffer_id,
+    int buffer_size,
+    unsigned int *data
+);
+void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh);
 
 
 #endif  // GRAPHICS_H

@@ -2,30 +2,35 @@
 #include "utils/file_handler.h"
 
 
-
-
 static unsigned int compile_shaders(
-    GLenum shader_type, const char *shader_source
+    GLenum shader_type, const char *shader_source, char *debug_name
 ) {
 	int status_success;
-
 	unsigned int shader_id;
-	shader_id = glCreateShader(shader_type);
+    char infoLog[512];
 
-	glShaderSource(shader_id, 1, &shader_source, NULL);
-	glCompileShader(shader_id);
-	glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status_success);
-	char infoLog[512];
+    for (int i=0; i<5; i++) {
+        shader_id = glCreateShader(shader_type);
 
-	if(!status_success){
-		glGetShaderInfoLog(shader_id, 512, NULL, infoLog);
-        printf("ERROR::SHADER::COMPILATION::FAILED\n");
+        glShaderSource(shader_id, 1, &shader_source, NULL);
+        glCompileShader(shader_id);
+        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &status_success);
+        if (status_success) {
+            break;
+        }
+    }
+    if(!status_success){
+        glGetShaderInfoLog(shader_id, 512, NULL, infoLog);
+        printf(
+            "[ERROR:SHADER] Could not compile shader from %s\n",
+            debug_name
+        );
         printf("  %s\n", infoLog);
-	}
+        exit(1);
+    }
 
     return shader_id;
 }
-
 
 
 unsigned int shader_get_program_general(
@@ -33,16 +38,16 @@ unsigned int shader_get_program_general(
 ) {
 	unsigned int shader_program_id = glCreateProgram();
 
-    char* vertex_shader = read_file("shaders/vertex_shader.glsl");
+    char* vertex_shader = read_file(vertex_shader_path);
 	unsigned int vertex_shader_id = compile_shaders(
-        GL_VERTEX_SHADER, vertex_shader
+        GL_VERTEX_SHADER, vertex_shader, vertex_shader_path
     );
 	glAttachShader(shader_program_id, vertex_shader_id);
 	free(vertex_shader);
 
-    char* fragment_shader = read_file("shaders/fragment_shader.glsl");
+    char* fragment_shader = read_file(fragment_shader_path);
 	unsigned int fragment_shader_id = compile_shaders(
-        GL_FRAGMENT_SHADER, fragment_shader
+        GL_FRAGMENT_SHADER, fragment_shader, fragment_shader_path
     );
 	glAttachShader(shader_program_id, fragment_shader_id);
 	free(fragment_shader);
@@ -60,8 +65,8 @@ unsigned int shader_get_program_general(
 
 unsigned int shader_get_program_2d() {
     return shader_get_program_general(
-        "shaders/vertex_2d.glsl",
-        "shaders/fragment_2d.glsl"
+        "shaders/gui_vertex.glsl",
+        "shaders/gui_fragment.glsl"
     );
 }
 
@@ -71,6 +76,89 @@ unsigned int shader_get_program() {
         "shaders/vertex_shader.glsl",
         "shaders/fragment_shader.glsl"
     );
+}
+
+
+void shader_load_vec2(
+    unsigned int shader_program_id,
+    char *location,
+    Vec2 *vec
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("VECTOR %s\n", location);
+        printf("%f %f\n", vec->x, vec->y);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform2fv(uniform_location, GL_FALSE, (float *)vec);
+}
+
+void shader_load_float(
+    unsigned int shader_program_id,
+    char *location,
+    float x
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("FLOAT %s\n", location);
+        printf("%f\n", x);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform1f(uniform_location, x);
+}
+
+
+void shader_load_vec3(
+    unsigned int shader_program_id,
+    char *location,
+    Vec3 *vec
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("VECTOR %s\n", location);
+        printf("%f %f %f\n", vec->x, vec->y, vec->z);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform3fv(uniform_location, 1, (float *)vec);
+}
+
+
+void shader_load_vec4(
+    unsigned int shader_program_id,
+    char *location,
+    Vec4 *vec
+) {
+    int uniform_location = glGetUniformLocation(
+        shader_program_id, location
+    );
+    if (uniform_location < 0) {
+        printf("VECTOR %s\n", location);
+        printf("%f %f %f %f\n", vec->x, vec->y, vec->z, vec->z);
+        printf(
+            "[ERROR] shader (ID: %d) couldn't find location %s\n",
+            shader_program_id,
+            location
+        );
+    }
+    glUniform4fv(uniform_location, 1, (float *)vec);
 }
 
 void shader_load_matrix(
@@ -101,11 +189,18 @@ void shader_load_matrix(
 
 
 void shader_push(unsigned int shader_program_id) {
+    printf("Active shader: %d\n", shader_program_id);
     glUseProgram(shader_program_id);
 }
 
 
 void shader_pop() {
     glUseProgram(0);
+}
+
+
+void shader_load_light(unsigned int shader_program_id, Light *light) {
+    shader_load_vec3(shader_program_id, "light_position", &light->position);
+    shader_load_vec3(shader_program_id, "light_color", &light->color);
 }
 
