@@ -385,10 +385,10 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     font_buffer_push(renderer->font, msg);
 
     sprintf(msg, "pitch: %0.3f", camera->pitch);
-    font_buffer_push(renderer->font, msg);
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
 
     sprintf(msg, "yaw: %.3f", camera->yaw);
-    font_buffer_push(renderer->font, msg);
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
 
     sprintf(
         msg, "aspect ratio: %.3f, font_aspect_ratio: %.3f",
@@ -397,6 +397,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     font_buffer_push(renderer->font, msg);
 
     sprintf(msg, "FPS: %.3f", 1.0/second_per_frame);
-    font_buffer_push(renderer->font, msg);
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 0.0, 0.0));
 }
 

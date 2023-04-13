@@ -300,6 +300,7 @@ void render(Renderer *rh, Camera *camera) {
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
         log_if_err("Issue with Vertex Attribs\n");
 
         log_if_err("Issue before subdata\n");
