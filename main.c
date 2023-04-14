@@ -14,8 +14,11 @@ float speed;
 int pulse_n;
 int pulse_p;
 int pulse_e;
+int pulse_c;
 float distance_from_player;
 int show_debug_info;
+
+int camera_mode;
 
 int entity_index;
 int entity_category_index;
@@ -38,8 +41,11 @@ int main() {
     show_debug_info = 0;
     pulse_n = 0;
     pulse_e = 0;
+    pulse_c = 0;
     pulse_p = 0;
     distance_from_player = 5.0;
+
+    camera_mode = 0;
 
     entity_index = 0;
     entity_category_index = 0;
@@ -212,43 +218,6 @@ int main() {
     intermediate_model_free(&suzanne_data);
 
 
-    Mesh quad_mesh = {0};
-    Vec3 vert[4];
-    quad_mesh.vertices = vert;
-    Vec2 uvs_coords[4];
-    quad_mesh.uvs = uvs_coords;
-    Vec3 normal[4];
-    quad_mesh.normal = normal;
-    Vec3 color[4];
-    quad_mesh.color = color;
-    unsigned int ind[10];
-    quad_mesh.indices = ind;
-
-    draw_quad(
-        &quad_mesh, newVec3(0.5, 0.5, 0.0), newVec3(0.0, 0.0, 1.0), 0.5
-    );
-    BaseModel quad_model = {0};
-    load_data_to_model(
-        &quad_model, (float *)quad_mesh.vertices, quad_mesh.indices,
-        3 * quad_mesh.vertices_len * sizeof(float),
-        quad_mesh.indices_len * sizeof(unsigned int)
-    );
-    load_empty_texture_to_model(
-        &quad_model, (float *)quad_mesh.uvs, 
-        2 * quad_mesh.uvs_len * sizeof(float)
-    );
-    glBindVertexArray(quad_model.vao);
-    store_float_in_attributes(
-        &quad_model.color,
-        2,
-        3,
-        3 * quad_mesh.color_len * sizeof(float),
-        (float *)quad_mesh.color
-    );
-    log_if_err("Issue loading quad color\n");
-    quad_model.vertex_count = quad_mesh.indices_len;
-
-
     Entity *entity = &renderer.font_entities[0];
     strcpy(entity->debug_name, "Default Font");
     entity->model = (BaseModel *) &font.vao;
@@ -264,21 +233,6 @@ int main() {
     entity->position = &entity_position_world;
     entity->active = 1;
     entity->scale = 1.0;
-
-    entity = &renderer.gui_entities[0];
-    strcpy(entity->debug_name, "Manual Quad");
-    entity->model = &quad_model;
-    Vec3 rect_pos = newVec3(0, 0, 0);
-    entity->position = &rect_pos;
-    entity->active = 1;
-    entity->scale = 1.0;
-
-
-    entity = &renderer.gui_entities[1];
-    strcpy(entity->debug_name, "Automatic Quad");
-    gui_quad_in_pos(
-        &ctx, entity, newVec2(0.0, 0.0), 0.5, newVec3(1.0, 1.0, 0.0)
-    );
 
     entity = &renderer.entities[0];
     strcpy(entity->debug_name, "Suzanne");
@@ -352,6 +306,11 @@ void handle_debug_info(
         entity_categories[entity_category_index],
         get_entity_selected(renderer)->debug_name
     );
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+    char *camera_movement_setting = (
+        camera_mode ? "Free Camera" : "Player Focus"
+    );
+    sprintf(msg, "Camera Mode: %s", camera_movement_setting);
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
 }
 
@@ -445,13 +404,20 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
         show_debug_info = 1 - show_debug_info;
     }
+    if (toggle_button_press(ctx, GLFW_KEY_C, &pulse_c)){
+        camera_mode = 1 - camera_mode;
+    }
 
-    camera_focus_movement(
-        ctx, camera, second_per_frame, distance_from_player
-    );
-    // player_focus_movement(
-    //     ctx, player, camera, second_per_frame, distance_from_player
-    // );
+    if (camera_mode) {
+        camera_focus_movement(
+            ctx, camera, second_per_frame, distance_from_player
+        );
+    }
+    else {
+        player_focus_movement(
+            ctx, player, camera, second_per_frame, distance_from_player
+        );
+    }
 
     float aspect_ratio = (float)ctx->width / (float)ctx->height;
     font_buffer_reset(renderer->font, aspect_ratio);
