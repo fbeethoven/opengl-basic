@@ -214,12 +214,20 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
             strcpy(r_entity->entity->debug_name, msg);
             int ran_model = (rand() % 3) + 2;
             r_entity->entity->model = &game_ctx->models[ran_model];
+
+            double t = game_ctx->current_time;
+            r_entity->start_time = t;
+            r_entity->end_time = t + (double)(rand() % 9) + 1.0;
             Vec2 ran_pos = get_random_position(ctx, game_ctx);
             Vec2 dest = get_random_position(ctx, game_ctx);
             
             r_entity->position.x = ran_pos.x;
             r_entity->position.y = 1.0;
             r_entity->position.z = ran_pos.y;
+
+            r_entity->start.x = ran_pos.x;
+            r_entity->start.y = 1.0;
+            r_entity->start.z = ran_pos.y;
 
             r_entity->dest.x = dest.x;
             r_entity->dest.y = 1.0;
@@ -259,5 +267,25 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
         entity->scale = 1.0;
     }
     rand_init(game_ctx);
+}
+
+void update_entities(GameContext *game_ctx) {
+    RandomEntity *r_entity;
+    double dt;
+    for (int i=1; i<10; i++) {
+        r_entity = &game_ctx->random_entities[i];
+        if (r_entity->active) {
+            if (game_ctx->current_time >= r_entity->end_time) {
+                *r_entity->active = 0;
+                continue;
+            }
+            dt = game_ctx->current_time - r_entity->start_time;
+            float t = dt / (r_entity->end_time - r_entity->start_time);
+            Vec3 new_pos = vec3_lerp(r_entity->start, r_entity->dest, t);
+            r_entity->position.x = new_pos.x;
+            r_entity->position.y = new_pos.y;
+            r_entity->position.z = new_pos.z;
+        }
+    }
 }
 

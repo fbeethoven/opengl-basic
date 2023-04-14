@@ -114,15 +114,6 @@ void handle_debug_info(
     float font_aspect_ratio = renderer->font->base_x / renderer->font->base_y;
 
     char msg[500];
-    sprintf(msg, "Distance from player (zoom): %0.3f", distance_from_player);
-    font_buffer_push(renderer->font, msg);
-
-    sprintf(msg, "pitch: %0.3f", camera->pitch);
-    font_buffer_push(renderer->font, msg);
-
-    sprintf(msg, "yaw: %.3f", camera->yaw);
-    font_buffer_push(renderer->font, msg);
-
     sprintf(
         msg, "aspect ratio: %.3f, font_aspect_ratio: %.3f",
         aspect_ratio, font_aspect_ratio
@@ -152,6 +143,11 @@ void handle_debug_info(
     sprintf(
         msg, "Random Position: %f, %f",
         game_ctx->prev_rand_pos.x, game_ctx->prev_rand_pos.y
+    );
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+    RandomEntity *r_entity = &game_ctx->random_entities[1];
+    sprintf(
+        msg, "Start: %f, end: %f", r_entity->start_time, r_entity->end_time
     );
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
 }
@@ -184,8 +180,11 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     double time = glfwGetTime();
     double second_per_frame = time - ctx->previous_time;
     ctx->previous_time = time;
+
+    update_entities(game_ctx);
     int new_rand = get_new_random(game_ctx);
     if (new_rand) {
+        add_random_entity(ctx, game_ctx);
         add_random_entity(ctx, game_ctx);
     }
     

@@ -20,9 +20,10 @@ typedef struct RandomEntity {
     Entity *entity;
     int *active;
     Vec3 position;
+    Vec3 start;
     Vec3 dest;
-    int current_step;
-    float speed;
+    double end_time;
+    double start_time;
 } RandomEntity;
 
 typedef struct GameContext {
@@ -46,6 +47,7 @@ void load_assets(
 );
 void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx);
 void sync_entities(GameContext *game_ctx, Renderer *renderer);
+void update_entities(GameContext *game_ctx);
 
 
 #endif  // EXPERIMENT_HELPERS_H
