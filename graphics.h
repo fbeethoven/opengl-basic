@@ -11,6 +11,7 @@ typedef struct GraphicsContext {
     int width;
     int height;
     double previous_time;
+    double mouse_position[2];
     GLFWwindow* window;
 } GraphicsContext;
 
@@ -20,6 +21,7 @@ typedef struct BaseModel {
 	unsigned int vbo;
 	unsigned int ibo;
     unsigned int uv;
+    unsigned int color;
     unsigned int normal;
 
     int vertex_count;
@@ -38,6 +40,7 @@ typedef struct Entity {
     float scale;
     int active;
     int fill;
+    char debug_name[50];
 } Entity;
 
 
@@ -57,6 +60,7 @@ typedef struct Renderer {
 
 	int gui_shader;
     Entity gui_entities[10];
+    Entity font_entities[10];
 
     Font *font;
     Light *light;
@@ -86,6 +90,11 @@ void load_texture_to_model(
     BaseModel *model, char *texture_file_path,
     float *texture_coord, int textures_size
 );
+
+void load_empty_texture_to_model(
+    BaseModel *model, float *texture_coord, int textures_size
+);
+
 
 void load_data_to_model(
     BaseModel *model,
