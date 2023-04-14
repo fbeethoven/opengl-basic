@@ -61,6 +61,7 @@ int main() {
 
     Renderer renderer = {0};
     init_render_handler(&ctx, &renderer);
+    sync_entities(game_ctx, &renderer);
 
     Camera camera = {0};
 
@@ -76,10 +77,6 @@ int main() {
     renderer.light = &light;
 
     load_assets(&ctx, &renderer, game_ctx, &font);
-
-    Vec3 *pos = &game_ctx->positions[10];
-    *pos = newVec3(0.0, 5.0, 0.0);
-    add_entity(&renderer, game_ctx, pos);
 
     while (!glfwWindowShouldClose(ctx.window)) {
         printf("Entity SELETED: %d\n", entity_index);
@@ -146,33 +143,17 @@ void handle_debug_info(
         get_entity_selected(renderer)->debug_name
     );
     font_buffer_push(renderer->font, msg);
-    int new_rand = get_new_random(game_ctx);
+
     sprintf(
         msg, "Current Time: %f, Random: %d",
         game_ctx->current_time, game_ctx->prev_rand
     );
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-    if (new_rand) {
-        game_ctx->prev_rand_pos = get_random_position(ctx, game_ctx);
-    }
     sprintf(
         msg, "Random Position: %f, %f",
         game_ctx->prev_rand_pos.x, game_ctx->prev_rand_pos.y
     );
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-
-    Entity *entity;
-    for (int i=0; i<10; i++) {
-        entity = &renderer->entities[i]; 
-        if (entity->active != 0) {
-            sprintf(
-                msg, "Entity %s: %f %f %f",
-                entity->debug_name,
-                entity->position->x, entity->position->y, entity->position->z 
-            );
-            font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-        }
-    }
 }
 
 
@@ -203,6 +184,10 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     double time = glfwGetTime();
     double second_per_frame = time - ctx->previous_time;
     ctx->previous_time = time;
+    int new_rand = get_new_random(game_ctx);
+    if (new_rand) {
+        add_random_entity(ctx, game_ctx);
+    }
     
     Entity *entity = get_entity_selected(renderer);
 

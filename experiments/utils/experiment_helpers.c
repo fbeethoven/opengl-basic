@@ -16,8 +16,8 @@ void load_model_cube(GameContext *game_ctx) {
 }
 
 Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx) {
-    float x_pos = ctx->width * ((float)rand() / RAND_MAX);
-    float y_pos = ctx->height * ((float)rand()/ RAND_MAX);
+    float x_pos = 200.0*((float)rand() / RAND_MAX) - 100.0;
+    float y_pos = 200.0*((float)rand() / RAND_MAX) - 100.0;
     return newVec2(x_pos, y_pos);
 }
 
@@ -60,11 +60,12 @@ void load_assets(
 
     world_model->vertex_count = mesh->indices_len;
 
-    free(mesh->vertices);
-    free(mesh->uvs);
-    free(mesh->normal);
-    free(mesh->indices);
-    free(mesh);
+    // TODO: check if we can remove these
+    // free(mesh->vertices);
+    // free(mesh->uvs);
+    // free(mesh->normal);
+    // free(mesh->indices);
+    // free(mesh);
 
 
     log_if_err("Issue before Font initiation\n");
@@ -77,16 +78,14 @@ void load_assets(
     Entity *entity = &renderer->font_entities[0];
     strcpy(entity->debug_name, "Default Font");
     entity->model = (BaseModel *) &font->vao;
-    Vec3 *world_center = &game_ctx->positions[game_ctx->position_len++];
-    *world_center = newVec3(0.0, 0.0, 0.0);
-    entity->position = world_center;
+    entity->position = &game_ctx->world_center;
     entity->active = 1;
     entity->scale = 1;
 
-    entity = &renderer->entities[1];
+    entity = &renderer->entities[0];
     strcpy(entity->debug_name, "World Floor");
     entity->model = world_model;
-    entity->position = world_center;
+    entity->position = &game_ctx->world_center;
     entity->active = 1;
     entity->scale = 1.0;
 
@@ -204,29 +203,36 @@ void load_assets(
 }
 
 
-void add_entity(Renderer *renderer, GameContext *game_ctx, Vec3 *position) {
-    Entity *entity;
+void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
+    RandomEntity *r_entity;
     int found = 0;
     for (int i=0; i<10; i++) {
-        entity = &renderer->entities[i];
-        if (entity->active == 0) {
-            strcpy(entity->debug_name, "First Entity");
-            entity->model = &game_ctx->models[ModelType_Suzanne];
+        r_entity = &game_ctx->random_entities[i];
+        if (*r_entity->active == 0) {
+            char msg[50];
+            sprintf(msg, "Entity %0.3f", game_ctx->current_time);
+            strcpy(r_entity->entity->debug_name, msg);
+            int ran_model = (rand() % 3) + 2;
+            r_entity->entity->model = &game_ctx->models[ran_model];
+            Vec2 ran_pos = get_random_position(ctx, game_ctx);
+            Vec2 dest = get_random_position(ctx, game_ctx);
+            
+            r_entity->position.x = ran_pos.x;
+            r_entity->position.y = 1.0;
+            r_entity->position.z = ran_pos.y;
 
-            Vec3 *pos = &game_ctx->positions[i];
-            *pos = newVec3(0.0, 5.0, 0.0);
-            entity->position = pos;
-
-            entity->active = 1;
-            entity->scale = 1.0;
+            r_entity->dest.x = dest.x;
+            r_entity->dest.y = 1.0;
+            r_entity->dest.z = dest.y;
+            *r_entity->active = 1;
             found = 1;
             return;
         }
     }
     if (!found) {
-        int ind = rand() % 10;
-        entity = &renderer->entities[ind];
-        entity->active = 0;
+        int ind = rand() % 9;
+        r_entity = &game_ctx->random_entities[ind + 1];
+        *r_entity->active = 0;
     }
 }
 
@@ -239,3 +245,19 @@ void rand_init(GameContext *game_ctx) {
     srand(time(0));
 
 }
+
+
+void sync_entities(GameContext *game_ctx, Renderer *renderer) {
+    Entity *entity;
+    RandomEntity *rand_entity;
+    for (int i=0; i<10; i++) {
+        entity = &renderer->entities[i];
+        rand_entity = &game_ctx->random_entities[i];
+        rand_entity->entity = entity;
+        rand_entity->active = &entity->active;
+        entity->position = &rand_entity->position;
+        entity->scale = 1.0;
+    }
+    rand_init(game_ctx);
+}
+
