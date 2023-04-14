@@ -67,7 +67,7 @@ typedef struct Mat4 {
 
 Vec2 newVec2(float x, float y);
 Vec3 newVec3(float x, float y, float z);
-Vec3 Vec3_add(Vec3 *a, Vec3 *b);
+Vec3 vec3_add(Vec3 *a, Vec3 *b);
 float vec3_dot(Vec3 *a, Vec3 *b);
 float vec3_distance(Vec3 *a, Vec3 *b);
 void vec3_normalize(Vec3 *vec);
@@ -88,6 +88,7 @@ Mat4 mat4_add(Mat4 *A, Mat4 *B);
 Mat4 mat4_mult(Mat4 *A, Mat4 *B);
 void mat4_scale(Vec3 *vec, Mat4 *source);
 Mat4 mat4_translate(Vec3 *vec, Mat4 *A);
+Vec4 vec4_multiply(Mat4 *A, Vec4 *vec);
 
 Mat4 mat4_rotate_x(float angle, Mat4 *A);
 Mat4 mat4_rotate_y(float angle, Mat4 *A);

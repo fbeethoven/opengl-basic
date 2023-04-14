@@ -58,43 +58,64 @@ void gui_quad_free(Entity *entity) {
 }
 
 
-void fps_player_movement(GraphicsContext *ctx, CameraMovementParams *params) {
+void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
+    int shift_press = shift_is_pressed(ctx);
     double cursor_x, cursor_y;
     glfwGetCursorPos(ctx->window, &cursor_x, &cursor_y);
 
-    double dx = cursor_x - ctx->mouse_position[0];
-    double dy = cursor_y - ctx->mouse_position[1];
-
-    ctx->mouse_position[0] = cursor_x;
-    ctx->mouse_position[1] = cursor_y;
-
-    glfwSetCursorPos(
-        ctx->window, 0.5*(double)ctx->width, 0.5*(double)ctx->height
-    );
-
+    // TODO: use mouse to rotate after adding quaternions
+    // double dx = cursor_x - ctx->mouse_position[0];
+    // double dy = cursor_y - ctx->mouse_position[1];
+    // ctx->mouse_position[0] = cursor_x;
+    // ctx->mouse_position[1] = cursor_y;
+    // glfwSetCursorPos(
+    //     ctx->window, 0.5*(double)ctx->width, 0.5*(double)ctx->height
+    // );
 
     Camera *camera = params->camera;
 
-    // if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
-    //     increase_rotation(params->player, 0.0, params->rotation_factor, 0.0);
-    // }
-    // if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
-    //     increase_rotation(params->player, 0.0, -params->rotation_factor, 0.0);
-    // }
-    // if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
-    //     params->d_player_move += params->speed;
-    // }
-    // if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
-    //     params->d_player_move -= params->speed;
-    // }
-
-    // params->player->position->x += (
-    //     params->d_player_move * sinf(params->player->rotation_y)
-    // );
-    // params->player->position->z += (
-    //     params->d_player_move * cosf(params->player->rotation_y)
-    // );
-
+    if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
+        Vec3 dir = newVec3(params->camera_speed, 0.0, 0.0);
+        camera->centre = vec3_add(&camera->centre, &dir);
+        if (!shift_press) {
+            camera->position = vec3_add(&camera->position, &dir); 
+        }
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
+        Vec3 dir = newVec3(-params->camera_speed, 0.0, 0.0);
+        camera->centre = vec3_add(&camera->centre, &dir);
+        if (!shift_press) {
+            camera->position = vec3_add(&camera->position, &dir); 
+        }
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
+        Vec3 dir = newVec3(0.0, 0.0, params->camera_speed);
+        camera->centre = vec3_add(&camera->centre, &dir);
+        if (!shift_press) {
+            camera->position = vec3_add(&camera->position, &dir); 
+        }
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
+        Vec3 dir = newVec3(0.0, 0.0, -params->camera_speed);
+        camera->centre = vec3_add(&camera->centre, &dir);
+        if (!shift_press) {
+            camera->position = vec3_add(&camera->position, &dir); 
+        }
+    }
+    if (shift_press){
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            Vec3 dir = newVec3(0.0, -params->camera_speed, 0.0);
+            camera->position = vec3_add(&camera->position, &dir);
+            camera->centre = vec3_add(&camera->centre, &dir);
+        }
+    }
+    else if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            Vec3 dir = newVec3(0.0, params->camera_speed, 0.0);
+            camera->position = vec3_add(&camera->position, &dir);
+            camera->centre = vec3_add(&camera->centre, &dir);
+    }
+    camera_movement(ctx, params);
+    camera_follow_player(&camera->centre, 0.0, params);
 }
 
 
@@ -121,18 +142,20 @@ void player_movement(GraphicsContext *ctx, PlayerMovementParams *params) {
 }
 
 
-void camera_follow_player(Entity *player, CameraMovementParams *params) {
+void camera_follow_player(
+    Vec3 *pos, float rot_y, CameraMovementParams *params
+) {
     float horizontal_distance = (
         params->distance_from_player * cosf(params->camera->pitch)
     );
     float vertical_distance = (
         params->distance_from_player * sinf(params->camera->pitch)
     );
-    float theta = params->camera->yaw + player->rotation_y;
+    float theta = params->camera->yaw + rot_y;
 
-    float target_x = player->position->x - horizontal_distance*sinf(theta);
-    float target_z = player->position->z - horizontal_distance*cos(theta);
-    float target_y = player->position->y + vertical_distance;
+    float target_x = pos->x - horizontal_distance*sinf(theta);
+    float target_z = pos->z - horizontal_distance*cos(theta);
+    float target_y = pos->y + vertical_distance;
 
     Vec3 new_camera_pos = newVec3(target_x, target_y, target_z);
 
@@ -146,13 +169,7 @@ void camera_follow_player(Entity *player, CameraMovementParams *params) {
     else {
         params->camera->position = new_camera_pos;
     }
-    params->camera->centre = *player->position;
-
-    // camera->position.x = player->position->x - horizontal_distance*sinf(theta);
-    // camera->position.z = player->position->z - horizontal_distance*cos(theta);
-    // camera->position.y = player->position->y + vertical_distance;
-
-    // camera->centre = *player->position;
+    params->camera->centre = *pos;
 }
 
 
@@ -197,6 +214,26 @@ int toggle_button_press(
     return 0;
 }
 
+int control_is_pressed(GraphicsContext *ctx) {
+    if (
+        glfwGetKey(ctx->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+        glfwGetKey(ctx->window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS
+    ) {
+        return 1;
+    }
+    return 0;
+}
+
+int shift_is_pressed(GraphicsContext *ctx) {
+    if (
+        glfwGetKey(ctx->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+        glfwGetKey(ctx->window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS
+    ) {
+        return 1;
+    }
+    return 0;
+}
+
 
 void draw_quad_in_pixels(
     GraphicsContext *ctx, Mesh *mesh, Vec2 center, Vec3 color, float side
@@ -206,5 +243,4 @@ void draw_quad_in_pixels(
 
     draw_quad(mesh, newVec3(x, y, 0), color, side/ctx->width);
 }
-
 

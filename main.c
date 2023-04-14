@@ -58,7 +58,7 @@ int main() {
 
     Camera camera = {0};
 
-    camera.position = newVec3(5.0, 5.0, 0.0);
+    camera.position = newVec3(0.0, 5.0, -5.0);
     camera.centre = newVec3(0.0, 0.0, 0.0);
     camera.pitch = 0.1745;
     camera.yaw = 0.0;
@@ -356,11 +356,46 @@ void handle_debug_info(
 }
 
 
-void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
-    // glfwGetCursorPos(
-    //     ctx->window, &ctx->mouse_position[0], &ctx->mouse_position[1]
-    // );
+void camera_focus_movement(
+    GraphicsContext *ctx, Camera *camera, float spf, float dist_from_p
+) {
+    CameraMovementParams camera_params = {0};
+    camera_params.camera = camera;
+    camera_params.speed = 0.05;
+    camera_params.camera_speed = 1.0;
+    camera_params.distance_from_player = dist_from_p;
+    camera_params.dt = spf;
 
+    free_camera_movement(ctx, &camera_params);
+
+}
+void player_focus_movement(
+    GraphicsContext *ctx, Entity *player, Camera *camera,
+    float spf, float dist_from_p
+) {
+    PlayerMovementParams params = {0};
+    params.player = player;
+    params.rotation_factor = 0.1;
+    params.speed = 0.5;
+    params.d_player_move = 0.0;
+    params.dt = spf;
+    player_movement(ctx, &params);
+
+    CameraMovementParams camera_params = {0};
+    camera_params.camera = camera;
+    camera_params.speed = 0.05;
+    camera_params.camera_speed = 1.0;
+    camera_params.distance_from_player = dist_from_p;
+    camera_params.dt = spf;
+
+    camera_movement(ctx, &camera_params);
+    distance_from_player = camera_params.distance_from_player;
+    // camera_follow_player(player, &camera_params);
+    camera_follow_player(player->position, player->rotation_y, &camera_params);
+}
+
+
+void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     float prev_width = ctx->width;
     float prev_height = ctx->height;
     
@@ -387,14 +422,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         entity->fill = 1 - entity->fill;
     }
 
-    PlayerMovementParams params = {0};
-    params.player = player;
-    params.rotation_factor = 0.1;
-    params.speed = speed;
-    params.d_player_move = 0.0;
-    params.dt = second_per_frame;
-    player_movement(ctx, &params);
-
     if (
         glfwGetKey(ctx->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
         glfwGetKey(ctx->window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS
@@ -419,17 +446,12 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         show_debug_info = 1 - show_debug_info;
     }
 
-    CameraMovementParams camera_params = {0};
-    camera_params.camera = camera;
-    camera_params.speed = 0.05;
-    camera_params.camera_speed = 1.0;
-    camera_params.distance_from_player = distance_from_player;
-    camera_params.dt = second_per_frame;
-
-    fps_player_movement(ctx, &camera_params);
-    // camera_movement(ctx, &camera_params);
-    // distance_from_player = camera_params.distance_from_player;
-    // camera_follow_player(player, &camera_params);
+    camera_focus_movement(
+        ctx, camera, second_per_frame, distance_from_player
+    );
+    // player_focus_movement(
+    //     ctx, player, camera, second_per_frame, distance_from_player
+    // );
 
     float aspect_ratio = (float)ctx->width / (float)ctx->height;
     font_buffer_reset(renderer->font, aspect_ratio);

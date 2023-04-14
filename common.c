@@ -31,7 +31,7 @@ Vec4 newVec4(float x, float y, float z, float w) {
 }
 
 
-Vec3 Vec3_add(Vec3 *a, Vec3 *b) {
+Vec3 vec3_add(Vec3 *a, Vec3 *b) {
     Vec3 result = {0};
     result.x = a->x + b->x;
     result.y = a->y + b->y;
@@ -52,6 +52,17 @@ Mat4 mat4_diag(float x, float y, float z, float w) {
 
 Mat4 Mat4I() {
     return mat4_diag(1.0, 1.0, 1.0, 1.0);
+}
+
+
+Vec4 vec4_multiply(Mat4 *A, Vec4 *vec) {
+    Vec4 C = {0};
+
+    C.x = A->m00*vec->x + A->m01*vec->y + A->m02*vec->z + A->m03*vec->w;
+    C.y = A->m10*vec->x + A->m11*vec->y + A->m12*vec->z + A->m13*vec->w;
+    C.z = A->m20*vec->x + A->m21*vec->y + A->m22*vec->z + A->m23*vec->w;
+    C.w = A->m30*vec->x + A->m31*vec->y + A->m32*vec->z + A->m33*vec->w;
+    return C;
 }
 
 Mat4 mat4_multiply(Mat4 *A, Mat4 *B) {
@@ -79,17 +90,6 @@ Mat4 mat4_multiply(Mat4 *A, Mat4 *B) {
     return C;
 }
 
-
-// Mat4 mat4_add(Mat4 *A, Mat4 *B) {
-//     Mat4 C = {0};
-// 
-//     for (int i=0; i<4; i++) {
-//         for (int j=0; j<4; j++) {
-//             C.mj += A->T[i][j] + B->T[i][j];
-//         }
-//     }
-//     return C;
-// }
 
 void mat4_scale(Vec3 *vec, Mat4 *source) {
     source->m00 = vec->x * source->m00;
