@@ -267,6 +267,7 @@ void render_entities(Renderer *rh) {
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
+        printf("ENTITY: %s\n", entity.debug_name);
         log_if_err("There was an issue with attributes\n");
         
         Mat4 transformation_matrix = create_transformation_matrix(
