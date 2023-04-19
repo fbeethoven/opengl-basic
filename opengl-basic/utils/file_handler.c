@@ -86,7 +86,7 @@ int split_next(StrSplitter *splitter, char *data) {
 
 
 char *read_file(char *file_path) {
-    FILE *file = fopen(file_path, "r");
+    FILE *file = fopen(file_path, "rb");
     if (!file) {
         fprintf(stderr, "Failed to read input\n");
         exit(1);
@@ -98,7 +98,7 @@ char *read_file(char *file_path) {
 
     char *data = malloc(sizeof(char) * (file_size + 1));
     if(fread(data, sizeof(char), file_size, file) != file_size) {
-        fprintf(stderr, "There was an error reading input\n");
+        fprintf(stderr, "there was an error reading input of file %s\n", file_path);
         free(data);
         fclose(file);
         exit(1);

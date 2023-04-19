@@ -22,7 +22,7 @@ void *_push_struct(Arena *arena, U64 n) {
         return (void *)0;
     }
     arena->last_pointer->pointer += n;
-    return arena->memory + pointer;
+    return (U8 *)arena->memory + pointer;
 }
 
 
@@ -46,7 +46,7 @@ void *_arr_push(ArrayList *arr, U64 n) {
         arr->data = realloc(arr->data, 2 * arr->capacity * n); 
         arr->capacity *= 2;
     }
-    void * item = arr->data + (n * arr->counter);
+    void * item = (U8 *)arr->data + (n * arr->counter);
     memset(item, 0, n);
     arr->counter++;
     return item;
@@ -58,7 +58,7 @@ void *_arr_pop(ArrayList *arr, U64 n) {
         printf("[ERROR] Array is empty\n");
         return 0;
     }
-    void *item = arr->data + (arr->counter * n);
+    void *item = (U8 *)arr->data + (arr->counter * n);
     arr->counter--;
     return item;
 }
