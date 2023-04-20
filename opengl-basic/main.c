@@ -1,5 +1,4 @@
 #define GLAD_GL_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 
 #include "common.h"
@@ -38,7 +37,7 @@ int main() {
     Font font = {0};
 
     speed = 0.5;
-    show_debug_info = 0;
+    show_debug_info = 1;
     pulse_n = 0;
     pulse_e = 0;
     pulse_c = 0;
@@ -201,7 +200,8 @@ int main() {
     );
     load_texture_to_model(
         // &suzanne, "assets/textures/wall.jpg", suzanne_data.uvs, 
-        &suzanne, "assets/textures/wood-floor.jpg", suzanne_data.uvs, 
+        // &suzanne, "assets/textures/wood-floor.jpg", suzanne_data.uvs, 
+        &suzanne, "assets/textures/marble-floor.jpg", suzanne_data.uvs, 
         suzanne_data.uvs_count * sizeof(float)
     );
     log_if_err("Issue before loading normals\n");
@@ -296,11 +296,11 @@ void handle_debug_info(
     sprintf(msg, "FPS: %.3f", 1.0/second_per_frame);
     font_buffer_push(renderer->font, msg);
 
-    sprintf(
-        msg, "Mouse x: %.3f, y: %.3f",
-        ctx->mouse_position[0], ctx->mouse_position[1]
+    font_buffer_push_color(
+        renderer->font, 
+        "e: menu | awsd: move player | hjkl: move camera | up down: zoom",
+        newVec3(1.0, 0.0, 0.0)
     );
-    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 0.0, 0.0));
     sprintf(
         msg, "%s Selected: %s",
         entity_categories[entity_category_index],
