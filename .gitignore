@@ -1,4 +1,6 @@
 build/
 .idea/
 .vs/
-external/GLFW/
+external/include/
+external/lib-vc2022/
+*.user

@@ -31,7 +31,7 @@ Vec4 newVec4(float x, float y, float z, float w) {
 }
 
 
-Vec3 Vec3_add(Vec3 *a, Vec3 *b) {
+Vec3 vec3_add(Vec3 *a, Vec3 *b) {
     Vec3 result = {0};
     result.x = a->x + b->x;
     result.y = a->y + b->y;
@@ -52,6 +52,17 @@ Mat4 mat4_diag(float x, float y, float z, float w) {
 
 Mat4 Mat4I() {
     return mat4_diag(1.0, 1.0, 1.0, 1.0);
+}
+
+
+Vec4 vec4_multiply(Mat4 *A, Vec4 *vec) {
+    Vec4 C = {0};
+
+    C.x = A->m00*vec->x + A->m01*vec->y + A->m02*vec->z + A->m03*vec->w;
+    C.y = A->m10*vec->x + A->m11*vec->y + A->m12*vec->z + A->m13*vec->w;
+    C.z = A->m20*vec->x + A->m21*vec->y + A->m22*vec->z + A->m23*vec->w;
+    C.w = A->m30*vec->x + A->m31*vec->y + A->m32*vec->z + A->m33*vec->w;
+    return C;
 }
 
 Mat4 mat4_multiply(Mat4 *A, Mat4 *B) {
@@ -79,17 +90,6 @@ Mat4 mat4_multiply(Mat4 *A, Mat4 *B) {
     return C;
 }
 
-
-// Mat4 mat4_add(Mat4 *A, Mat4 *B) {
-//     Mat4 C = {0};
-// 
-//     for (int i=0; i<4; i++) {
-//         for (int j=0; j<4; j++) {
-//             C.mj += A->T[i][j] + B->T[i][j];
-//         }
-//     }
-//     return C;
-// }
 
 void mat4_scale(Vec3 *vec, Mat4 *source) {
     source->m00 = vec->x * source->m00;
@@ -345,6 +345,31 @@ Vec3 vec3_cross(Vec3 v0, Vec3 v1) {
 	result.y = v0.z*v1.x - v0.x*v1.z;
 	result.z = v0.x*v1.y - v0.y*v1.x;
     return result;
+}
+
+
+float lerp(float a, float b, float t) {
+    return a + t*(b-a);
+}
+
+Vec2 vec2_lerp(Vec2 a, Vec2 b, float t) {
+    return newVec2(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
+}
+
+Vec3 vec3_lerp(Vec3 a, Vec3 b, float t) {
+    return newVec3(lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t));
+}
+
+
+float vec3_dot(Vec3 *a, Vec3 *b) {
+    float norm = a->x *b->x + a->y*b->y + a->z*b->z;
+    return norm;
+}
+
+
+float vec3_distance(Vec3 *a, Vec3 *b) {
+    Vec3 a_to_b = newVec3(b->x - a->x, b->y - a->y, b->z - a->z);
+    return sqrt(vec3_dot(&a_to_b, &a_to_b));
 }
 
 

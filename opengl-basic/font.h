@@ -38,6 +38,7 @@ typedef struct Font {
 	unsigned int vbo;
 	unsigned int ibo;
     unsigned int uv;
+    unsigned int color_buffer;
     int vertex_count;
     unsigned int texture_id;
 
@@ -54,7 +55,8 @@ GlyphInfo getGlyphInfo(
 void font_init(Font *font, char *font_file_path, float aspect_ratio);
 void font_buffer_reset(Font *font, float aspect_ratio);
 void font_buffer_push(Font *font, char *msg);
-void _font_buffer_push(Font *font, char *msg, Vec2 position);
+void font_buffer_push_color(Font *font, char *msg, Vec3 color);
+void _font_buffer_push(Font *font, char *msg, Vec2 position, Vec3 color);
 void font_free(Font *font);
 void font_update_buffer(Font *font);
 

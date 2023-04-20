@@ -71,6 +71,38 @@ void load_data_to_model(
     glBindVertexArray(0);
 }
 
+void load_empty_texture_to_model(
+    BaseModel *model, float *texture_coord, int textures_size
+){
+    glBindVertexArray(model->vao);
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &model->texture_id);
+    glBindTexture(GL_TEXTURE_2D, model->texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(
+        GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    unsigned int texture[256*256];
+    for (int i=0; i<256*256; i++) {
+        texture[i] = 0xffffffff;
+    }
+
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGB,
+        GL_UNSIGNED_BYTE, texture
+    );
+    glGenerateMipmap(GL_TEXTURE_2D);
+    store_float_in_attributes(
+        &model->uv, 1, 2, textures_size, texture_coord
+    );
+
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+}
+
 
 void load_texture_to_model(
     BaseModel *model, char *texture_file_path,
@@ -132,6 +164,9 @@ int graphics_init(GraphicsContext *ctx) {
         return -1;
     }
     ctx->window = window;
+    glfwGetCursorPos(
+        ctx->window, &ctx->mouse_position[0], &ctx->mouse_position[1]
+    );
     return 0;
 }
 
@@ -208,27 +243,7 @@ void prepare(Renderer *rh) {
     log_if_err("There was an issue Preparing\n");
 }
 
-
-void render(Renderer *rh, Camera *camera) {
-    prepare(rh);
-    shader_push(rh->shader);
-
-    Mat4 view_matrix = mat4_look_at(
-        camera->position, 
-        camera->centre,
-        newVec3(0.0, 1.0, 0.0)
-    );
-
-    shader_load_matrix(
-        rh->shader,
-        "view_matrix",
-        &view_matrix
-    );
-    log_if_err("Issue before loading light\n");
-    shader_load_light(rh->shader, rh->light);
-    log_if_err("There was a problem loading lights");
-
-
+void render_entities(Renderer *rh) {
     for (int i=0; i<10; i++) {
         Entity entity = rh->entities[i];
 
@@ -281,14 +296,12 @@ void render(Renderer *rh, Camera *camera) {
             GL_UNSIGNED_INT, 0
         );
 	}
+}
 
-    glDisableVertexAttribArray(2);
-    glDisable(GL_DEPTH_TEST);
 
-    shader_push(rh->gui_shader);
-
+void render_font_entities(Renderer *rh) {
     for (int i=0; i<10; i++) {
-        Entity entity = rh->gui_entities[i];
+        Entity entity = rh->font_entities[i];
 
         if (entity.active == 0) {
             continue;
@@ -300,6 +313,7 @@ void render(Renderer *rh, Camera *camera) {
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
         log_if_err("Issue with Vertex Attribs\n");
 
         log_if_err("Issue before subdata\n");
@@ -327,18 +341,103 @@ void render(Renderer *rh, Camera *camera) {
         else {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
-        log_if_err("Issue Polygons\n");
+        log_if_err("Font ussue with Polygons\n");
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, rh->font->texture_id);
-        log_if_err("Issue before drawing gui entities\n");
+        log_if_err("Issue before drawing font entities\n");
 
+        glDrawElements(
+            GL_TRIANGLES, rh->font->font_mesh->indices_len,
+            GL_UNSIGNED_INT, 0
+        );
+        log_if_err("Issue after font entities\n");
+	}
+}
+
+
+void render_gui_entities(Renderer *rh) {
+    for (int i=0; i<10; i++) {
+        Entity entity = rh->gui_entities[i];
+
+        if (entity.active == 0) {
+            continue;
+        }
+        log_if_err("Issue before gui entities\n");
+
+        glBindVertexArray(entity.model->vao);
+        log_if_err("Issue bindin Vertex Array\n");
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        log_if_err("Issue with Vertex Attribs\n");
+
+        Mat4 transformation_matrix = create_transformation_matrix(
+            entity.position,
+            entity.rotation_x,
+            entity.rotation_y,
+            entity.rotation_z,
+            entity.scale
+        );
+
+        shader_load_matrix(
+            rh->gui_shader,
+            "transformation_matrix",
+            &transformation_matrix
+        );
+        
+        if ( (entity.fill & 1) == 0) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+        log_if_err("Gui issue with Polygons\n");
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        log_if_err("Issue before drawing gui entities\n");
         glDrawElements(
             GL_TRIANGLES, rh->font->font_mesh->indices_len,
             GL_UNSIGNED_INT, 0
         );
         log_if_err("Issue after gui entities\n");
 	}
+}
+
+
+void render(Renderer *rh, Camera *camera) {
+    prepare(rh);
+    shader_push(rh->shader);
+
+    Mat4 view_matrix = mat4_look_at(
+        camera->position, 
+        camera->centre,
+        newVec3(0.0, 1.0, 0.0)
+    );
+
+    shader_load_matrix(
+        rh->shader,
+        "view_matrix",
+        &view_matrix
+    );
+    log_if_err("Issue before loading light\n");
+    shader_load_light(rh->shader, rh->light);
+    log_if_err("There was a problem loading lights");
+
+    render_entities(rh);
+
+    glDisableVertexAttribArray(2);
+    glDisable(GL_DEPTH_TEST);
+
+    shader_push(rh->gui_shader);
+
+    render_font_entities(rh);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    render_gui_entities(rh);
+
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
