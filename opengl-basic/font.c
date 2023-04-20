@@ -63,7 +63,8 @@ void font_init(Font *font, char *font_file_path, float aspect_ratio) {
     
 
     char *fontData = read_file(font_file_path);
-    U8 atlasData[font->atlasWidth * font->atlasHeight];
+    // U8 atlasData[font->atlasWidth * font->atlasHeight];
+    U8* atlasData = (U8*)malloc(font->atlasWidth * font->atlasHeight);
 
     stbtt_pack_context context;
     if (!stbtt_PackBegin(
@@ -94,6 +95,7 @@ void font_init(Font *font, char *font_file_path, float aspect_ratio) {
     );
     // glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
     glGenerateMipmap(GL_TEXTURE_2D);
+    free(atlasData);
     log_if_err("Could not initialize font\n");
 
 
