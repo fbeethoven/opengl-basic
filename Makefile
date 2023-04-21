@@ -4,7 +4,8 @@ LIBS = -lglfw -ldl -lm
 INCLUDES = -I ../external
 BIN = ../build
 OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c \
-	  utils/helpers.c utils/file_handler.c
+	  utils/helpers.c utils/file_handler.c \
+	  $(EXP_DIR)/packman.c $(EXP_DIR)/utils/experiment_helpers.c
 PROG = $(BIN)/p
 
 EXP_DIR = experiments
@@ -13,9 +14,12 @@ PACKMAN_OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c \
 PACKMAN = $(BIN)/packman
 
 
-.PHONY: clean dev all packman
+.PHONY: clean dev all packman main
 
 all: clean $(PROG)
+	$(PROG)
+
+main: $(PROG)
 	$(PROG)
 
 packman: clean $(PACKMAN)

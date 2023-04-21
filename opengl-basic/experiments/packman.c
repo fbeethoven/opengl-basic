@@ -1,39 +1,14 @@
 #define GLAD_GL_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 
-#include "../common.h"
-#include "utils/experiment_helpers.h"
+#include "packman.h"
 #include "../mesh.h"
 #include "../font.h"
 #include "../utils/file_handler.h"
 #include "../utils/helpers.h"
 
 
-float speed;
-int pulse_n;
-int pulse_p;
-int pulse_e;
-float distance_from_player;
-int show_debug_info;
-
-int entity_index;
-int entity_category_index;
-char *entity_categories[3];
-
-enum EntityCategory {
-    EntityCategory_entities = 0,
-    EntityCategory_gui = 1,
-    EntityCategory_font = 2
-};
-
-GameContext *game_ctx;
-
-
-void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
-
-
-int main() {
+int game_run() {
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
     rand_init(game_ctx);
@@ -65,9 +40,9 @@ int main() {
 
     Camera camera = {0};
 
-    camera.position = newVec3(0.0, 5.0, -5.0);
-    camera.centre = newVec3(0.0, 0.0, 0.0);
-    camera.pitch = 0.1745;
+    camera.position = newVec3(0.0, 60.0, -145.0);
+    camera.centre = newVec3(0.0, 55.0, -140.0);
+    camera.pitch = 0.6;
     camera.yaw = 0.0;
 
     Light light = {0};
@@ -110,24 +85,12 @@ void handle_debug_info(
     GraphicsContext *ctx, Renderer *renderer, Camera *camera,
     double second_per_frame
 ) {
-    float aspect_ratio = (float)ctx->width / (float)ctx->height;
-    float font_aspect_ratio = renderer->font->base_x / renderer->font->base_y;
-
     char msg[500];
     sprintf(
-        msg, "aspect ratio: %.3f, font_aspect_ratio: %.3f",
-        aspect_ratio, font_aspect_ratio
+        msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
     );
     font_buffer_push(renderer->font, msg);
 
-    sprintf(msg, "FPS: %.3f", 1.0/second_per_frame);
-    font_buffer_push(renderer->font, msg);
-
-    sprintf(
-        msg, "Mouse x: %.3f, y: %.3f",
-        ctx->mouse_position[0], ctx->mouse_position[1]
-    );
-    font_buffer_push(renderer->font, msg);
     sprintf(
         msg, "%s Selected: %s",
         entity_categories[entity_category_index],
@@ -135,19 +98,23 @@ void handle_debug_info(
     );
     font_buffer_push(renderer->font, msg);
 
+    sprintf(msg, "Current Time: %f", game_ctx->current_time);
+    font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+
+    font_buffer_push_color(renderer->font, "Camera:", newVec3(1.0, 1.0, 0.0));
     sprintf(
-        msg, "Current Time: %f, Random: %d",
-        game_ctx->current_time, game_ctx->prev_rand
+        msg, " Position: %f %f %f",
+        camera->position.x, camera->position.y, camera->position.z
     );
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
     sprintf(
-        msg, "Random Position: %f, %f",
-        game_ctx->prev_rand_pos.x, game_ctx->prev_rand_pos.y
+        msg, " Center: %f %f %f",
+        camera->centre.x, camera->centre.y, camera->centre.z
     );
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-    RandomEntity *r_entity = &game_ctx->random_entities[1];
     sprintf(
-        msg, "Start: %f, end: %f", r_entity->start_time, r_entity->end_time
+        msg, " Yaw: %f | Pitch: %f",
+        camera->yaw, camera->pitch
     );
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
 }

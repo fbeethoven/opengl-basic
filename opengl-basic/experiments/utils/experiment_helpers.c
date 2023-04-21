@@ -92,13 +92,22 @@ void load_assets(
 
     BaseModel *cube_model = &game_ctx->models[ModelType_Cube];
     IntermediateModel cube_data = {0};
-    intermediate_model_init(&cube_data);
     parse_obj_file_simple("assets/models/cube.obj", &cube_data);
     load_data_to_model(
         cube_model, cube_data.vertices, cube_data.indices,
         cube_data.vertices_count * sizeof(float),
         cube_data.indices_count * sizeof(unsigned int)
     );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(cube_model->vao);
+    store_float_in_attributes(
+        &cube_model->normal,
+        2,
+        3,
+        cube_data.normals_count * sizeof(float),
+        cube_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
     cube_model->vertex_count = cube_data.indices_count;
     intermediate_model_free(&cube_data);
     float text_coord1[] = {
@@ -138,16 +147,77 @@ void load_assets(
         sizeof(text_coord1)
     );
 
-    BaseModel *tea_model = &game_ctx->models[ModelType_Tea];
+
+    BaseModel *model = &game_ctx->models[ModelType_Spoon];
     IntermediateModel tmp = {0};
-    intermediate_model_init(&tmp);
-    parse_obj_file_simple("assets/models/utah_teapot.obj", &tmp);
+    parse_obj_file("assets/models/spoon.obj", &tmp);
     load_data_to_model(
-        tea_model, tmp.vertices, tmp.indices,
+        model, tmp.vertices, tmp.indices,
         tmp.vertices_count* sizeof(float),
         tmp.indices_count * sizeof(unsigned int)
     );
-    tea_model->vertex_count = tmp.indices_count;
+    load_texture_to_model(
+        model, "assets/textures/wood-floor.jpg", tmp.uvs, 
+        tmp.uvs_count * sizeof(float)
+    );
+    glBindVertexArray(model->vao);
+    store_float_in_attributes(
+        &model->normal,
+        2,
+        3,
+        tmp.normals_count * sizeof(float),
+        tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
+
+
+    model = &game_ctx->models[ModelType_Teacup];
+    parse_obj_file("assets/models/teacup.obj", &tmp);
+    load_data_to_model(
+        model, tmp.vertices, tmp.indices,
+        tmp.vertices_count* sizeof(float),
+        tmp.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        model, "assets/textures/wood-floor.jpg", tmp.uvs, 
+        tmp.uvs_count * sizeof(float)
+    );
+    glBindVertexArray(model->vao);
+    store_float_in_attributes(
+        &model->normal,
+        2,
+        3,
+        tmp.normals_count * sizeof(float),
+        tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
+
+
+    model = &game_ctx->models[ModelType_Teapot];
+    parse_obj_file("assets/models/teapot.obj", &tmp);
+    load_data_to_model(
+        model, tmp.vertices, tmp.indices,
+        tmp.vertices_count* sizeof(float),
+        tmp.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        model, "assets/textures/wood-floor.jpg", tmp.uvs, 
+        tmp.uvs_count * sizeof(float)
+    );
+    glBindVertexArray(model->vao);
+    store_float_in_attributes(
+        &model->normal,
+        2,
+        3,
+        tmp.normals_count * sizeof(float),
+        tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
     intermediate_model_free(&tmp);
 
 
@@ -212,8 +282,18 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
             char msg[50];
             sprintf(msg, "Entity %0.3f", game_ctx->current_time);
             strcpy(r_entity->entity->debug_name, msg);
-            int ran_model = (rand() % 3) + 2;
+            int ran_model = (rand() % (ModelType_Count - 1)) + 1;
             r_entity->entity->model = &game_ctx->models[ran_model];
+
+            float scalar;
+            if (ran_model == ModelType_Dragon) { scalar = 1.2; } 
+            else if (ran_model == ModelType_Spoon){ scalar = 10.0;}
+            else if (ran_model == ModelType_Teapot){ scalar = 1.5;}
+            else { scalar = 3.0;}
+            r_entity->entity->scale = scalar;
+
+            float rot = (float)(rand() % 3000000)/3000000;
+            r_entity->entity->rotation_y = rot * 3.1415;
 
             double t = game_ctx->current_time;
             r_entity->start_time = t;
@@ -222,15 +302,15 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
             Vec2 dest = get_random_position(ctx, game_ctx);
             
             r_entity->position.x = ran_pos.x;
-            r_entity->position.y = 1.0;
+            r_entity->position.y = scalar;
             r_entity->position.z = ran_pos.y;
 
             r_entity->start.x = ran_pos.x;
-            r_entity->start.y = 1.0;
+            r_entity->start.y = scalar;
             r_entity->start.z = ran_pos.y;
 
             r_entity->dest.x = dest.x;
-            r_entity->dest.y = 1.0;
+            r_entity->dest.y = scalar;
             r_entity->dest.z = dest.y;
             *r_entity->active = 1;
             found = 1;
@@ -238,9 +318,9 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
         }
     }
     if (!found) {
-        int ind = rand() % 9;
-        r_entity = &game_ctx->random_entities[ind + 1];
-        *r_entity->active = 0;
+        // int ind = rand() % 9;
+        // r_entity = &game_ctx->random_entities[ind + 1];
+        // *r_entity->active = 0;
     }
 }
 

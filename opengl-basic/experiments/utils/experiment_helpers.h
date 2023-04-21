@@ -9,7 +9,9 @@
 
 enum ModelType {
     ModelType_World,
-    ModelType_Tea,
+    ModelType_Spoon,
+    ModelType_Teacup,
+    ModelType_Teapot,
     ModelType_Cube,
     ModelType_Suzanne,
     ModelType_Dragon,
