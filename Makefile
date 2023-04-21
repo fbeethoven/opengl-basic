@@ -1,29 +1,32 @@
 CFLAGS = -Wall -g
 LIBS = -lglfw -ldl -lm
 
-INCLUDES = -I external
-BIN = build
-EXPERIMENT_DIR = experiments
+INCLUDES = -I ../external
+BIN = ../build
 OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c \
 	  utils/helpers.c utils/file_handler.c
-PROG = $(BIN)/prog
+PROG = $(BIN)/p
 
-RANDOM_OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c \
-	utils/helpers.c utils/file_handler.c experiments/utils/experiment_helpers.c
-RANDOM = $(BIN)/rand
-
-
-.PHONY: clean dev
+EXP_DIR = experiments
+PACKMAN_OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c \
+	utils/helpers.c utils/file_handler.c $(EXP_DIR)/utils/experiment_helpers.c
+PACKMAN = $(BIN)/packman
 
 
-all: $(RANDOM)
+.PHONY: clean dev all packman
+
+all: clean $(PROG)
+	$(PROG)
+
+packman: clean $(PACKMAN)
+	$(PACKMAN)
 
 $(PROG): main.c $(OBJ)
 	gcc -o $@ $(CFLAGS) $(INCLUDES) $(OBJ) main.c $(LIBS)
 
-$(RANDOM): $(EXPERIMENT_DIR)/random.c $(RANDOM_OBJ)
-	gcc -o $@ $(CFLAGS) $(INCLUDES) $(RANDOM_OBJ) \
-		$(EXPERIMENT_DIR)/random.c $(LIBS)
+$(PACKMAN): $(EXP_DIR)/random.c $(PACKMAN_OBJ)
+	gcc -o $@ $(CFLAGS) $(INCLUDES) $(PACKMAN_OBJ) \
+		$(EXP_DIR)/random.c $(LIBS)
 
 dev:
 	apt install libglfw3 libglfw3-dev

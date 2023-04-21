@@ -13,9 +13,18 @@ Image *image_load(const char *image_path) {
 
     Image *img = (Image *) malloc(sizeof(Image));
 
-    img->data = stbi_load(image_path, &img->width, &img->height, &img->channels, 0);
+    img->data = stbi_load(
+        image_path, &img->width, &img->height, &img->channels, 3
+    );
+    if (img->channels != 3) {
+        printf(
+            "File %s returned %d channels. Expected 4\n",
+            image_path, img->channels
+        );
+        exit(1);
+    }
     if(img->data == NULL) {
-        printf("IMAGE: Error in loading the image\n");
+        printf("IMAGE: Error loading image %s\n", image_path);
         exit(1);
     }
 
