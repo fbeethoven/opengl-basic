@@ -20,6 +20,7 @@ typedef struct CameraMovementParams {
     float camera_speed;
     float distance_from_player;
     double dt;
+    float player_rotation;
 } CameraMovementParams;
 
 

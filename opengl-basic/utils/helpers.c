@@ -59,6 +59,11 @@ void gui_quad_free(Entity *entity) {
 
 
 void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
+    float player_rotation = params->player_rotation;
+    float speed = params->camera_speed;
+    float rot_speed = params->speed;
+    float movement = 0.0;
+
     int shift_press = shift_is_pressed(ctx);
     double cursor_x, cursor_y;
     glfwGetCursorPos(ctx->window, &cursor_x, &cursor_y);
@@ -75,32 +80,16 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
     Camera *camera = params->camera;
 
     if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
-        Vec3 dir = newVec3(params->camera_speed, 0.0, 0.0);
-        camera->centre = vec3_add(&camera->centre, &dir);
-        if (!shift_press) {
-            camera->position = vec3_add(&camera->position, &dir); 
-        }
+        player_rotation += 0.5 * rot_speed;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
-        Vec3 dir = newVec3(-params->camera_speed, 0.0, 0.0);
-        camera->centre = vec3_add(&camera->centre, &dir);
-        if (!shift_press) {
-            camera->position = vec3_add(&camera->position, &dir); 
-        }
+        player_rotation -= 0.5 * rot_speed;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
-        Vec3 dir = newVec3(0.0, 0.0, params->camera_speed);
-        camera->centre = vec3_add(&camera->centre, &dir);
-        if (!shift_press) {
-            camera->position = vec3_add(&camera->position, &dir); 
-        }
+        movement += speed;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
-        Vec3 dir = newVec3(0.0, 0.0, -params->camera_speed);
-        camera->centre = vec3_add(&camera->centre, &dir);
-        if (!shift_press) {
-            camera->position = vec3_add(&camera->position, &dir); 
-        }
+        movement -= speed;
     }
     if (shift_press){
         if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -114,8 +103,13 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
             camera->position = vec3_add(&camera->position, &dir);
             camera->centre = vec3_add(&camera->centre, &dir);
     }
+
+    camera->centre.x += movement * sin(player_rotation);
+    camera->centre.z += movement * cos(player_rotation);
+    params->player_rotation = player_rotation;
+
     camera_movement(ctx, params);
-    camera_follow_player(&camera->centre, 0.0, params);
+    camera_follow_player(&camera->centre, player_rotation, params);
 }
 
 

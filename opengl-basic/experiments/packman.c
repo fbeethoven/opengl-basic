@@ -8,7 +8,17 @@
 #include "../utils/helpers.h"
 
 
+float player_rotation;
+
 int game_run() {
+    // TODO: 
+    //  - gui buttons
+    //  - gui sliders
+    //  - rotate entity towards target point
+    //  - quad sprite facing the camera
+    //  - collision: AABB or SAT?
+    //  - debug random segfault: maybe in floor textures?
+
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
     rand_init(game_ctx);
@@ -129,8 +139,10 @@ void camera_focus_movement(
     camera_params.camera_speed = 1.0;
     camera_params.distance_from_player = dist_from_p;
     camera_params.dt = spf;
+    camera_params.player_rotation = player_rotation;
 
     free_camera_movement(ctx, &camera_params);
+    player_rotation = camera_params.player_rotation;
 
 }
 
