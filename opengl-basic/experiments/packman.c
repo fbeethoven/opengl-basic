@@ -18,6 +18,7 @@ int game_run() {
     //  - quad sprite facing the camera
     //  - collision: AABB or SAT?
     //  - debug random segfault: maybe in floor textures?
+    //  - mouse picker
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
