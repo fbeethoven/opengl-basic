@@ -9,12 +9,17 @@
 
 
 float player_rotation;
+int random_experiment;
+int pulse_r;
 
 int game_run() {
     // TODO: 
     //  [X] add color to textures (gamma correction)
     //  [ ] gui buttons
-    //  [ ] collision: AABB or SAT?
+    //  [ ] collision: 
+    //      [ ] AABB 
+    //      [ ] SAT
+    //      [ ] Spherical
     //  [ ] rotate entity towards target point
     //  [ ] camera movement using mouse
     //  [ ] gui sliders
@@ -34,9 +39,11 @@ int game_run() {
     pulse_n = 0;
     pulse_e = 0;
     pulse_p = 0;
+    pulse_r = 0;
     distance_from_player = 5.0;
+    random_experiment = 1;
 
-    entity_index = 0;
+    entity_index = 1;
     entity_category_index = 0;
     entity_categories[0] = "Entity";
     entity_categories[1] = "GUI Entity";
@@ -66,6 +73,15 @@ int game_run() {
     renderer.light = &light;
 
     load_assets(&ctx, &renderer, game_ctx, &font);
+
+
+    Entity *entity = &renderer.gui_entities[1];
+    gui_quad_in_pos(
+        &ctx,  entity, newVec2(ctx.width*0.5, 5.0),
+        newVec2(5.0, 5.0),
+        newVec3(1.0, 0.0, 0.0)
+    );
+
 
     while (!glfwWindowShouldClose(ctx.window)) {
         printf("Entity SELETED: %d\n", entity_index);
@@ -164,14 +180,28 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     double second_per_frame = time - ctx->previous_time;
     ctx->previous_time = time;
 
-    update_entities(game_ctx);
-    int new_rand = get_new_random(game_ctx);
-    if (new_rand) {
-        add_random_entity(ctx, game_ctx);
-        add_random_entity(ctx, game_ctx);
+    Entity *entity = get_entity_selected(renderer);
+    if (entity->active != 0) {
+        float freq = 1.0;
+        float pulse = (float)time - (int)time;
+        pulse = sin(3.1415 * pulse * freq);
+        pulse *= pulse;
+
+        entity->color = vec3_lerp(
+            newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
+        );
+    }
+
+    if (random_experiment) {
+        update_entities(game_ctx);
+        int new_rand = get_new_random(game_ctx);
+        if (new_rand) {
+            add_random_entity(ctx, game_ctx);
+            add_random_entity(ctx, game_ctx);
+        }
     }
     
-    Entity *entity = get_entity_selected(renderer);
+    entity = get_entity_selected(renderer);
 
     if(
         glfwGetKey(ctx->window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
@@ -198,14 +228,22 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     }
     else if (toggle_button_press(ctx, GLFW_KEY_N, &pulse_n)){
+        entity = get_entity_selected(renderer);
+        entity->color = newVec3(0.0, 0.0, 0.0);
+
         entity_index++;
-        if (get_entity_selected(renderer)->active == 0) {
+        entity = get_entity_selected(renderer);
+        if (entity->active == 0) {
             entity_index = 0;
+            entity = get_entity_selected(renderer);
         }
     }
 
     if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
         show_debug_info = 1 - show_debug_info;
+    }
+    if (toggle_button_press(ctx, GLFW_KEY_R, &pulse_r)){
+        random_experiment = 1 - random_experiment;
     }
 
     camera_focus_movement(

@@ -24,8 +24,11 @@ typedef struct CameraMovementParams {
 } CameraMovementParams;
 
 
+void quad_in_pos(
+    GraphicsContext *ctx, Entity *entity, Vec3 center, Vec2 size, Vec3 color
+);
 void gui_quad_in_pos(
-    GraphicsContext *ctx, Entity *entity, Vec2 center, float size, Vec3 color
+    GraphicsContext *ctx, Entity *entity, Vec2 center, Vec2 size, Vec3 color
 );
 void gui_quad_free(Entity *entity);
 void player_movement(GraphicsContext *ctx, PlayerMovementParams *params);
@@ -38,7 +41,7 @@ int toggle_button_press(
 );
 void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params);
 void draw_quad_in_pixels(
-    GraphicsContext *ctx, Mesh *mesh, Vec2 center, Vec3 color, float side
+    GraphicsContext *ctx, Mesh *mesh, Vec2 center, Vec3 color, Vec2 side
 );
 int control_is_pressed(GraphicsContext *ctx);
 int shift_is_pressed(GraphicsContext *ctx);

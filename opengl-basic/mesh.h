@@ -19,7 +19,7 @@ typedef struct Mesh {
 } Mesh;
 
 
-void draw_quad(Mesh *mesh, Vec3 center, Vec3 color, float side);
+void draw_quad(Mesh *mesh, Vec3 center, Vec3 color, Vec2 side);
 void draw_quad_single(Mesh *mesh, Vec3 position);
 void mesh_init(Mesh *mesh);
 

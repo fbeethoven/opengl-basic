@@ -269,6 +269,7 @@ void load_assets(
     log_if_err("Issue after loading normals\n");
     dragon->vertex_count = dragon_data.indices_count;
     intermediate_model_free(&dragon_data);
+
 }
 
 

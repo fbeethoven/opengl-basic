@@ -38,23 +38,26 @@ void draw_quad_single(Mesh *mesh, Vec3 position) {
 }
 
 
-void draw_quad(Mesh *mesh, Vec3 center, Vec3 color, float side) {
-    float width = 0.5 * side;
+void draw_quad(Mesh *mesh, Vec3 top_left, Vec3 color, Vec2 side) {
+    float width = side.x;
+    float height = side.y;
 
     int v_c = mesh->vertices_len;
     int u_c = mesh->uvs_len;
     int c_c = mesh->color_len;
     int i_c = mesh->indices_len;
 
-    mesh->vertices[v_c] = newVec3(center.x - width, center.y + width, 0);
-    mesh->vertices[v_c + 1] = newVec3(center.x - width, center.y - width, 0);
-    mesh->vertices[v_c + 2] = newVec3(center.x + width, center.y - width, 0);
-    mesh->vertices[v_c + 3] = newVec3(center.x + width, center.y + width, 0);
+    mesh->vertices[v_c] = newVec3(top_left.x, top_left.y, 0);
+    mesh->vertices[v_c + 1] = newVec3(top_left.x, top_left.y - height, 0);
+    mesh->vertices[v_c + 2] = newVec3(
+        top_left.x + width, top_left.y - height, 0
+    );
+    mesh->vertices[v_c + 3] = newVec3(top_left.x + width, top_left.y, 0);
 
     mesh->uvs[u_c] = newVec2(0.0, 0.0);
     mesh->uvs[u_c + 1] = newVec2(0.0, 1.0);
     mesh->uvs[u_c + 2] = newVec2(1.0, 1.0);
-    mesh->uvs[u_c + 3] = newVec2(0.0, 1.0);
+    mesh->uvs[u_c + 3] = newVec2(1.0, 0.0);
 
     Vec3 normal_default = newVec3(0.0, 0.0, 1.0);
     mesh->normal[v_c] = normal_default;
@@ -72,8 +75,8 @@ void draw_quad(Mesh *mesh, Vec3 center, Vec3 color, float side) {
     mesh->indices[i_c + 2] = v_c + 2;
 
     mesh->indices[i_c + 3] = v_c + 2;
-    mesh->indices[i_c + 4] = v_c + 3;
-    mesh->indices[i_c + 5] = v_c + 0;
+    mesh->indices[i_c + 4] = v_c + 0;
+    mesh->indices[i_c + 5] = v_c + 3;
 
 
     mesh->vertices_len += 4;

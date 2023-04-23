@@ -1,8 +1,56 @@
 #include "helpers.h"
 
 
+void quad_in_pos(
+    GraphicsContext *ctx, Entity *entity, Vec3 center, Vec2 size, Vec3 color
+) {
+    Mesh quad_mesh = {0};
+    Vec3 vert[4];
+    quad_mesh.vertices = vert;
+    Vec2 uvs_coords[4];
+    quad_mesh.uvs = uvs_coords;
+    Vec3 normal[4];
+    quad_mesh.normal = normal;
+    Vec3 color_buffer[4];
+    quad_mesh.color = color_buffer;
+    unsigned int ind[10];
+    quad_mesh.indices = ind;
+
+    draw_quad(&quad_mesh, newVec3(0, 0, 0.0), color, size);
+    BaseModel *quad_model = (BaseModel *)malloc(sizeof(BaseModel));
+    load_data_to_model(
+        quad_model, (float *)quad_mesh.vertices, quad_mesh.indices,
+        3 * quad_mesh.vertices_len * sizeof(float),
+        quad_mesh.indices_len * sizeof(unsigned int)
+    );
+    load_empty_texture_to_model(
+        quad_model, (float *)quad_mesh.uvs, 
+        2 * quad_mesh.uvs_len * sizeof(float)
+    );
+    glBindVertexArray(quad_model->vao);
+    store_float_in_attributes(
+        &quad_model->color,
+        2,
+        3,
+        3 * quad_mesh.color_len * sizeof(float),
+        (float *)quad_mesh.color
+    );
+    log_if_err("Issue loading quad color\n");
+    quad_model->vertex_count = quad_mesh.indices_len;
+
+    entity->model = quad_model;
+
+    Vec3 *rect_pos = (Vec3 *)malloc(sizeof(Vec3));
+    *rect_pos = center;
+
+    entity->position = rect_pos;
+    entity->active = 1;
+    entity->scale = 1.0;
+}
+
+
 void gui_quad_in_pos(
-    GraphicsContext *ctx, Entity *entity, Vec2 center, float size, Vec3 color
+    GraphicsContext *ctx, Entity *entity, Vec2 center, Vec2 size, Vec3 color
 ) {
     Mesh quad_mesh = {0};
     Vec3 vert[4];
@@ -17,7 +65,11 @@ void gui_quad_in_pos(
     quad_mesh.indices = ind;
 
 
-    draw_quad(&quad_mesh, newVec3(0, 0, 0.0), color, size);
+    Vec2 new_size = newVec2(
+        (2 * size.x/(float)ctx->width) - 1.0, 
+        1.0 - (2 * size.y/(float)ctx->height)
+    );
+    draw_quad(&quad_mesh, newVec3(0, 0, 0.0), color, new_size);
     BaseModel *quad_model = (BaseModel *)malloc(sizeof(BaseModel));
     load_data_to_model(
         quad_model, (float *)quad_mesh.vertices, quad_mesh.indices,
@@ -230,11 +282,14 @@ int shift_is_pressed(GraphicsContext *ctx) {
 
 
 void draw_quad_in_pixels(
-    GraphicsContext *ctx, Mesh *mesh, Vec2 center, Vec3 color, float side
+    GraphicsContext *ctx, Mesh *mesh, Vec2 center, Vec3 color, Vec2 side
 ) {
     float x = 2 * (center.x/ctx->width) - 1;
     float y = 1 - 2 * (center.y/ctx->height);
 
-    draw_quad(mesh, newVec3(x, y, 0), color, side/ctx->width);
+    draw_quad(
+        mesh, newVec3(x, y, 0), color,
+        newVec2(side.x/ctx->width, side.y/ctx->height)
+    );
 }
 
