@@ -34,6 +34,7 @@ typedef struct BaseModel {
 typedef struct Entity {
     BaseModel *model;
     Vec3 *position;
+    Vec3 color;
     float rotation_x;
     float rotation_y;
     float rotation_z;

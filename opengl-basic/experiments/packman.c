@@ -12,13 +12,16 @@ float player_rotation;
 
 int game_run() {
     // TODO: 
-    //  - gui buttons
-    //  - gui sliders
-    //  - rotate entity towards target point
-    //  - quad sprite facing the camera
-    //  - collision: AABB or SAT?
-    //  - debug random segfault: maybe in floor textures?
-    //  - mouse picker
+    //  [X] add color to textures (gamma correction)
+    //  [ ] gui buttons
+    //  [ ] collision: AABB or SAT?
+    //  [ ] rotate entity towards target point
+    //  [ ] camera movement using mouse
+    //  [ ] gui sliders
+    //  [ ] quad sprite facing the camera
+    //  [ ] mouse picker
+    //  [ ] debug random segfault: maybe in floor textures?
+    //      - confirm it is in floor
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;

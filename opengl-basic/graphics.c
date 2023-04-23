@@ -244,11 +244,21 @@ void prepare(Renderer *rh) {
 }
 
 void render_entities(Renderer *rh) {
+    Vec3 light_color = rh->light->color;
     for (int i=0; i<10; i++) {
         Entity entity = rh->entities[i];
 
         if (entity.active == 0) {
             continue;
+        }
+        if (
+            !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
+            !vec3_is_equal(entity.color, light_color)
+        ) {
+            log_if_err("Issue before loading light\n");
+            rh->light->color = entity.color;
+            shader_load_light(rh->shader, rh->light);
+            log_if_err("There was a problem loading lights");
         }
         printf("Entity %d Debug INFO:\n", i);
         printf(
@@ -296,6 +306,13 @@ void render_entities(Renderer *rh) {
             GL_TRIANGLES, entity.model->vertex_count,
             GL_UNSIGNED_INT, 0
         );
+
+        if (!vec3_is_equal(entity.color, light_color)) {
+            log_if_err("Issue before loading light\n");
+            rh->light->color = light_color;
+            shader_load_light(rh->shader, rh->light);
+            log_if_err("There was a problem loading lights");
+        }
 	}
 }
 

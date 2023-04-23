@@ -11,7 +11,6 @@ uniform sampler2D in_texture;
 
 const float ambient = 0.2;
 
-
 void main(){
 
     float normal_dot = dot(surface_normal, to_light);
@@ -19,5 +18,8 @@ void main(){
     vec3 diffuse = (brightness + ambient) * out_light_color;
 
     vec4 c = texture(in_texture, out_text_coords);
-    FragColor = vec4(diffuse, 1.0) * c;
+    c = pow(c, vec4(2.2));
+    vec4 color = vec4(diffuse, 1.0) * c;
+    color = pow(color, vec4(1.0/2.2));
+    FragColor = color;
 }
