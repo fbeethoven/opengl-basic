@@ -270,6 +270,34 @@ void load_assets(
     dragon->vertex_count = dragon_data.indices_count;
     intermediate_model_free(&dragon_data);
 
+
+    Vec3 *pos_obj = malloc(sizeof(Vec3));
+    Vec3 *pos_collider = malloc(sizeof(Vec3));
+
+    entity = &renderer->entities[10];
+    entity->model = &game_ctx->models[ModelType_Dragon];
+    entity->position = pos_obj;
+    *entity->position = newVec3(0.0, 1.0, 0.0);
+    entity->scale = 1.0;
+    entity->rotation_y = 0.5 * 3.1415;
+    entity->active = 1;
+
+    entity = &renderer->entities[11];
+    entity->model = &game_ctx->models[ModelType_Suzanne];
+    entity->position = pos_collider;
+    *entity->position = newVec3(0.0, 6.0, 0.0);
+    entity->scale = 1.0;
+    entity->color = newVec3(0.0, 0.0, 1.0);
+    entity->active = 1;
+
+
+    // Suzanne collider:
+    //  offset: 0 0 0;
+    //  radius: 1;
+    
+    // Dragon collider:
+    //  offset: 0 5 0;
+    //  radius: 5;
 }
 
 

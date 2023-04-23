@@ -254,7 +254,7 @@ void prepare(Renderer *rh) {
 
 void render_entities(Renderer *rh) {
     Vec3 light_color = rh->light->color;
-    for (int i=0; i<10; i++) {
+    for (int i=0; i<20; i++) {
         Entity entity = rh->entities[i];
 
         if (entity.active == 0) {
@@ -324,48 +324,48 @@ void render_entities(Renderer *rh) {
         }
 	}
 
-    shader_push(rh->circle_shader);
-    for (int i=10; i<20; i++) {
-        Entity entity = rh->entities[i];
+    // shader_push(rh->circle_shader);
+    // for (int i=10; i<20; i++) {
+    //     Entity entity = rh->entities[i];
 
-        if (entity.active == 0) {
-            continue;
-        }
-        glBindVertexArray(entity.model->vao);
+    //     if (entity.active == 0) {
+    //         continue;
+    //     }
+    //     glBindVertexArray(entity.model->vao);
 
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-        printf("ENTITY: %s\n", entity.debug_name);
-        log_if_err("There was an issue with attributes\n");
-        
-        Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            entity.scale
-        );
-        shader_load_matrix(
-            rh->shader,
-            "transformation_matrix",
-            &transformation_matrix
-        );
+    //     glEnableVertexAttribArray(0);
+    //     glEnableVertexAttribArray(1);
+    //     glEnableVertexAttribArray(2);
+    //     printf("ENTITY: %s\n", entity.debug_name);
+    //     log_if_err("There was an issue with attributes\n");
+    //     
+    //     Mat4 transformation_matrix = create_transformation_matrix(
+    //         entity.position,
+    //         entity.rotation_x,
+    //         entity.rotation_y,
+    //         entity.rotation_z,
+    //         entity.scale
+    //     );
+    //     shader_load_matrix(
+    //         rh->shader,
+    //         "transformation_matrix",
+    //         &transformation_matrix
+    //     );
 
-        if ( (entity.fill & 1) == 0) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-        else {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }
+    //     if ( (entity.fill & 1) == 0) {
+    //         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //     }
+    //     else {
+    //         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //     }
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-        glDrawElements(
-            GL_TRIANGLES, entity.model->vertex_count,
-            GL_UNSIGNED_INT, 0
-        );
-	}
+    //     glActiveTexture(GL_TEXTURE0);
+    //     glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+    //     glDrawElements(
+    //         GL_TRIANGLES, entity.model->vertex_count,
+    //         GL_UNSIGNED_INT, 0
+    //     );
+	// }
 }
 
 

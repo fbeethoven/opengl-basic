@@ -41,9 +41,9 @@ int game_run() {
     pulse_p = 0;
     pulse_r = 0;
     distance_from_player = 5.0;
-    random_experiment = 1;
+    random_experiment = 0;
 
-    entity_index = 1;
+    entity_index = 11;
     entity_category_index = 0;
     entity_categories[0] = "Entity";
     entity_categories[1] = "GUI Entity";
@@ -166,6 +166,31 @@ void camera_focus_movement(
 
 }
 
+void player_focus_movement(
+    GraphicsContext *ctx, Entity *player, Camera *camera,
+    float spf, float dist_from_p
+) {
+    PlayerMovementParams params = {0};
+    params.player = player;
+    params.rotation_factor = 0.1;
+    params.speed = 0.5;
+    params.d_player_move = 0.0;
+    params.dt = spf;
+    player_movement(ctx, &params);
+
+    CameraMovementParams camera_params = {0};
+    camera_params.camera = camera;
+    camera_params.speed = 0.05;
+    camera_params.camera_speed = 1.0;
+    camera_params.distance_from_player = dist_from_p;
+    camera_params.dt = spf;
+
+    camera_movement(ctx, &camera_params);
+    distance_from_player = camera_params.distance_from_player;
+    // camera_follow_player(player, &camera_params);
+    camera_follow_player(player->position, player->rotation_y, &camera_params);
+}
+
 
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     float prev_width = ctx->width;
@@ -181,16 +206,16 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     ctx->previous_time = time;
 
     Entity *entity = get_entity_selected(renderer);
-    if (entity->active != 0) {
-        float freq = 1.0;
-        float pulse = (float)time - (int)time;
-        pulse = sin(3.1415 * pulse * freq);
-        pulse *= pulse;
+    // if (entity->active != 0) {
+    //     float freq = 1.0;
+    //     float pulse = (float)time - (int)time;
+    //     pulse = sin(3.1415 * pulse * freq);
+    //     pulse *= pulse;
 
-        entity->color = vec3_lerp(
-            newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
-        );
-    }
+    //     entity->color = vec3_lerp(
+    //         newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
+    //     );
+    // }
 
     if (random_experiment) {
         update_entities(game_ctx);
@@ -246,14 +271,68 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         random_experiment = 1 - random_experiment;
     }
 
-    camera_focus_movement(
-        ctx, camera, second_per_frame, distance_from_player
-    );
+
+    // camera_focus_movement(
+    //     ctx, camera, second_per_frame, distance_from_player
+    // );
 
     float aspect_ratio = (float)ctx->width / (float)ctx->height;
     font_buffer_reset(renderer->font, aspect_ratio);
     if (show_debug_info) {
         handle_debug_info(ctx, renderer, camera, second_per_frame);
     }
+
+    
+    entity = get_entity_selected(renderer);
+
+    Vec3 dragon_center = newVec3(0.0, 6.0, 0.0);
+    float dragon_radius = 5.0;
+
+    Vec3 player_center = *entity->position;
+    float player_radius = 1.0;
+
+
+    float distance = vec3_distance(&dragon_center, &player_center);
+    if (distance < dragon_radius + player_radius) {
+        entity->color = newVec3(1.0, 0.0, 0.0);
+    }
+    else {
+        entity->color = newVec3(0.0, 0.0, 0.0);
+    }
+
+
+    player_focus_movement(
+        ctx, entity, camera, second_per_frame, distance_from_player
+    );
+    // float step = 0.25;
+    // if (glfwGetKey(ctx->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
+    //         entity->scale += step;
+    //     }
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    //         entity->scale -= step;
+    //     }
+    // }
+    // else {
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
+    //         entity->position->z += step;
+    //     }
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    //         entity->position->z -= step;
+    //     }
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+    //         entity->position->x += step;
+    //     }
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    //         entity->position->x -= step;
+    //     }
+    // }
+
+    // printf(
+    //     "position: %f %f %f\n",
+    //     entity->position->x, entity->position->y, entity->position->z
+    // );
+    // printf("scale: %f\n", entity->scale);
+
 }
 

@@ -11,4 +11,5 @@ uniform sampler2D in_texture;
 void main() {
     float value = texture(in_texture, out_text_coords).r;
     FragColor = vec4(out_color, value);
+    FragColor = vec4(0.0, 1.0, 0.0, 1.0);
 }
