@@ -20,7 +20,7 @@ int game_run() {
     //  [ ] gui sliders
     //  [ ] quad sprite facing the camera
     //  [ ] mouse picker
-    //  [ ] debug random segfault: maybe in floor textures?
+    //  [X] debug random segfault: maybe in floor textures?
     //      - confirm it is in floor
 
     GameContext g_ctx = {0};

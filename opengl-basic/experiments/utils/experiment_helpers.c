@@ -24,48 +24,47 @@ Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx) {
 void load_assets(
     GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font
 ) {
-    // Mesh *mesh = (Mesh *)malloc(sizeof(Mesh));
-    // int mesh_size = 64*64;
+    Mesh *mesh = (Mesh *)malloc(sizeof(Mesh));
+    int mesh_size = 128 * 128;
 
-    // mesh->vertices = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
-    // mesh->uvs = (Vec2 *)malloc(mesh_size * sizeof(Vec2));
-    // mesh->normal = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
-    // mesh->indices = (unsigned int*)malloc(mesh_size * sizeof(unsigned int));
-    // mesh_init(mesh);
+    mesh->vertices = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
+    mesh->uvs = (Vec2 *)malloc(mesh_size * sizeof(Vec2));
+    mesh->normal = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
+    mesh->indices = (unsigned int*)malloc(mesh_size * sizeof(unsigned int));
+    mesh_init(mesh);
 
-    // BaseModel *world_model = &game_ctx->models[ModelType_World];
-    // load_data_to_model(
-    //     world_model, (float *) mesh->vertices, mesh->indices,
-    //     3*sizeof(float)*mesh->vertices_len,
-    //     sizeof(unsigned int)*mesh->indices_len
-    // );
-    // load_texture_to_model(
-    //     world_model,
-    //     // "assets/textures/marble-floor.jpg",
-    //     "assets/textures/wall.jpg",
-    //     // "assets/textures/wood-floor.jpg",
-    //     (float *)mesh->uvs, 
-    //     2 * sizeof(float) * mesh->uvs_len
-    // );
-    // log_if_err("Issue before loading normals\n");
-    // glBindVertexArray(world_model->vao);
-    // store_float_in_attributes(
-    //     &world_model->normal,
-    //     2,
-    //     3,
-    //     3 * mesh->vertices_len * sizeof(float),
-    //     (float *) mesh->normal
-    // );
-    // log_if_err("Issue after loading normals\n");
+    BaseModel *world_model = &game_ctx->models[ModelType_World];
+    load_data_to_model(
+        world_model, (float *) mesh->vertices, mesh->indices,
+        3*sizeof(float)*mesh->vertices_len,
+        sizeof(unsigned int)*mesh->indices_len
+    );
+    load_texture_to_model(
+        world_model,
+        // "assets/textures/marble-floor.jpg",
+        "assets/textures/wall.jpg",
+        // "assets/textures/wood-floor.jpg",
+        (float *)mesh->uvs, 
+        2 * sizeof(float) * mesh->uvs_len
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(world_model->vao);
+    store_float_in_attributes(
+        &world_model->normal,
+        2,
+        3,
+        3 * mesh->vertices_len * sizeof(float),
+        (float *) mesh->normal
+    );
+    log_if_err("Issue after loading normals\n");
 
-    // world_model->vertex_count = mesh->indices_len;
+    world_model->vertex_count = mesh->indices_len;
 
-    // TODO: check if we can remove these
-    // free(mesh->vertices);
-    // free(mesh->uvs);
-    // free(mesh->normal);
-    // free(mesh->indices);
-    // free(mesh);
+    free(mesh->vertices);
+    free(mesh->uvs);
+    free(mesh->normal);
+    free(mesh->indices);
+    free(mesh);
 
 
     log_if_err("Issue before Font initiation\n");
@@ -82,12 +81,12 @@ void load_assets(
     entity->active = 1;
     entity->scale = 1;
 
-    // entity = &renderer->entities[0];
-    // strcpy(entity->debug_name, "World Floor");
-    // entity->model = world_model;
-    // entity->position = &game_ctx->world_center;
-    // entity->active = 1;
-    // entity->scale = 1.0;
+    entity = &renderer->entities[0];
+    strcpy(entity->debug_name, "World Floor");
+    entity->model = world_model;
+    entity->position = &game_ctx->world_center;
+    entity->active = 1;
+    entity->scale = 1.0;
 
 
     BaseModel *cube_model = &game_ctx->models[ModelType_Cube];
@@ -293,17 +292,6 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
 
             float rot = (float)(rand() % 3000000)/3000000;
             r_entity->entity->rotation_y = rot * 3.1415;
-
-            int is_blue = (rand() % 10) == 9;
-            int is_red = (!is_blue) && ((rand() % 10) < 5);
-
-            r_entity->entity->color = newVec3(0.0, 0.0, 0.0);
-            if (is_blue) {
-                r_entity->entity->color = newVec3(0.0, 0.0, 1.0);
-            }
-            else if (is_red) {
-                r_entity->entity->color = newVec3(1.0, 0.0, 0.0);
-            }
 
             double t = game_ctx->current_time;
             r_entity->start_time = t;

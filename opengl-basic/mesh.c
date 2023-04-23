@@ -86,9 +86,13 @@ void draw_quad(Mesh *mesh, Vec3 center, Vec3 color, float side) {
 void mesh_init(Mesh *mesh) {
     float tile_size = 10.0;
     int tiles_per_chunk = 10;
+
+    mesh->vertices_len = 0.0;
+    mesh->uvs_len = 0.0;
+    mesh->indices_len = 0.0;
     for (int z=-tiles_per_chunk; z<tiles_per_chunk; z++) {
         for (int x=-tiles_per_chunk; x<tiles_per_chunk; x++) {
-            draw_quad_single(mesh, newVec3(x * tile_size, 0, z * tile_size));
+            draw_quad_single(mesh, newVec3(x * tile_size, 0.0, z * tile_size));
         }
     }
 }
