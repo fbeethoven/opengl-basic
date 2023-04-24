@@ -45,6 +45,7 @@ void draw_quad_in_pixels(
 );
 int control_is_pressed(GraphicsContext *ctx);
 int shift_is_pressed(GraphicsContext *ctx);
+void camera_reset(Camera *camera);
 
 
 #endif  // HELPERS_H

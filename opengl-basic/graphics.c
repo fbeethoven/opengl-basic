@@ -202,6 +202,12 @@ void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh) {
         "projection_matrix",
         &rh->projection_matrix
     );
+    shader_push(rh->circle_shader);
+    shader_load_matrix(
+        rh->circle_shader,
+        "projection_matrix",
+        &rh->projection_matrix
+    );
     shader_pop();
 }
 
@@ -234,7 +240,7 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     );
     shader_push(rh->circle_shader);
     shader_load_matrix(
-        rh->shader,
+        rh->circle_shader,
         "projection_matrix",
         &rh->projection_matrix
     );
@@ -245,7 +251,9 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 void prepare(Renderer *rh) {
     log_if_err("There was an issue BEFORE Preparing\n");
     glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(rh->RED, rh->GREEN, rh->BLUE, 1);
@@ -254,7 +262,7 @@ void prepare(Renderer *rh) {
 
 void render_entities(Renderer *rh) {
     Vec3 light_color = rh->light->color;
-    for (int i=0; i<20; i++) {
+    for (int i=0; i<10; i++) {
         Entity entity = rh->entities[i];
 
         if (entity.active == 0) {
@@ -264,29 +272,19 @@ void render_entities(Renderer *rh) {
             !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
             !vec3_is_equal(entity.color, light_color)
         ) {
-            log_if_err("Issue before loading light\n");
+            log_if_err(
+                "Entity Renderer found an issue before loading light\n"
+            );
             rh->light->color = entity.color;
             shader_load_light(rh->shader, rh->light);
-            log_if_err("There was a problem loading lights");
+            log_if_err("Entity Renderer found problem loading lights");
         }
-        printf("Entity %d Debug INFO:\n", i);
-        printf(
-            "  position: %f %f %f\n",
-            entity.position->x, entity.position->y, entity.position->z
-        );
-        printf(
-            "  vao: %u, vbo: %u, ibo: %u\n",
-            entity.model->vao,
-            entity.model->vbo,
-            entity.model->ibo
-        );
 
         glBindVertexArray(entity.model->vao);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
-        printf("ENTITY: %s\n", entity.debug_name);
         log_if_err("There was an issue with attributes\n");
         
         Mat4 transformation_matrix = create_transformation_matrix(
@@ -324,48 +322,54 @@ void render_entities(Renderer *rh) {
         }
 	}
 
-    // shader_push(rh->circle_shader);
-    // for (int i=10; i<20; i++) {
-    //     Entity entity = rh->entities[i];
+    // glDisable(GL_DEPTH_TEST);
+    shader_push(rh->circle_shader);
+    for (int i=10; i<20; i++) {
+        Entity entity = rh->entities[i];
 
-    //     if (entity.active == 0) {
-    //         continue;
-    //     }
-    //     glBindVertexArray(entity.model->vao);
+        if (entity.active == 0) {
+            continue;
+        }
+        glBindVertexArray(entity.model->vao);
 
-    //     glEnableVertexAttribArray(0);
-    //     glEnableVertexAttribArray(1);
-    //     glEnableVertexAttribArray(2);
-    //     printf("ENTITY: %s\n", entity.debug_name);
-    //     log_if_err("There was an issue with attributes\n");
-    //     
-    //     Mat4 transformation_matrix = create_transformation_matrix(
-    //         entity.position,
-    //         entity.rotation_x,
-    //         entity.rotation_y,
-    //         entity.rotation_z,
-    //         entity.scale
-    //     );
-    //     shader_load_matrix(
-    //         rh->shader,
-    //         "transformation_matrix",
-    //         &transformation_matrix
-    //     );
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        printf("ENTITY: %s\n", entity.debug_name);
+        log_if_err("There was an issue with attributes\n");
+        
+        Mat4 transformation_matrix = create_transformation_matrix(
+            entity.position,
+            entity.rotation_x,
+            entity.rotation_y,
+            entity.rotation_z,
+            entity.scale
+        );
+        shader_load_matrix(
+            rh->circle_shader,
+            "transformation_matrix",
+            &transformation_matrix
+        );
+        shader_load_vec3(
+            rh->circle_shader,
+            "color",
+            &entity.color
+        );
 
-    //     if ( (entity.fill & 1) == 0) {
-    //         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //     }
-    //     else {
-    //         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //     }
+        if ( (entity.fill & 1) == 0) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
 
-    //     glActiveTexture(GL_TEXTURE0);
-    //     glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-    //     glDrawElements(
-    //         GL_TRIANGLES, entity.model->vertex_count,
-    //         GL_UNSIGNED_INT, 0
-    //     );
-	// }
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        glDrawElements(
+            GL_TRIANGLES, entity.model->vertex_count,
+            GL_UNSIGNED_INT, 0
+        );
+	}
 }
 
 
@@ -488,20 +492,22 @@ void render(Renderer *rh, Camera *camera) {
     );
     shader_push(rh->circle_shader);
     shader_load_matrix(
-        rh->shader,
+        rh->circle_shader,
         "view_matrix",
         &view_matrix
     );
+    log_if_err("Renderer found a problem with circle shader\n");
     shader_push(rh->shader);
     shader_load_matrix(
         rh->shader,
         "view_matrix",
         &view_matrix
     );
+    log_if_err("Renderer found a problem with shader\n");
 
-    log_if_err("Issue before loading light\n");
+    log_if_err("Renderer found an issue before loading light\n");
     shader_load_light(rh->shader, rh->light);
-    log_if_err("There was a problem loading lights");
+    log_if_err("Renderer found problem loading lights");
 
     render_entities(rh);
 

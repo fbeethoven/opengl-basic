@@ -293,3 +293,9 @@ void draw_quad_in_pixels(
     );
 }
 
+
+void camera_reset(Camera *camera) {
+    camera->pitch = 0.6;
+    camera->yaw = 0.0;
+}
+

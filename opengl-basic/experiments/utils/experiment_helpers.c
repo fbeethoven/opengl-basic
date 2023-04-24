@@ -271,25 +271,80 @@ void load_assets(
     intermediate_model_free(&dragon_data);
 
 
-    Vec3 *pos_obj = malloc(sizeof(Vec3));
-    Vec3 *pos_collider = malloc(sizeof(Vec3));
+    float a = 0.0;
+    float b = 1.0;
 
-    entity = &renderer->entities[10];
-    entity->model = &game_ctx->models[ModelType_Dragon];
-    entity->position = pos_obj;
-    *entity->position = newVec3(0.0, 1.0, 0.0);
-    entity->scale = 1.0;
-    entity->rotation_y = 0.5 * 3.1415;
-    entity->active = 1;
+    float vertices[] = {
+        -b, b, a,
+        -b, -b, a,
+        b, -b, a,
+        b, b, a,
 
-    entity = &renderer->entities[11];
-    entity->model = &game_ctx->models[ModelType_Suzanne];
-    entity->position = pos_collider;
-    *entity->position = newVec3(0.0, 6.0, 0.0);
-    entity->scale = 1.0;
-    entity->color = newVec3(0.0, 0.0, 1.0);
-    entity->active = 1;
+        a, b, -b,
+        a, -b, -b,
+        a, -b, b,
+        a, b, b,
 
+        b, a, -b,
+        -b, a, -b,
+        -b, a, b,
+        b, a, b
+    };
+
+    float uvs[] = {
+        0.0, 0.0,
+        0.0, 1.0,
+        1.0, 1.0,
+        1.0, 0.0,
+
+        0.0, 0.0,
+        0.0, 1.0,
+        1.0, 1.0,
+        1.0, 0.0,
+
+        0.0, 0.0,
+        0.0, 1.0,
+        1.0, 1.0,
+        1.0, 0.0
+
+    };
+
+    float color[] = {
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0
+    };
+
+    unsigned int indices[] = {
+        0, 1, 2,
+        2, 3, 0,
+
+        4, 5, 6,
+        6, 7, 4,
+
+        8, 9, 10,
+        10, 11, 8
+    };
+
+    BaseModel *sphere = &game_ctx->models[ModelType_SimpleSphere];
+    load_data_to_model(
+        sphere, vertices, indices, sizeof(vertices), sizeof(indices)
+    );
+    load_empty_texture_to_model(sphere, uvs, sizeof(uvs));
+    sphere->vertex_count = sizeof(indices)/sizeof(unsigned int);
+
+    new_circle_entity(game_ctx);
 
     // Suzanne collider:
     //  offset: 0 0 0;
@@ -309,7 +364,9 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
             char msg[50];
             sprintf(msg, "Entity %0.3f", game_ctx->current_time);
             strcpy(r_entity->entity->debug_name, msg);
-            int ran_model = (rand() % (ModelType_Count - 1)) + 1;
+            int ran_model = (
+                (rand() % (ModelType_Count - ResevedModels)) + ResevedModels
+            );
             r_entity->entity->model = &game_ctx->models[ran_model];
 
             float scalar;
@@ -359,7 +416,7 @@ void rand_init(GameContext *game_ctx) {
 void sync_entities(GameContext *game_ctx, Renderer *renderer) {
     Entity *entity;
     RandomEntity *rand_entity;
-    for (int i=0; i<10; i++) {
+    for (int i=0; i<20; i++) {
         entity = &renderer->entities[i];
         rand_entity = &game_ctx->random_entities[i];
         rand_entity->entity = entity;
@@ -386,6 +443,21 @@ void update_entities(GameContext *game_ctx) {
             r_entity->position.x = new_pos.x;
             r_entity->position.y = new_pos.y;
             r_entity->position.z = new_pos.z;
+        }
+    }
+}
+
+void new_circle_entity(GameContext *game_ctx) {
+    RandomEntity *entity;
+    for (int i=10; i<20; i++) {
+        entity = &game_ctx->random_entities[i];
+        if (*entity->active == 0) {
+            entity->entity->model = &game_ctx->models[ModelType_SimpleSphere];
+            entity->position = newVec3(0.0, 0.0, 0.0);
+            entity->entity->scale = 1.0;
+            entity->entity->color = newVec3(0.0, 0.0, 1.0);
+            *entity->active = 1;
+            return;
         }
     }
 }

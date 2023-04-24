@@ -27,6 +27,7 @@ int game_run() {
     //  [ ] mouse picker
     //  [X] debug random segfault: maybe in floor textures?
     //      - confirm it is in floor
+    //  [ ] sphere visualizer
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
@@ -43,7 +44,7 @@ int game_run() {
     distance_from_player = 5.0;
     random_experiment = 0;
 
-    entity_index = 11;
+    entity_index = 12;
     entity_category_index = 0;
     entity_categories[0] = "Entity";
     entity_categories[1] = "GUI Entity";
@@ -206,16 +207,16 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     ctx->previous_time = time;
 
     Entity *entity = get_entity_selected(renderer);
-    // if (entity->active != 0) {
-    //     float freq = 1.0;
-    //     float pulse = (float)time - (int)time;
-    //     pulse = sin(3.1415 * pulse * freq);
-    //     pulse *= pulse;
+    if (entity->active != 0) {
+        float freq = 1.0;
+        float pulse = (float)time - (int)time;
+        pulse = sin(3.1415 * pulse * freq);
+        pulse *= pulse;
 
-    //     entity->color = vec3_lerp(
-    //         newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
-    //     );
-    // }
+        entity->color = vec3_lerp(
+            newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
+        );
+    }
 
     if (random_experiment) {
         update_entities(game_ctx);
@@ -237,6 +238,9 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     if (toggle_button_press(ctx, GLFW_KEY_P, &pulse_p)) {
         entity->fill = 1 - entity->fill;
+    }
+    if(glfwGetKey(ctx->window, GLFW_KEY_X) == GLFW_PRESS) {
+        camera_reset(camera);
     }
 
     if (
@@ -272,9 +276,9 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
 
-    // camera_focus_movement(
-    //     ctx, camera, second_per_frame, distance_from_player
-    // );
+    camera_focus_movement(
+        ctx, camera, second_per_frame, distance_from_player
+    );
 
     float aspect_ratio = (float)ctx->width / (float)ctx->height;
     font_buffer_reset(renderer->font, aspect_ratio);
@@ -301,9 +305,14 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
 
-    player_focus_movement(
-        ctx, entity, camera, second_per_frame, distance_from_player
-    );
+    // player_focus_movement(
+    //     ctx, entity, camera, second_per_frame, distance_from_player
+    // );
+
+
+
+
+
     // float step = 0.25;
     // if (glfwGetKey(ctx->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
     //     if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
