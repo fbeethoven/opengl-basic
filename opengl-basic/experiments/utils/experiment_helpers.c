@@ -273,30 +273,30 @@ void load_assets(
 
     // Blendercube
 
-    //BaseModel *blendercube = &game_ctx->models[ModelType_Blendercube];
-    //IntermediateModel blendercube_data = { 0 };
-    //parse_obj_file("assets/models/BlenderCube.obj", &blendercube_data);
-    //load_data_to_model(
-        //blendercube, blendercube_data.vertices, blendercube_data.indices,
-        //blendercube_data.vertices_count * sizeof(float),
-        //blendercube_data.indices_count * sizeof(unsigned int)
-    //);
-    //load_texture_to_model(
-        //blendercube, "assets/textures/wood-floor.jpg", blendercube_data.uvs,
-        //blendercube_data.uvs_count * sizeof(float)
-    //);
-    //log_if_err("Issue before loading normals\n");
-    //glBindVertexArray(blendercube->vao);
-    //store_float_in_attributes(
-        //&blendercube->normal,
-        //2,
-        //3,
-        //blendercube_data.normals_count * sizeof(float),
-        //blendercube_data.normals
-    //);
-    //log_if_err("Issue after loading normals\n");
-    //blendercube->vertex_count = blendercube_data.indices_count;
-    //intermediate_model_free(&blendercube_data);
+    BaseModel *blendercube = &game_ctx->models[ModelType_Blendercube];
+    IntermediateModel blendercube_data = { 0 };
+    parse_obj_file("assets/models/BlenderCube.obj", &blendercube_data);
+    load_data_to_model(
+        blendercube, blendercube_data.vertices, blendercube_data.indices,
+        blendercube_data.vertices_count * sizeof(float),
+        blendercube_data.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        blendercube, "assets/textures/wood-floor.jpg", blendercube_data.uvs,
+        blendercube_data.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(blendercube->vao);
+    store_float_in_attributes(
+        &blendercube->normal,
+        2,
+        3,
+        blendercube_data.normals_count * sizeof(float),
+        blendercube_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    blendercube->vertex_count = blendercube_data.indices_count;
+    intermediate_model_free(&blendercube_data);
 
 
     // Sphere
