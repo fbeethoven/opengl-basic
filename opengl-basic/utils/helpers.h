@@ -46,6 +46,12 @@ void draw_quad_in_pixels(
 int control_is_pressed(GraphicsContext *ctx);
 int shift_is_pressed(GraphicsContext *ctx);
 void camera_reset(Camera *camera);
+Vec3 mouse_to_plane(
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
+    Vec3 normal, float distance
+);
+Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance);
+Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance);
 
 
 #endif  // HELPERS_H

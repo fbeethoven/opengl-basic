@@ -90,6 +90,8 @@ Mat4 mat4_add(Mat4 *A, Mat4 *B);
 Mat4 mat4_mult(Mat4 *A, Mat4 *B);
 void mat4_scale(Vec3 *vec, Mat4 *source);
 Mat4 mat4_translate(Vec3 *vec, Mat4 *A);
+Mat4 mat4_transpose(Mat4 *A);
+Mat4 mat4_inverse(Mat4 *in);
 Vec4 vec4_multiply(Mat4 *A, Vec4 *vec);
 
 Mat4 mat4_rotate_x(float angle, Mat4 *A);

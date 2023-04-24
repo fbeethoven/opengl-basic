@@ -24,10 +24,11 @@ int game_run() {
     //  [ ] camera movement using mouse
     //  [ ] gui sliders
     //  [ ] quad sprite facing the camera
-    //  [ ] mouse picker
+    //  [X] mouse picker
+    //      [ ] Fix issue with camera rotations
     //  [X] debug random segfault: maybe in floor textures?
     //      - confirm it is in floor
-    //  [ ] sphere visualizer
+    //  [X] sphere visualizer
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
@@ -196,6 +197,16 @@ void player_focus_movement(
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     float prev_width = ctx->width;
     float prev_height = ctx->height;
+    glfwGetCursorPos(
+        ctx->window, &ctx->mouse_position[0], &ctx->mouse_position[1]
+    );
+
+    RandomEntity *r_entity = &game_ctx->random_entities[10];
+    r_entity->position = mouse_to_plane(
+        ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.5
+    );
+
+
     
     glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
     if (prev_width != ctx->width || prev_height != ctx->height) {
@@ -304,14 +315,9 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         entity->color = newVec3(0.0, 0.0, 0.0);
     }
 
-
     // player_focus_movement(
     //     ctx, entity, camera, second_per_frame, distance_from_player
     // );
-
-
-
-
 
     // float step = 0.25;
     // if (glfwGetKey(ctx->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {

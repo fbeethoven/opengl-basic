@@ -322,7 +322,6 @@ void render_entities(Renderer *rh) {
         }
 	}
 
-    // glDisable(GL_DEPTH_TEST);
     shader_push(rh->circle_shader);
     for (int i=10; i<20; i++) {
         Entity entity = rh->entities[i];

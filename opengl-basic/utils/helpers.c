@@ -158,6 +158,15 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
 
     camera->centre.x += movement * sin(player_rotation);
     camera->centre.z += movement * cos(player_rotation);
+    printf(
+        "CAMERA CENTRE: %f %f %f\n", 
+        camera->centre.x, camera->centre.y, camera->centre.z
+    );
+    printf(
+        "MOVEMENT: %f | ROTATION: %f %f\n",
+        movement, sin(player_rotation), cos(player_rotation)
+    );
+        
     params->player_rotation = player_rotation;
 
     camera_movement(ctx, params);
@@ -297,5 +306,55 @@ void draw_quad_in_pixels(
 void camera_reset(Camera *camera) {
     camera->pitch = 0.6;
     camera->yaw = 0.0;
+}
+
+Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
+    Vec3 dir = newVec3(
+        toward.x - origin.x, toward.y - origin.y, toward.z - origin.z
+    );
+    return ray_to_plane(origin, dir, normal, distance);
+}
+
+Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance) {
+    Vec3 normalize_dir = dir;
+    vec3_normalize(&normalize_dir);
+
+    float t = vec3_dot(&normalize_dir, &normal);
+    if (t == 0) { 
+        return newVec3(0.0, 0.0, 0.0); 
+    }
+    t = (distance - vec3_dot(&origin, &normal)) / t;
+
+    normalize_dir.x *= t;
+    normalize_dir.y *= t;
+    normalize_dir.z *= t;
+    return vec3_add(&origin, &normalize_dir);
+}
+
+Vec3 mouse_to_plane(
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
+    Vec3 normal, float distance
+) {
+    float x = 2 * (float)ctx->mouse_position[0]/ctx->width - 1.0;
+    float y = 1.0 - 2 * (float)ctx->mouse_position[1]/ctx->height;
+
+    Vec4 rel_pos = newVec4(x, y, -1.0, 1.0);
+
+    Mat4 projection_inverse = mat4_inverse(&renderer->projection_matrix);
+
+    Mat4 view_matrix = mat4_look_at(
+        camera->position, 
+        camera->centre,
+        newVec3(0.0, 1.0, 0.0)
+    );
+    view_matrix = mat4_inverse(&view_matrix);
+
+    rel_pos = vec4_multiply(&projection_inverse, &rel_pos);
+    rel_pos.z = -1.0;
+    rel_pos.w = 1.0;
+    rel_pos = vec4_multiply(&view_matrix, &rel_pos);
+
+    Vec3 dir = newVec3(rel_pos.x, rel_pos.y, rel_pos.z);
+    return ray_to_plane(camera->position, dir, normal, distance);
 }
 
