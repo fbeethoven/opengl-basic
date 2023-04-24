@@ -15,7 +15,9 @@ enum ModelType {
     ModelType_Cube,
     ModelType_Suzanne,
     ModelType_Dragon,
-    ModelType_Count
+    ModelType_Count,
+    //ModelType_Blendercube,
+    ModelType_sphere
 };
 
 typedef struct RandomEntity {

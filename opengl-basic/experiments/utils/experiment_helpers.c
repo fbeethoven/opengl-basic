@@ -270,6 +270,67 @@ void load_assets(
     dragon->vertex_count = dragon_data.indices_count;
     intermediate_model_free(&dragon_data);
 
+
+    // Blendercube
+
+    //BaseModel *blendercube = &game_ctx->models[ModelType_Blendercube];
+    //IntermediateModel blendercube_data = { 0 };
+    //parse_obj_file("assets/models/BlenderCube.obj", &blendercube_data);
+    //load_data_to_model(
+        //blendercube, blendercube_data.vertices, blendercube_data.indices,
+        //blendercube_data.vertices_count * sizeof(float),
+        //blendercube_data.indices_count * sizeof(unsigned int)
+    //);
+    //load_texture_to_model(
+        //blendercube, "assets/textures/wood-floor.jpg", blendercube_data.uvs,
+        //blendercube_data.uvs_count * sizeof(float)
+    //);
+    //log_if_err("Issue before loading normals\n");
+    //glBindVertexArray(blendercube->vao);
+    //store_float_in_attributes(
+        //&blendercube->normal,
+        //2,
+        //3,
+        //blendercube_data.normals_count * sizeof(float),
+        //blendercube_data.normals
+    //);
+    //log_if_err("Issue after loading normals\n");
+    //blendercube->vertex_count = blendercube_data.indices_count;
+    //intermediate_model_free(&blendercube_data);
+
+
+    // Sphere
+
+    BaseModel *sphere = &game_ctx->models[ModelType_sphere];
+    IntermediateModel sphere_data = { 0 };
+    parse_obj_file("assets/models/sphere.obj", &sphere_data);
+    load_data_to_model(
+        sphere, sphere_data.vertices, sphere_data.indices,
+        sphere_data.vertices_count * sizeof(float),
+        sphere_data.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        sphere, "assets/textures/wood-floor.jpg", sphere_data.uvs,
+        sphere_data.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(sphere->vao);
+    store_float_in_attributes(
+        &sphere->normal,
+        2,
+        3,
+        sphere_data.normals_count * sizeof(float),
+        sphere_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    sphere->vertex_count = sphere_data.indices_count;
+    intermediate_model_free(&sphere_data);
+
+    entity = &renderer->entities[1];
+    entity->model = &game_ctx->models[ModelType_sphere];
+    entity->active = 1;
+    entity->scale = 1.0;
+    entity->position = &game_ctx->world_center;
 }
 
 
@@ -345,7 +406,7 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
 void update_entities(GameContext *game_ctx) {
     RandomEntity *r_entity;
     double dt;
-    for (int i=1; i<10; i++) {
+    for (int i=2; i<10; i++) {
         r_entity = &game_ctx->random_entities[i];
         if (r_entity->active) {
             if (game_ctx->current_time >= r_entity->end_time) {
