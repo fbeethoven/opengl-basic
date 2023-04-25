@@ -66,7 +66,7 @@ int game_run() {
     camera.position = newVec3(0.0, 60.0, -145.0);
     camera.centre = newVec3(0.0, 55.0, -140.0);
     camera.pitch = 2.2;
-    camera.yaw = 1.6;
+    camera.yaw = 1.57;
 
     Light light = {0};
     light.position = newVec3(0.0, -1.0, 0.0);

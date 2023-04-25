@@ -317,7 +317,7 @@ void draw_quad_in_pixels(
 
 void camera_reset(Camera *camera) {
     camera->pitch = 2.2;
-    camera->yaw = 1.5;
+    camera->yaw = 1.57;
 }
 
 Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
