@@ -29,6 +29,9 @@ int game_run() {
     //  [X] debug random segfault: maybe in floor textures?
     //      - confirm it is in floor
     //  [X] sphere visualizer
+    //  [ ] OBJ Parser Update:
+    //      [ ] normalize normal vectors
+    //      [ ] handle EOF
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
