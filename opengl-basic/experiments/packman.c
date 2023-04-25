@@ -13,11 +13,11 @@ int random_experiment;
 int pulse_r;
 
 int game_run() {
-    // TODO: 
+    // TODO:
     //  [X] add color to textures (gamma correction)
     //  [ ] gui buttons
-    //  [ ] collision: 
-    //      [ ] AABB 
+    //  [ ] collision:
+    //      [ ] AABB
     //      [ ] SAT
     //      [ ] Spherical
     //  [ ] rotate entity towards target point
@@ -65,8 +65,8 @@ int game_run() {
 
     camera.position = newVec3(0.0, 60.0, -145.0);
     camera.centre = newVec3(0.0, 55.0, -140.0);
-    camera.pitch = 0.6;
-    camera.yaw = 0.0;
+    camera.pitch = 2.2;
+    camera.yaw = 1.6;
 
     Light light = {0};
     light.position = newVec3(0.0, -1.0, 0.0);
@@ -207,7 +207,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     );
 
 
-    
+
     glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
     if (prev_width != ctx->width || prev_height != ctx->height) {
         reload_projection_matrix(ctx, renderer);
@@ -237,7 +237,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             add_random_entity(ctx, game_ctx);
         }
     }
-    
+
     entity = get_entity_selected(renderer);
 
     if(
@@ -297,7 +297,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         handle_debug_info(ctx, renderer, camera, second_per_frame);
     }
 
-    
+
     entity = get_entity_selected(renderer);
 
     Vec3 dragon_center = newVec3(0.0, 6.0, 0.0);
@@ -350,4 +350,3 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // printf("scale: %f\n", entity->scale);
 
 }
-

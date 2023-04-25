@@ -112,7 +112,7 @@ void gui_quad_free(Entity *entity) {
 
 void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
     float player_rotation = params->player_rotation;
-    float speed = params->camera_speed;
+    float speed = params->camera_speed * params->dt * 50;
     float rot_speed = params->speed;
     float movement = 0.0;
 
@@ -130,47 +130,59 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
     // );
 
     Camera *camera = params->camera;
+    Vec3 foward = newVec3(
+        camera->centre.x - camera->position.x,
+        camera->centre.y - camera->position.y,
+        camera->centre.z - camera->position.z
+    );
+    vec3_normalize(&foward);
+    Vec3 right = vec3_cross(foward, newVec3(0.0, 1.0, 0.0));
+    vec3_normalize(&right);
 
     if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
-        player_rotation += 0.5 * rot_speed;
+        camera->position.x -= speed * right.x;
+        camera->position.z -= speed * right.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
-        player_rotation -= 0.5 * rot_speed;
+        camera->position.x += speed * right.x;
+        camera->position.z += speed * right.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
-        movement += speed;
+        camera->position.x += speed * foward.x;
+        camera->position.z += speed * foward.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
-        movement -= speed;
+        camera->position.x -= speed * foward.x;
+        camera->position.z -= speed * foward.z;
     }
     if (shift_press){
         if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            Vec3 dir = newVec3(0.0, -params->camera_speed, 0.0);
-            camera->position = vec3_add(&camera->position, &dir);
-            camera->centre = vec3_add(&camera->centre, &dir);
+            camera->position.y -= speed;
         }
     }
     else if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            Vec3 dir = newVec3(0.0, params->camera_speed, 0.0);
-            camera->position = vec3_add(&camera->position, &dir);
-            camera->centre = vec3_add(&camera->centre, &dir);
+            camera->position.y += speed;
     }
 
-    camera->centre.x += movement * sin(player_rotation);
-    camera->centre.z += movement * cos(player_rotation);
-    printf(
-        "CAMERA CENTRE: %f %f %f\n", 
-        camera->centre.x, camera->centre.y, camera->centre.z
-    );
-    printf(
-        "MOVEMENT: %f | ROTATION: %f %f\n",
-        movement, sin(player_rotation), cos(player_rotation)
-    );
-        
-    params->player_rotation = player_rotation;
+    camera->centre.x = camera->position.x + sin(camera->pitch) * cos(camera->yaw);
+    camera->centre.y = camera->position.y + cos(camera->pitch);
+    camera->centre.z = camera->position.z + sin(camera->pitch) * sin(camera->yaw);
+
+    // camera->centre.x += movement * sin(player_rotation);
+    // camera->centre.z += movement * cos(player_rotation);
+    // printf(
+    //     "CAMERA CENTRE: %f %f %f\n", 
+    //     camera->centre.x, camera->centre.y, camera->centre.z
+    // );
+    // printf(
+    //     "MOVEMENT: %f | ROTATION: %f %f\n",
+    //     movement, sin(player_rotation), cos(player_rotation)
+    // );
+    //     
+    // params->player_rotation = player_rotation;
 
     camera_movement(ctx, params);
-    camera_follow_player(&camera->centre, player_rotation, params);
+    // camera_follow_player(&camera->centre, player_rotation, params);
 }
 
 
@@ -304,8 +316,8 @@ void draw_quad_in_pixels(
 
 
 void camera_reset(Camera *camera) {
-    camera->pitch = 0.6;
-    camera->yaw = 0.0;
+    camera->pitch = 2.2;
+    camera->yaw = 1.5;
 }
 
 Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
@@ -351,7 +363,7 @@ Vec3 mouse_to_plane(
 
     rel_pos = vec4_multiply(&projection_inverse, &rel_pos);
     rel_pos.z = -1.0;
-    rel_pos.w = 1.0;
+    rel_pos.w = 0.0;
     rel_pos = vec4_multiply(&view_matrix, &rel_pos);
 
     Vec3 dir = newVec3(rel_pos.x, rel_pos.y, rel_pos.z);

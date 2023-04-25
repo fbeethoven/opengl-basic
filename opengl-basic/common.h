@@ -71,6 +71,7 @@ Vec3 vec3_add(Vec3 *a, Vec3 *b);
 float vec3_dot(Vec3 *a, Vec3 *b);
 float vec3_distance(Vec3 *a, Vec3 *b);
 void vec3_normalize(Vec3 *vec);
+Vec3 vec3_cross(Vec3 v0, Vec3 v1);
 int vec3_is_equal(Vec3 a, Vec3 b);
 int vec4_is_equal(Vec4 a, Vec4 b);
 
