@@ -117,18 +117,8 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
     float movement = 0.0;
 
     int shift_press = shift_is_pressed(ctx);
-    double cursor_x, cursor_y;
-    glfwGetCursorPos(ctx->window, &cursor_x, &cursor_y);
 
-    // TODO: use mouse to rotate after adding quaternions
-    // double dx = cursor_x - ctx->mouse_position[0];
-    // double dy = cursor_y - ctx->mouse_position[1];
-    // ctx->mouse_position[0] = cursor_x;
-    // ctx->mouse_position[1] = cursor_y;
-    // glfwSetCursorPos(
-    //     ctx->window, 0.5*(double)ctx->width, 0.5*(double)ctx->height
-    // );
-
+    
     Camera *camera = params->camera;
     Vec3 foward = newVec3(
         camera->centre.x - camera->position.x,
@@ -164,25 +154,18 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
             camera->position.y += speed;
     }
 
-    camera->centre.x = camera->position.x + sin(camera->pitch) * cos(camera->yaw);
+    camera->yaw += 0.001 * (float)ctx->dmouse[0];
+    camera->pitch += 0.001 * (float)ctx->dmouse[1];
+    ctx->dmouse[0] = 0.0;
+    ctx->dmouse[1] = 0.0;
+
+    camera->centre.x = (
+        camera->position.x + sin(camera->pitch) * cos(camera->yaw)
+    );
     camera->centre.y = camera->position.y + cos(camera->pitch);
-    camera->centre.z = camera->position.z + sin(camera->pitch) * sin(camera->yaw);
-
-    // camera->centre.x += movement * sin(player_rotation);
-    // camera->centre.z += movement * cos(player_rotation);
-    // printf(
-    //     "CAMERA CENTRE: %f %f %f\n", 
-    //     camera->centre.x, camera->centre.y, camera->centre.z
-    // );
-    // printf(
-    //     "MOVEMENT: %f | ROTATION: %f %f\n",
-    //     movement, sin(player_rotation), cos(player_rotation)
-    // );
-    //     
-    // params->player_rotation = player_rotation;
-
-    camera_movement(ctx, params);
-    // camera_follow_player(&camera->centre, player_rotation, params);
+    camera->centre.z = (
+        camera->position.z + sin(camera->pitch) * sin(camera->yaw)
+    );
 }
 
 

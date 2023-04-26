@@ -16,13 +16,13 @@ int game_run() {
     // TODO:
     //  [X] add color to textures (gamma correction)
     //  [ ] gui buttons
+    //  [ ] gui sliders
     //  [ ] collision:
     //      [ ] AABB
     //      [ ] SAT
     //      [ ] Spherical
     //  [ ] rotate entity towards target point
-    //  [ ] camera movement using mouse
-    //  [ ] gui sliders
+    //  [X] camera movement using mouse
     //  [ ] quad sprite facing the camera
     //  [X] mouse picker
     //      [ ] Fix issue with camera rotations
@@ -59,6 +59,8 @@ int game_run() {
     if(graphics_init(&ctx) != 0) {
         return -1;
     }
+    glfwSetInputMode(ctx.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 
     Renderer renderer = {0};
     init_render_handler(&ctx, &renderer);
@@ -197,24 +199,27 @@ void player_focus_movement(
 }
 
 
-void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
+void update_graphic_state(GraphicsContext *ctx, Renderer *renderer) {
     float prev_width = ctx->width;
     float prev_height = ctx->height;
-    glfwGetCursorPos(
-        ctx->window, &ctx->mouse_position[0], &ctx->mouse_position[1]
-    );
-
-    RandomEntity *r_entity = &game_ctx->random_entities[10];
-    r_entity->position = mouse_to_plane(
-        ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.5
-    );
-
-
-
     glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
     if (prev_width != ctx->width || prev_height != ctx->height) {
         reload_projection_matrix(ctx, renderer);
     }
+
+    double prev_x = ctx->mouse_position[0];
+    double prev_y = ctx->mouse_position[1];
+    glfwGetCursorPos(
+        ctx->window, &ctx->mouse_position[0], &ctx->mouse_position[1]
+    );
+    ctx->dmouse[0] = ctx->mouse_position[0] - prev_x;
+    ctx->dmouse[1] = ctx->mouse_position[1] - prev_y;
+}
+
+
+void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
+
+    update_graphic_state(ctx, renderer);
 
     double time = glfwGetTime();
     double second_per_frame = time - ctx->previous_time;
@@ -299,57 +304,4 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     if (show_debug_info) {
         handle_debug_info(ctx, renderer, camera, second_per_frame);
     }
-
-
-    entity = get_entity_selected(renderer);
-
-    Vec3 dragon_center = newVec3(0.0, 6.0, 0.0);
-    float dragon_radius = 5.0;
-
-    Vec3 player_center = *entity->position;
-    float player_radius = 1.0;
-
-
-    float distance = vec3_distance(&dragon_center, &player_center);
-    if (distance < dragon_radius + player_radius) {
-        entity->color = newVec3(1.0, 0.0, 0.0);
-    }
-    else {
-        entity->color = newVec3(0.0, 0.0, 0.0);
-    }
-
-    // player_focus_movement(
-    //     ctx, entity, camera, second_per_frame, distance_from_player
-    // );
-
-    // float step = 0.25;
-    // if (glfwGetKey(ctx->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
-    //         entity->scale += step;
-    //     }
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-    //         entity->scale -= step;
-    //     }
-    // }
-    // else {
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS) {
-    //         entity->position->z += step;
-    //     }
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-    //         entity->position->z -= step;
-    //     }
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-    //         entity->position->x += step;
-    //     }
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-    //         entity->position->x -= step;
-    //     }
-    // }
-
-    // printf(
-    //     "position: %f %f %f\n",
-    //     entity->position->x, entity->position->y, entity->position->z
-    // );
-    // printf("scale: %f\n", entity->scale);
-
 }
