@@ -9,6 +9,7 @@ int pulse_n;
 int pulse_p;
 int pulse_e;
 float distance_from_player;
+float player_is_grounded;
 int show_debug_info;
 
 int entity_index;

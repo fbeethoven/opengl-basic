@@ -77,7 +77,9 @@ void load_assets(
     Entity *entity = &renderer->font_entities[0];
     strcpy(entity->debug_name, "Default Font");
     entity->model = (BaseModel *) &font->vao;
-    entity->position = &game_ctx->world_center;
+    Vec3 *font_position = malloc(sizeof(Vec3));
+    entity->position = font_position;
+    *entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = 1;
 
@@ -344,8 +346,6 @@ void load_assets(
     load_empty_texture_to_model(sphere, uvs, sizeof(uvs));
     sphere->vertex_count = sizeof(indices)/sizeof(unsigned int);
 
-    new_circle_entity(game_ctx);
-
     // Suzanne collider:
     //  offset: 0 0 0;
     //  radius: 1;
@@ -356,7 +356,25 @@ void load_assets(
 }
 
 
-void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
+RandomEntity* get_random_entity_slot(
+    GraphicsContext *ctx, GameContext *game_ctx, Camera *camera
+) {
+    RandomEntity *r_entity;
+    for (int i=0; i<10; i++) {
+        r_entity = &game_ctx->random_entities[i];
+        if (*r_entity->active == 0) {
+            char msg[50];
+            sprintf(msg, "Entity %0.3f", game_ctx->current_time);
+            strcpy(r_entity->entity->debug_name, msg);
+            return r_entity;
+        }
+    }
+    return 0;
+}
+
+RandomEntity* add_random_entity(
+    GraphicsContext *ctx, GameContext *game_ctx, Camera *camera
+) {
     RandomEntity *r_entity;
     for (int i=0; i<10; i++) {
         r_entity = &game_ctx->random_entities[i];
@@ -381,7 +399,7 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
 
             double t = game_ctx->current_time;
             r_entity->start_time = t;
-            r_entity->end_time = t + (double)(rand() % 9) + 1.0;
+            r_entity->end_time = t + (double)(rand() % 9) + 5.0;
             Vec2 ran_pos = get_random_position(ctx, game_ctx);
             Vec2 dest = get_random_position(ctx, game_ctx);
             
@@ -393,13 +411,17 @@ void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx) {
             r_entity->start.y = scalar;
             r_entity->start.z = ran_pos.y;
 
-            r_entity->dest.x = dest.x;
+            r_entity->dest.x = camera->position.x;
             r_entity->dest.y = scalar;
-            r_entity->dest.z = dest.y;
+            r_entity->dest.z = camera->position.z;
+            // r_entity->dest.x = dest.x;
+            // r_entity->dest.y = scalar;
+            // r_entity->dest.z = dest.y;
             *r_entity->active = 1;
-            return;
+            return r_entity;
         }
     }
+    return 0;
 }
 
 
@@ -427,22 +449,39 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
     rand_init(game_ctx);
 }
 
-void update_entities(GameContext *game_ctx) {
+void update_entities(GameContext *game_ctx, Camera *camera) {
     RandomEntity *r_entity;
     double dt;
-    for (int i=1; i<10; i++) {
+    for (int i=2; i<10; i++) {
         r_entity = &game_ctx->random_entities[i];
         if (r_entity->active) {
             if (game_ctx->current_time >= r_entity->end_time) {
                 *r_entity->active = 0;
+                game_ctx->points++;
+                printf("ENTITY: %s DIED\n", r_entity->entity->debug_name);
+                printf("ENTITY: %d DIED\n", i);
+                exit(0);
                 continue;
             }
-            dt = game_ctx->current_time - r_entity->start_time;
-            float t = dt / (r_entity->end_time - r_entity->start_time);
-            Vec3 new_pos = vec3_lerp(r_entity->start, r_entity->dest, t);
-            r_entity->position.x = new_pos.x;
-            r_entity->position.y = new_pos.y;
-            r_entity->position.z = new_pos.z;
+            Vec3 dir = newVec3(
+                camera->position.x - r_entity->position.x,
+                0.0,
+                camera->position.z - r_entity->position.z
+            );
+            vec3_normalize(&dir);
+            r_entity->position.x += dir.x;
+            r_entity->position.x += dir.z;
+
+            float dis = vec3_distance(&r_entity->position, &camera->position);
+            if (dis < 2.0) {
+                game_ctx->game_over = 1;
+                sprintf(
+                    game_ctx->msg,
+                    "Killed by %s", r_entity->entity->debug_name
+                );
+                // strcpy(r_entity->entity->debug_name, msg);
+
+            }
         }
     }
 }
@@ -455,7 +494,7 @@ void new_circle_entity(GameContext *game_ctx) {
             entity->entity->model = &game_ctx->models[ModelType_SimpleSphere];
             entity->position = newVec3(0.0, 0.0, 0.0);
             entity->entity->scale = 1.0;
-            entity->entity->color = newVec3(0.0, 0.0, 1.0);
+            entity->entity->color = newVec3(1.0, 1.0, 0.0);
             *entity->active = 1;
             return;
         }

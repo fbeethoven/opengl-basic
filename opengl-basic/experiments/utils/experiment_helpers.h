@@ -29,6 +29,7 @@ typedef struct RandomEntity {
     Vec3 dest;
     double end_time;
     double start_time;
+    int is_grounded;
 } RandomEntity;
 
 typedef struct GameContext {
@@ -40,6 +41,9 @@ typedef struct GameContext {
     RandomEntity random_entities[20];
     int position_len;
     Vec3 world_center;
+    int game_over;
+    int points;
+    char msg[100];
 } GameContext;
 
 
@@ -50,9 +54,11 @@ Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx);
 void load_assets(
     GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font
 );
-void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx);
+RandomEntity* add_random_entity(
+    GraphicsContext *ctx, GameContext *game_ctx, Camera *camera
+);
 void sync_entities(GameContext *game_ctx, Renderer *renderer);
-void update_entities(GameContext *game_ctx);
+void update_entities(GameContext *game_ctx, Camera *camera);
 void new_circle_entity(GameContext *game_ctx);
 
 

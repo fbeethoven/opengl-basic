@@ -66,10 +66,10 @@ void gui_quad_in_pos(
 
 
     Vec2 new_size = newVec2(
-        (2 * size.x/(float)ctx->width) - 1.0, 
-        1.0 - (2 * size.y/(float)ctx->height)
+        2 * size.x/(float)ctx->width,
+        2 * size.y/(float)ctx->height
     );
-    draw_quad(&quad_mesh, newVec3(0, 0, 0.0), color, new_size);
+    draw_quad(&quad_mesh, newVec3(0.0, 0.0, 0.0), color, new_size);
     BaseModel *quad_model = (BaseModel *)malloc(sizeof(BaseModel));
     load_data_to_model(
         quad_model, (float *)quad_mesh.vertices, quad_mesh.indices,
@@ -111,12 +111,10 @@ void gui_quad_free(Entity *entity) {
 
 
 void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
-    float player_rotation = params->player_rotation;
+    float player_is_grounded = params->player_is_grounded;
     float speed = params->camera_speed * params->dt * 50;
-    float rot_speed = params->speed;
-    float movement = 0.0;
+    float player_momentum = params->player_rotation;
 
-    int shift_press = shift_is_pressed(ctx);
 
     
     Camera *camera = params->camera;
@@ -145,19 +143,40 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
         camera->position.x -= speed * foward.x;
         camera->position.z -= speed * foward.z;
     }
-    if (shift_press){
-        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            camera->position.y -= speed;
-        }
-    }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            camera->position.y += speed;
+
+    // int shift_press = shift_is_pressed(ctx);
+    // if (shift_press){
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    //         camera->position.y -= speed;
+    //     }
+    // }
+    if (
+        player_is_grounded &&
+        glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS
+    ) {
+            player_momentum = -0.4;
+            params->player_is_grounded = 0;
     }
 
     camera->yaw += 0.001 * (float)ctx->dmouse[0];
     camera->pitch += 0.001 * (float)ctx->dmouse[1];
     ctx->dmouse[0] = 0.0;
     ctx->dmouse[1] = 0.0;
+
+    float gravity = 1.0;
+    if (!player_is_grounded) {
+        player_momentum += gravity * params->dt;
+        if (player_momentum > 3) {
+            player_momentum = 3;
+        }
+        camera->position.y -= player_momentum;
+        if (camera->position.y <= 2.0) {
+            camera->position.y = 2.0;
+            params->player_is_grounded = 1;
+            player_momentum = 0.0;
+        }
+    }
+    params->player_rotation = player_momentum;
 
     camera->centre.x = (
         camera->position.x + sin(camera->pitch) * cos(camera->yaw)

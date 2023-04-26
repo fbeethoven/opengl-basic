@@ -11,6 +11,7 @@
 float player_rotation;
 int random_experiment;
 int pulse_r;
+int stage;
 
 int game_run() {
     // TODO:
@@ -21,6 +22,7 @@ int game_run() {
     //      [ ] AABB
     //      [ ] SAT
     //      [ ] Spherical
+    //  [ ] add gravity
     //  [ ] rotate entity towards target point
     //  [X] camera movement using mouse
     //  [ ] quad sprite facing the camera
@@ -39,12 +41,14 @@ int game_run() {
 
     Font font = {0};
 
-    speed = 0.5;
+    speed = 1.0;
+    player_is_grounded = 0;
     show_debug_info = 0;
     pulse_n = 0;
     pulse_e = 0;
     pulse_p = 0;
     pulse_r = 0;
+    stage = -1;
     distance_from_player = 5.0;
     random_experiment = 0;
 
@@ -68,8 +72,8 @@ int game_run() {
 
     Camera camera = {0};
 
-    camera.position = newVec3(0.0, 60.0, -145.0);
-    camera.centre = newVec3(0.0, 55.0, -140.0);
+    camera.position = newVec3(0.0, 60.0, 0.0);
+    camera.centre = newVec3(0.0, 55.0, 0.0);
     camera.pitch = 2.2;
     camera.yaw = 1.57;
 
@@ -82,12 +86,11 @@ int game_run() {
     load_assets(&ctx, &renderer, game_ctx, &font);
 
 
-    Entity *entity = &renderer.gui_entities[1];
-    gui_quad_in_pos(
-        &ctx,  entity, newVec2(ctx.width*0.5, 5.0),
-        newVec2(5.0, 5.0),
-        newVec3(1.0, 0.0, 0.0)
-    );
+    // Entity *entity = &renderer.gui_entities[1];
+    // gui_quad_in_pos(
+    //     &ctx,  entity, newVec2(0.5*ctx.width, 0.5*ctx.height),
+    //     newVec2(100.0, 250.0), newVec3(1.0, 1.0, 1.0)
+    // );
 
 
     while (!glfwWindowShouldClose(ctx.window)) {
@@ -162,14 +165,16 @@ void camera_focus_movement(
 ) {
     CameraMovementParams camera_params = {0};
     camera_params.camera = camera;
-    camera_params.speed = 0.05;
-    camera_params.camera_speed = 1.0;
+    camera_params.speed = 0.0;
+    camera_params.camera_speed = speed;
     camera_params.distance_from_player = dist_from_p;
     camera_params.dt = spf;
     camera_params.player_rotation = player_rotation;
+    camera_params.player_is_grounded = player_is_grounded;
 
     free_camera_movement(ctx, &camera_params);
     player_rotation = camera_params.player_rotation;
+    player_is_grounded = camera_params.player_is_grounded;
 
 }
 
@@ -224,25 +229,35 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     double time = glfwGetTime();
     double second_per_frame = time - ctx->previous_time;
     ctx->previous_time = time;
+    game_ctx->current_time = time;
 
     Entity *entity = get_entity_selected(renderer);
-    if (entity->active != 0) {
-        float freq = 1.0;
-        float pulse = (float)time - (int)time;
-        pulse = sin(3.1415 * pulse * freq);
-        pulse *= pulse;
-
-        entity->color = vec3_lerp(
-            newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
-        );
+    if (time > 5.0 && stage < 0) {
+        for (int i=1; i<10; i++) {
+            entity = &renderer->entities[i];
+            entity->active = 0;
+        }
+        random_experiment = 1;
+        stage = 0;
     }
+    // if (entity->active != 0) {
+    //     float freq = 1.0;
+    //     float pulse = (float)time - (int)time;
+    //     pulse = sin(3.1415 * pulse * freq);
+    //     pulse *= pulse;
+
+    //     entity->color = vec3_lerp(
+    //         newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
+    //     );
+    // }
+
+    printf("RANDOM EXPERIMENT: %d\n", random_experiment);
 
     if (random_experiment) {
-        update_entities(game_ctx);
-        int new_rand = get_new_random(game_ctx);
-        if (new_rand) {
-            add_random_entity(ctx, game_ctx);
-            add_random_entity(ctx, game_ctx);
+        update_entities(game_ctx, camera);
+        if (time - game_ctx->prev_rand_time > 3.0) {
+            game_ctx->prev_rand_time = time;
+            add_random_entity(ctx, game_ctx, camera);
         }
     }
 
@@ -299,9 +314,69 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         ctx, camera, second_per_frame, distance_from_player
     );
 
+
     float aspect_ratio = (float)ctx->width / (float)ctx->height;
     font_buffer_reset(renderer->font, aspect_ratio);
-    if (show_debug_info) {
-        handle_debug_info(ctx, renderer, camera, second_per_frame);
+    char msg[500];
+    entity = &renderer->font_entities[0];
+    int timer = 3 - (int)time;
+    if (timer > 0) {
+        entity->scale = 5.0;
+        *entity->position = newVec3(5.0, -4.5, 0.0);
+        sprintf(msg, "%d", timer);
+        font_buffer_push(renderer->font, msg);
     }
+    else if (timer >= -1) {
+        entity->scale = 5.0;
+        *entity->position = newVec3(4.95, -4.5, 0.0);
+        font_buffer_push_color(
+            renderer->font, "GO!", newVec3(1.0, 1.0, 0.0)
+        );
+    }
+    else if (game_ctx->game_over) {
+        entity->scale = 5.0;
+        *entity->position = newVec3(4.5, -4.5, 0.0);
+        font_buffer_push_color(
+            renderer->font, "GAME OVER", newVec3(1.0, 0.0, 0.0)
+        );
+        font_buffer_push_color(
+            renderer->font, game_ctx->msg, newVec3(1.0, 0.0, 0.0)
+        );
+    }
+    else {
+        *entity->position = newVec3(0.0, 0.0, 0.0);
+        entity->scale = 1.0;
+
+        sprintf(msg, "TIME: %.3f", time);
+        font_buffer_push(renderer->font, msg);
+        sprintf(
+            msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
+        );
+        font_buffer_push(renderer->font, msg);
+        sprintf(msg, "POINTS: %d", game_ctx->points);
+        font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+    }
+
+    if (glfwGetKey(ctx->window, GLFW_KEY_H) == GLFW_PRESS) {
+        entity->position->x -= 0.1;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_L) == GLFW_PRESS) {
+        entity->position->x += 0.1;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_J) == GLFW_PRESS) {
+        entity->position->y -= 0.1;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_K) == GLFW_PRESS) {
+        entity->position->y += 0.1;
+    }
+    printf("TIME: %f", time);
+    printf("CAMERA: %f %f %f",
+            camera->position.x,
+            camera->position.y,
+            camera->position.z
+        );
+
+    // if (show_debug_info) {
+    //     handle_debug_info(ctx, renderer, camera, second_per_frame);
+    // }
 }

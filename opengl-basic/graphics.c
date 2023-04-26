@@ -473,7 +473,7 @@ void render_gui_entities(Renderer *rh) {
         glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
         log_if_err("Issue before drawing gui entities\n");
         glDrawElements(
-            GL_TRIANGLES, rh->font->font_mesh->indices_len,
+            GL_TRIANGLES, entity.model->vertex_count,
             GL_UNSIGNED_INT, 0
         );
         log_if_err("Issue after gui entities\n");
