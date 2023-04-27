@@ -35,6 +35,7 @@ typedef struct RandomEntity {
 typedef struct GameContext {
     double current_time;
     double prev_rand_time;
+    double start_time;
     int prev_rand;
     Vec2 prev_rand_pos;
     BaseModel models[ModelType_Count];
@@ -43,6 +44,7 @@ typedef struct GameContext {
     Vec3 world_center;
     int game_over;
     int points;
+    int max_points;
     char msg[100];
 } GameContext;
 

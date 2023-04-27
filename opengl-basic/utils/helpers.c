@@ -169,14 +169,8 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
         if (player_momentum > 3) {
             player_momentum = 3;
         }
-        camera->position.y -= player_momentum;
-        if (camera->position.y <= 2.0) {
-            camera->position.y = 2.0;
-            params->player_is_grounded = 1;
-            player_momentum = 0.0;
-        }
     }
-    params->player_rotation = player_momentum;
+    camera->position.y -= player_momentum;
 
     camera->centre.x = (
         camera->position.x + sin(camera->pitch) * cos(camera->yaw)
@@ -185,6 +179,23 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
     camera->centre.z = (
         camera->position.z + sin(camera->pitch) * sin(camera->yaw)
     );
+
+    printf(
+        "%f %f => %f\n",
+        camera->position.x, camera->position.z, player_is_grounded
+    );
+    if (
+        (camera->position.x <= -100) || (camera->position.z <= -100) ||
+        (camera->position.x >= 95) || (camera->position.z >= 95)
+    ) {
+        params->player_is_grounded = 0;
+    }
+    else if (camera->position.y <= 2.0) {
+            camera->position.y = 2.0;
+            params->player_is_grounded = 1;
+            player_momentum = 0.0;
+    }
+    params->player_rotation = player_momentum;
 }
 
 

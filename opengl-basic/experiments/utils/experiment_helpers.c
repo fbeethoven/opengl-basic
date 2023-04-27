@@ -379,9 +379,10 @@ RandomEntity* add_random_entity(
     for (int i=0; i<10; i++) {
         r_entity = &game_ctx->random_entities[i];
         if (*r_entity->active == 0) {
-            char msg[50];
-            sprintf(msg, "Entity %0.3f", game_ctx->current_time);
-            strcpy(r_entity->entity->debug_name, msg);
+            sprintf(
+                r_entity->entity->debug_name,
+                "RANDOM %0.3f", game_ctx->current_time
+            );
             int ran_model = (
                 (rand() % (ModelType_Count - ResevedModels)) + ResevedModels
             );
@@ -445,6 +446,7 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
         rand_entity->active = &entity->active;
         entity->position = &rand_entity->position;
         entity->scale = 1.0;
+        entity->active = 0;
     }
     rand_init(game_ctx);
 }
@@ -452,15 +454,12 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
 void update_entities(GameContext *game_ctx, Camera *camera) {
     RandomEntity *r_entity;
     double dt;
-    for (int i=2; i<10; i++) {
+    for (int i=1; i<10; i++) {
         r_entity = &game_ctx->random_entities[i];
-        if (r_entity->active) {
+        if (*r_entity->active) {
             if (game_ctx->current_time >= r_entity->end_time) {
                 *r_entity->active = 0;
                 game_ctx->points++;
-                printf("ENTITY: %s DIED\n", r_entity->entity->debug_name);
-                printf("ENTITY: %d DIED\n", i);
-                exit(0);
                 continue;
             }
             Vec3 dir = newVec3(
@@ -470,17 +469,11 @@ void update_entities(GameContext *game_ctx, Camera *camera) {
             );
             vec3_normalize(&dir);
             r_entity->position.x += dir.x;
-            r_entity->position.x += dir.z;
+            r_entity->position.z += dir.z;
 
             float dis = vec3_distance(&r_entity->position, &camera->position);
             if (dis < 2.0) {
                 game_ctx->game_over = 1;
-                sprintf(
-                    game_ctx->msg,
-                    "Killed by %s", r_entity->entity->debug_name
-                );
-                // strcpy(r_entity->entity->debug_name, msg);
-
             }
         }
     }
