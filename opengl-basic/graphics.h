@@ -34,6 +34,7 @@ typedef struct BaseModel {
 typedef struct Entity {
     BaseModel *model;
     Vec3 *position;
+    Vec3 color;
     float rotation_x;
     float rotation_y;
     float rotation_z;
@@ -56,8 +57,9 @@ typedef struct Renderer {
 	Mat4 projection_matrix;
 
 	int shader;
-    Entity entities[10];
+    Entity entities[20];
 
+	int circle_shader;
 	int gui_shader;
     Entity gui_entities[10];
     Entity font_entities[10];

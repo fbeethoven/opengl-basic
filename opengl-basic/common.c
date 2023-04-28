@@ -41,6 +41,16 @@ Vec3 vec3_add(Vec3 *a, Vec3 *b) {
 }
 
 
+int vec3_is_equal(Vec3 a, Vec3 b) {
+    return ((a.x == b.x) && (a.y == b.y) && (a.z == b.z)); 
+}
+
+
+int vec4_is_equal(Vec4 a, Vec4 b) {
+    return ((a.x == b.x) && (a.y == b.y) && (a.z == b.z) && (a.w == b.w)); 
+}
+
+
 Mat4 mat4_diag(float x, float y, float z, float w) {
     Mat4 C = {0};
     C.m00 = x;
@@ -417,7 +427,7 @@ void log_if_err(char *err_msg) {
     int err = glGetError();
     if (err != GL_NO_ERROR) {
         printf("[ERROR: %d] GL Error: %s", err, err_msg);
-        exit(1);
+        // exit(1);
     }
 }
 

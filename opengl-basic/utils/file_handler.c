@@ -6,55 +6,6 @@
 #include "../memory.h"
 
 
-int push_float(
-    float *dest,
-    float x,
-    int limit,
-    unsigned int *counter
-) {
-    if (*counter == VerticesCapacity) {
-        return -1;
-    }
-    dest[(*counter)++] = x;
-    return 0;
-}
-
-int push_vertice(IntermediateModel *dest, float x) {
-    return push_float(
-        dest->vertices, x, VerticesCapacity, &dest->vertices_count
-    );
-}
-
-int push_normal(IntermediateModel *dest, float x) {
-    return push_float(
-        dest->normals, x, NormalsCapacity, &dest->normals_count
-    );
-}
-
-int push_text_coords(IntermediateModel *dest, float x) {
-    return push_float(
-        dest->uvs, x, TexCapacity, &dest->uvs_count
-    );
-}
-
-int push_vertice_bac(IntermediateModel *dest, float x) {
-    if (dest->vertices_count == VerticesCapacity) {
-        return -1;
-    }
-    dest->vertices[dest->vertices_count++] = x;
-    return 0;
-}
-
-
-int push_index(IntermediateModel *dest, unsigned int x) {
-    if (dest->indices_count == IndicesCapacity) {
-        return -1;
-    }
-    dest->indices[dest->indices_count++] = x;
-    return 0;
-}
-
-
 void splitter_reset(StrSplitter *splitter) {
     splitter->cursor = 0;
     memset(splitter->buffer, 0, BufferCapacity * sizeof(char));
@@ -71,7 +22,7 @@ int split_next(StrSplitter *splitter, char *data) {
         splitter->buffer[pointer] = data[splitter->cursor];
         pointer++;
         splitter->cursor++;
-        if (pointer == 499) {
+        if (pointer == (BufferCapacity - 1)) {
             splitter->buffer[pointer] = '\0';
             return -1; 
         }
@@ -88,7 +39,7 @@ int split_next(StrSplitter *splitter, char *data) {
 char *read_file(char *file_path) {
     FILE *file = fopen(file_path, "rb");
     if (!file) {
-        fprintf(stderr, "Failed to read input\n");
+        fprintf(stderr, "Failed to read file: %s\n", file_path);
         exit(1);
     }
 
@@ -98,7 +49,9 @@ char *read_file(char *file_path) {
 
     char *data = malloc(sizeof(char) * (file_size + 1));
     if(fread(data, sizeof(char), file_size, file) != file_size) {
-        fprintf(stderr, "there was an error reading input of file %s\n", file_path);
+        fprintf(
+            stderr, "there was an error reading input of file %s\n", file_path
+        );
         free(data);
         fclose(file);
         exit(1);
@@ -110,83 +63,59 @@ char *read_file(char *file_path) {
 }
 
 
-void parse_obj_file_simple(char *file_path, IntermediateModel *dest) {
-    char *data = read_file(file_path);
-    StrSplitter split_line = {0};
-    split_line.separator = '\n';
-    StrSplitter split_space = {0};
-    split_space.separator = ' ';
-
-    while (split_next(&split_line, data) >= 0) {
-        splitter_reset(&split_space);
-        if (split_line.buffer[0] == 'v') {
-            split_next(&split_space, split_line.buffer);
-
-            split_next(&split_space, split_line.buffer);
-            push_vertice(dest, atof(split_space.buffer));
-
-            split_next(&split_space, split_line.buffer);
-            push_vertice(dest, atof(split_space.buffer));
-
-            split_next(&split_space, split_line.buffer);
-            push_vertice(dest, atof(split_space.buffer));
-        }
-        else if ( split_line.buffer[0] == 'f') {
-            split_next(&split_space, split_line.buffer);
-
-            split_next(&split_space, split_line.buffer);
-            push_index(dest, (unsigned int) atoi(split_space.buffer));
-
-            split_next(&split_space, split_line.buffer);
-            push_index(dest, (unsigned int) atoi(split_space.buffer));
-
-            split_next(&split_space, split_line.buffer);
-            push_index(dest, (unsigned int) atoi(split_space.buffer));
-        }
-    }
-    free(data);
-}
-
-
 void handle_face_vertex(
     char *face_vertex,
     IntermediateModel *dest,
     ArrayList *normals,
     ArrayList *uvs,
-    ArrayList *indices
+    ArrayList *indices,
+    int simple
 ) {
-    StrSplitter split_bar = {0};
-    split_bar.separator = '/';
+    unsigned int vertex_pointer;
+    if (simple) {
+        vertex_pointer = (unsigned int) atoi(face_vertex) - 1;
+        *arr_push(indices, unsigned int) = vertex_pointer;
+        dest->uvs[2*vertex_pointer] = 0.0;
+        dest->uvs[2*vertex_pointer + 1] = 0.0;
 
-    split_next(&split_bar, face_vertex);
-    unsigned int vertex_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
+        dest->normals[3*vertex_pointer] = 0.0;
+        dest->normals[3*vertex_pointer + 1] = 1.0;
+        dest->normals[3*vertex_pointer + 2] = 0.0;
+    }
+    else {
+        StrSplitter split_bar = {0};
+        split_bar.separator = '/';
 
-    *arr_push(indices, unsigned int) = vertex_pointer;
+        split_next(&split_bar, face_vertex);
+        vertex_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
 
-    split_next(&split_bar, face_vertex);
-    unsigned int uv_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
-    dest->uvs[2*vertex_pointer] = (
-        ((float *)uvs->data)[2*uv_pointer]
-    );
-    dest->uvs[2*vertex_pointer + 1] = (
-        1.0 - ((float *)uvs->data)[2*uv_pointer + 1]
-    );
+        *arr_push(indices, unsigned int) = vertex_pointer;
 
-    split_next(&split_bar, face_vertex);
-    unsigned int normal_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
-    dest->normals[3*vertex_pointer] = (
-        ((float *)normals->data)[3*normal_pointer]
-    );
-    dest->normals[3*vertex_pointer + 1] = ( 
-        ((float *)normals->data)[3*normal_pointer + 1]
-    );
-    dest->normals[3*vertex_pointer + 2] = ( 
-        ((float *)normals->data)[3*normal_pointer + 2]
-    );
+        split_next(&split_bar, face_vertex);
+        unsigned int uv_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
+        dest->uvs[2*vertex_pointer] = (
+            ((float *)uvs->data)[2*uv_pointer]
+        );
+        dest->uvs[2*vertex_pointer + 1] = (
+            1.0 - ((float *)uvs->data)[2*uv_pointer + 1]
+        );
+
+        split_next(&split_bar, face_vertex);
+        unsigned int normal_pointer = (unsigned int) atoi(split_bar.buffer) - 1;
+        dest->normals[3*vertex_pointer] = (
+            ((float *)normals->data)[3*normal_pointer]
+        );
+        dest->normals[3*vertex_pointer + 1] = ( 
+            ((float *)normals->data)[3*normal_pointer + 1]
+        );
+        dest->normals[3*vertex_pointer + 2] = ( 
+            ((float *)normals->data)[3*normal_pointer + 2]
+        );
+    }
 }
 
 
-void parse_obj_file(char *file_path, IntermediateModel *dest) {
+void _parse_obj_file(char *file_path, IntermediateModel *dest, int simple) {
     ArrayList *vertices = new_array_list(float);
     ArrayList *normals = new_array_list(float);
     ArrayList *uvs = new_array_list(float);
@@ -256,17 +185,17 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
 
             split_next(&split_space, split_line.buffer);
             handle_face_vertex(
-                split_space.buffer, dest, normals, uvs, indices
+                split_space.buffer, dest, normals, uvs, indices, simple
             );
 
             split_next(&split_space, split_line.buffer);
             handle_face_vertex(
-                split_space.buffer, dest, normals, uvs, indices
+                split_space.buffer, dest, normals, uvs, indices, simple
             );
 
             split_next(&split_space, split_line.buffer);
             handle_face_vertex(
-                split_space.buffer, dest, normals, uvs, indices
+                split_space.buffer, dest, normals, uvs, indices, simple
             );
         }
         lines++;
@@ -291,6 +220,15 @@ void parse_obj_file(char *file_path, IntermediateModel *dest) {
     );
 }
 
+void parse_obj_file_simple(char *file_path, IntermediateModel *dest) {
+    _parse_obj_file(file_path, dest, 1);
+}
+
+
+void parse_obj_file(char *file_path, IntermediateModel *dest) {
+    _parse_obj_file(file_path, dest, 0);
+}
+
 
 void intermediate_model_init(IntermediateModel *model) {
     model->vertices = (float *)malloc(3*sizeof(float)*VerticesCapacity);
@@ -307,3 +245,67 @@ void intermediate_model_free(IntermediateModel *model) {
     free(model->indices);
 }
 
+
+void transform_obj_file(char *file_path, char *file_output) {
+    char *data = read_file(file_path);
+    FILE *out_file = fopen(file_output, "wb");
+    char *face_buffer = malloc(500000*sizeof(char));
+    int cursor = 0;
+
+    char vertex_1[50];
+    char vertex_2[50];
+    char vertex_3[50];
+    char vertex_4[50];
+
+    StrSplitter split_line = {0};
+    split_line.separator = '\n';
+
+    StrSplitter split_space = {0};
+    split_space.separator = ' ';
+
+    int lines = 0;
+
+    while (split_next(&split_line, data) >= 0) {
+        splitter_reset(&split_space);
+        split_next(&split_space, split_line.buffer);
+        if (strcmp(split_space.buffer, "f") == 0) {
+            split_next(&split_space, split_line.buffer);
+            strcpy(vertex_1, split_space.buffer);
+
+            split_next(&split_space, split_line.buffer);
+            strcpy(vertex_2, split_space.buffer);
+
+            split_next(&split_space, split_line.buffer);
+            strcpy(vertex_3, split_space.buffer);
+
+            split_next(&split_space, split_line.buffer);
+            strcpy(vertex_4, split_space.buffer);
+
+            if (*vertex_4 == '\0') {
+                cursor += sprintf(
+                    face_buffer + cursor, "%s\n", split_line.buffer
+                );
+            } 
+            else {
+                cursor += sprintf(
+                    face_buffer + cursor,
+                    "f %s %s %s\n",
+                    vertex_1, vertex_2, vertex_3
+                );
+                cursor += sprintf(
+                    face_buffer + cursor,
+                    "f %s %s %s\n",
+                    vertex_1, vertex_3, vertex_4
+                );
+            }
+        }
+        else {
+            fprintf(out_file, "%s\n", split_line.buffer);
+        }
+        lines++;
+    }
+
+    fprintf(out_file, "\n%s\n", face_buffer);
+
+    fclose(out_file);
+}
