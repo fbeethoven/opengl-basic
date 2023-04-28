@@ -34,6 +34,7 @@ void parse_obj_file(char *data, IntermediateModel *dest);
 int split_next(StrSplitter *splitter, char *data);
 void intermediate_model_init(IntermediateModel *model);
 void intermediate_model_free(IntermediateModel *model);
+void transform_obj_file(char *file_path, char *file_output);
 
 
 #endif  // FILE_HANDLER_H

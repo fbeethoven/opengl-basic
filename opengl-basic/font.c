@@ -40,6 +40,34 @@ GlyphInfo getGlyphInfo(
 }
 
 
+Mesh *font_mesh_new() {
+    Mesh *font_mesh = (Mesh *) malloc(sizeof(Mesh));
+    Vec3 *vertices = (Vec3 *) malloc(FontCapacity * sizeof(Vec3));
+    font_mesh->vertices = vertices;
+    Vec2 *text_uvs = (Vec2 *) malloc(FontCapacity * sizeof(Vec2));
+    font_mesh->uvs = text_uvs;
+    Vec3 *color = (Vec3 *) malloc(FontCapacity * sizeof(Vec3));
+    font_mesh->color = color;
+    unsigned int *indexes = (
+        (unsigned int *) malloc(FontCapacity * sizeof(unsigned int))
+    );
+    font_mesh->indices = indexes;
+
+    return font_mesh;
+}
+
+void font_mesh_free(Mesh *font_mesh) {
+    free(font_mesh->vertices);
+    free(font_mesh->uvs);
+    free(font_mesh->color);
+    free(font_mesh->indices);
+    free(font_mesh);
+}
+
+
+
+
+
 void font_init(Font *font, char *font_file_path, float aspect_ratio) {
     font->size = 20;
     font->atlasWidth = 1024;
@@ -98,20 +126,7 @@ void font_init(Font *font, char *font_file_path, float aspect_ratio) {
     free(atlasData);
     log_if_err("Could not initialize font\n");
 
-
-    Mesh *font_mesh = (Mesh *) malloc(sizeof(Mesh));
-    Vec3 *vertices = (Vec3 *) malloc(FontCapacity * sizeof(Vec3));
-    font_mesh->vertices = vertices;
-    Vec2 *text_uvs = (Vec2 *) malloc(FontCapacity * sizeof(Vec2));
-    font_mesh->uvs = text_uvs;
-    Vec3 *color = (Vec3 *) malloc(FontCapacity * sizeof(Vec3));
-    font_mesh->color = color;
-    unsigned int *indexes = (
-        (unsigned int *) malloc(FontCapacity * sizeof(unsigned int))
-    );
-    font_mesh->indices = indexes;
-
-    font->font_mesh = font_mesh;
+    font->font_mesh = font_mesh_new();
 
 
     glBindVertexArray(font->vao);
