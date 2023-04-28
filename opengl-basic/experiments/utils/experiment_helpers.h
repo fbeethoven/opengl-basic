@@ -7,8 +7,11 @@
 #include <time.h>
 
 
+#define ResevedModels 2
+
 enum ModelType {
     ModelType_World,
+    ModelType_SimpleSphere,
     ModelType_Spoon,
     ModelType_Teacup,
     ModelType_Teapot,
@@ -28,17 +31,23 @@ typedef struct RandomEntity {
     Vec3 dest;
     double end_time;
     double start_time;
+    int is_grounded;
 } RandomEntity;
 
 typedef struct GameContext {
     double current_time;
     double prev_rand_time;
+    double start_time;
     int prev_rand;
     Vec2 prev_rand_pos;
     BaseModel models[ModelType_Count];
-    RandomEntity random_entities[10];
+    RandomEntity random_entities[20];
     int position_len;
     Vec3 world_center;
+    int game_over;
+    int points;
+    int max_points;
+    char msg[100];
 } GameContext;
 
 
@@ -49,9 +58,12 @@ Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx);
 void load_assets(
     GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font
 );
-void add_random_entity(GraphicsContext *ctx, GameContext *game_ctx);
+RandomEntity* add_random_entity(
+    GraphicsContext *ctx, GameContext *game_ctx, Camera *camera
+);
 void sync_entities(GameContext *game_ctx, Renderer *renderer);
-void update_entities(GameContext *game_ctx);
+void update_entities(GameContext *game_ctx, Camera *camera);
+void new_circle_entity(GameContext *game_ctx);
 
 
 #endif  // EXPERIMENT_HELPERS_H

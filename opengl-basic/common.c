@@ -422,12 +422,106 @@ Mat4 mat4_look_at(Vec3 eye, Vec3 centre, Vec3 up) {
     return C;
 }
 
+Mat4 mat4_transpose(Mat4 *in) {
+    Mat4 C = {0};
+
+    C.m00 = in->m00;
+    C.m11 = in->m11;
+    C.m22 = in->m22;
+    C.m33 = in->m33;
+
+    C.m10 = in->m01;
+    C.m11 = in->m11;
+    C.m12 = in->m21;
+    C.m13 = in->m31;
+
+    C.m20 = in->m02;
+    C.m21 = in->m12;
+    C.m22 = in->m22;
+    C.m23 = in->m32;
+
+    C.m30 = in->m03;
+    C.m31 = in->m13;
+    C.m32 = in->m23;
+    C.m33 = in->m33;
+    return C;
+}
+
+Mat4 mat4_inverse(Mat4 *in) {
+    float ood;
+    Mat4 o = {0};
+
+	float sf00 = in->m22 * in->m33 - in->m32 * in->m23;
+	float sf01 = in->m21 * in->m33 - in->m31 * in->m23;
+	float sf02 = in->m21 * in->m32 - in->m31 * in->m22;
+	float sf03 = in->m20 * in->m33 - in->m30 * in->m23;
+	float sf04 = in->m20 * in->m32 - in->m30 * in->m22;
+	float sf05 = in->m20 * in->m31 - in->m30 * in->m21;
+	float sf06 = in->m12 * in->m33 - in->m32 * in->m13;
+	float sf07 = in->m11 * in->m33 - in->m31 * in->m13;
+	float sf08 = in->m11 * in->m32 - in->m31 * in->m12;
+	float sf09 = in->m10 * in->m33 - in->m30 * in->m13;
+	float sf10 = in->m10 * in->m32 - in->m30 * in->m12;
+	float sf11 = in->m11 * in->m33 - in->m31 * in->m13;
+	float sf12 = in->m10 * in->m31 - in->m30 * in->m11;
+	float sf13 = in->m12 * in->m23 - in->m22 * in->m13;
+	float sf14 = in->m11 * in->m23 - in->m21 * in->m13;
+	float sf15 = in->m11 * in->m22 - in->m21 * in->m12;
+	float sf16 = in->m10 * in->m23 - in->m20 * in->m13;
+	float sf17 = in->m10 * in->m22 - in->m20 * in->m12;
+	float sf18 = in->m10 * in->m21 - in->m20 * in->m11;
+
+	o.m00 = +(in->m11 * sf00 - in->m12 * sf01 + in->m13 * sf02);
+	o.m10 = -(in->m10 * sf00 - in->m12 * sf03 + in->m13 * sf04);
+	o.m20 = +(in->m10 * sf01 - in->m11 * sf03 + in->m13 * sf05);
+	o.m30 = -(in->m10 * sf02 - in->m11 * sf04 + in->m12 * sf05);
+
+	o.m01 = -(in->m01 * sf00 - in->m02 * sf01 + in->m03 * sf02);
+	o.m11 = +(in->m00 * sf00 - in->m02 * sf03 + in->m03 * sf04);
+	o.m21 = -(in->m00 * sf01 - in->m01 * sf03 + in->m03 * sf05);
+	o.m31 = +(in->m00 * sf02 - in->m01 * sf04 + in->m02 * sf05);
+
+	o.m02 = +(in->m01 * sf06 - in->m02 * sf07 + in->m03 * sf08);
+	o.m12 = -(in->m00 * sf06 - in->m02 * sf09 + in->m03 * sf10);
+	o.m22 = +(in->m00 * sf11 - in->m01 * sf09 + in->m03 * sf12);
+	o.m32 = -(in->m00 * sf08 - in->m01 * sf10 + in->m02 * sf12);
+
+	o.m03 = -(in->m01 * sf13 - in->m02 * sf14 + in->m03 * sf15);
+	o.m13 = +(in->m00 * sf13 - in->m02 * sf16 + in->m03 * sf17);
+	o.m23 = -(in->m00 * sf14 - in->m01 * sf16 + in->m03 * sf18);
+	o.m33 = +(in->m00 * sf15 - in->m01 * sf17 + in->m02 * sf18);
+
+	ood = 1.0f / (in->m00 * o.m00 +
+				  in->m01 * o.m10 +
+				  in->m02 * o.m20 +
+				  in->m03 * o.m30);
+
+	o.m00 *= ood;
+	o.m01 *= ood;
+	o.m02 *= ood;
+	o.m03 *= ood;
+	o.m10 *= ood;
+	o.m11 *= ood;
+	o.m12 *= ood;
+	o.m13 *= ood;
+	o.m20 *= ood;
+	o.m21 *= ood;
+	o.m22 *= ood;
+	o.m23 *= ood;
+	o.m30 *= ood;
+	o.m31 *= ood;
+	o.m32 *= ood;
+    o.m33 *= ood;
+
+    return o;
+}
+
 
 void log_if_err(char *err_msg) {
     int err = glGetError();
     if (err != GL_NO_ERROR) {
         printf("[ERROR: %d] GL Error: %s", err, err_msg);
-        // exit(1);
+        exit(1);
     }
 }
 

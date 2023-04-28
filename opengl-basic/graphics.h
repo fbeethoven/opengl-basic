@@ -12,6 +12,7 @@ typedef struct GraphicsContext {
     int height;
     double previous_time;
     double mouse_position[2];
+    double dmouse[2];
     GLFWwindow* window;
 } GraphicsContext;
 

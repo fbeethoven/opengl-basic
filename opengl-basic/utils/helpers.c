@@ -66,10 +66,10 @@ void gui_quad_in_pos(
 
 
     Vec2 new_size = newVec2(
-        (2 * size.x/(float)ctx->width) - 1.0, 
-        1.0 - (2 * size.y/(float)ctx->height)
+        2 * size.x/(float)ctx->width,
+        2 * size.y/(float)ctx->height
     );
-    draw_quad(&quad_mesh, newVec3(0, 0, 0.0), color, new_size);
+    draw_quad(&quad_mesh, newVec3(0.0, 0.0, 0.0), color, new_size);
     BaseModel *quad_model = (BaseModel *)malloc(sizeof(BaseModel));
     load_data_to_model(
         quad_model, (float *)quad_mesh.vertices, quad_mesh.indices,
@@ -111,57 +111,91 @@ void gui_quad_free(Entity *entity) {
 
 
 void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
-    float player_rotation = params->player_rotation;
-    float speed = params->camera_speed;
-    float rot_speed = params->speed;
-    float movement = 0.0;
+    float player_is_grounded = params->player_is_grounded;
+    float speed = params->camera_speed * params->dt * 50;
+    float player_momentum = params->player_rotation;
 
-    int shift_press = shift_is_pressed(ctx);
-    double cursor_x, cursor_y;
-    glfwGetCursorPos(ctx->window, &cursor_x, &cursor_y);
 
-    // TODO: use mouse to rotate after adding quaternions
-    // double dx = cursor_x - ctx->mouse_position[0];
-    // double dy = cursor_y - ctx->mouse_position[1];
-    // ctx->mouse_position[0] = cursor_x;
-    // ctx->mouse_position[1] = cursor_y;
-    // glfwSetCursorPos(
-    //     ctx->window, 0.5*(double)ctx->width, 0.5*(double)ctx->height
-    // );
-
+    
     Camera *camera = params->camera;
+    Vec3 foward = newVec3(
+        camera->centre.x - camera->position.x,
+        camera->centre.y - camera->position.y,
+        camera->centre.z - camera->position.z
+    );
+    vec3_normalize(&foward);
+    Vec3 right = vec3_cross(foward, newVec3(0.0, 1.0, 0.0));
+    vec3_normalize(&right);
 
     if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
-        player_rotation += 0.5 * rot_speed;
+        camera->position.x -= speed * right.x;
+        camera->position.z -= speed * right.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
-        player_rotation -= 0.5 * rot_speed;
+        camera->position.x += speed * right.x;
+        camera->position.z += speed * right.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
-        movement += speed;
+        camera->position.x += speed * foward.x;
+        camera->position.z += speed * foward.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
-        movement -= speed;
+        camera->position.x -= speed * foward.x;
+        camera->position.z -= speed * foward.z;
     }
-    if (shift_press){
-        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            Vec3 dir = newVec3(0.0, -params->camera_speed, 0.0);
-            camera->position = vec3_add(&camera->position, &dir);
-            camera->centre = vec3_add(&camera->centre, &dir);
+
+    // int shift_press = shift_is_pressed(ctx);
+    // if (shift_press){
+    //     if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    //         camera->position.y -= speed;
+    //     }
+    // }
+    if (
+        player_is_grounded &&
+        glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS
+    ) {
+            player_momentum = -0.4;
+            params->player_is_grounded = 0;
+    }
+
+    camera->yaw += 0.001 * (float)ctx->dmouse[0];
+    camera->pitch += 0.001 * (float)ctx->dmouse[1];
+    ctx->dmouse[0] = 0.0;
+    ctx->dmouse[1] = 0.0;
+
+    float gravity = 1.0;
+    if (!player_is_grounded) {
+        player_momentum += gravity * params->dt;
+        if (player_momentum > 3) {
+            player_momentum = 3;
         }
     }
-    else if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            Vec3 dir = newVec3(0.0, params->camera_speed, 0.0);
-            camera->position = vec3_add(&camera->position, &dir);
-            camera->centre = vec3_add(&camera->centre, &dir);
+    camera->position.y -= player_momentum;
+
+    camera->centre.x = (
+        camera->position.x + sin(camera->pitch) * cos(camera->yaw)
+    );
+    camera->centre.y = camera->position.y + cos(camera->pitch);
+    camera->centre.z = (
+        camera->position.z + sin(camera->pitch) * sin(camera->yaw)
+    );
+
+    printf(
+        "%f %f => %f\n",
+        camera->position.x, camera->position.z, player_is_grounded
+    );
+    if (
+        (camera->position.x <= -100) || (camera->position.z <= -100) ||
+        (camera->position.x >= 95) || (camera->position.z >= 95)
+    ) {
+        params->player_is_grounded = 0;
     }
-
-    camera->centre.x += movement * sin(player_rotation);
-    camera->centre.z += movement * cos(player_rotation);
-    params->player_rotation = player_rotation;
-
-    camera_movement(ctx, params);
-    camera_follow_player(&camera->centre, player_rotation, params);
+    else if (camera->position.y <= 2.0) {
+            camera->position.y = 2.0;
+            params->player_is_grounded = 1;
+            player_momentum = 0.0;
+    }
+    params->player_rotation = player_momentum;
 }
 
 
@@ -291,5 +325,61 @@ void draw_quad_in_pixels(
         mesh, newVec3(x, y, 0), color,
         newVec2(side.x/ctx->width, side.y/ctx->height)
     );
+}
+
+
+void camera_reset(Camera *camera) {
+    camera->pitch = 2.2;
+    camera->yaw = 1.57;
+}
+
+Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
+    Vec3 dir = newVec3(
+        toward.x - origin.x, toward.y - origin.y, toward.z - origin.z
+    );
+    return ray_to_plane(origin, dir, normal, distance);
+}
+
+Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance) {
+    Vec3 normalize_dir = dir;
+    vec3_normalize(&normalize_dir);
+
+    float t = vec3_dot(&normalize_dir, &normal);
+    if (t == 0) { 
+        return newVec3(0.0, 0.0, 0.0); 
+    }
+    t = (distance - vec3_dot(&origin, &normal)) / t;
+
+    normalize_dir.x *= t;
+    normalize_dir.y *= t;
+    normalize_dir.z *= t;
+    return vec3_add(&origin, &normalize_dir);
+}
+
+Vec3 mouse_to_plane(
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
+    Vec3 normal, float distance
+) {
+    float x = 2 * (float)ctx->mouse_position[0]/ctx->width - 1.0;
+    float y = 1.0 - 2 * (float)ctx->mouse_position[1]/ctx->height;
+
+    Vec4 rel_pos = newVec4(x, y, -1.0, 1.0);
+
+    Mat4 projection_inverse = mat4_inverse(&renderer->projection_matrix);
+
+    Mat4 view_matrix = mat4_look_at(
+        camera->position, 
+        camera->centre,
+        newVec3(0.0, 1.0, 0.0)
+    );
+    view_matrix = mat4_inverse(&view_matrix);
+
+    rel_pos = vec4_multiply(&projection_inverse, &rel_pos);
+    rel_pos.z = -1.0;
+    rel_pos.w = 0.0;
+    rel_pos = vec4_multiply(&view_matrix, &rel_pos);
+
+    Vec3 dir = newVec3(rel_pos.x, rel_pos.y, rel_pos.z);
+    return ray_to_plane(camera->position, dir, normal, distance);
 }
 
