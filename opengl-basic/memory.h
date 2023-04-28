@@ -44,5 +44,8 @@ void *_arr_pop(ArrayList *arr, U64 n);
 
 void arr_free(ArrayList *arr);
 
+unsigned long hash_function(void *key, int len);
+unsigned long hash_string(char *key);
+
 
 #endif  // MEMORY_H

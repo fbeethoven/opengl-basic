@@ -28,6 +28,29 @@ typedef struct StrSplitter {
 } StrSplitter;
 
 
+typedef enum TokenKind {
+    Token_Unknown,
+    Token_StrLiteral,
+    Token_Colon,
+    Token_Coma,
+    Token_Int,
+    Token_Float,
+    Token_Bool,
+    Token_OpenCurl,
+    Token_CloseCurl,
+    Token_OpenBra,
+    Token_CloseBra,
+    Token_EOF,
+
+    Token_Count
+} TokenKind;
+
+typedef struct Token {
+    TokenKind kind;
+    char info[256];
+} Token;
+
+
 char *read_file(char *file_path);
 void parse_obj_file_simple(char *data, IntermediateModel *dest);
 void parse_obj_file(char *data, IntermediateModel *dest);

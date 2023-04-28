@@ -68,3 +68,34 @@ void arr_free(ArrayList *arr) {
     free(arr);
 }
 
+
+// FNV-1a hash function in 64 bits
+unsigned long hash_function(void *key, int len) {
+    unsigned long hash = 0xcbf29ce484222325;
+    unsigned long fnv_prime = 0x00000100000001B3;
+
+    for(unsigned int i=0; i<len; i++) {
+        hash ^= *(unsigned char *)key + i;
+        hash *= 0x00000100000001B3;
+    }
+    return hash;
+}
+
+
+// DJB2
+unsigned long hash_string(char *str) {
+    unsigned long hash = 5381;
+    int c = *str++;
+
+    for(
+        int c=*(unsigned char *)str++;
+        c;
+        c = *(unsigned char *)str++
+    ) {
+        // hash = ((hash << 5) + hash) + c;
+        hash = (hash * 33) ^ c;
+    }
+
+    return hash;
+}
+

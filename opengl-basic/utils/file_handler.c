@@ -309,3 +309,207 @@ void transform_obj_file(char *file_path, char *file_output) {
 
     fclose(out_file);
 }
+
+
+typedef struct Tokenizer {
+    char *data;
+    int cursor;
+    int lines;
+} Tokenizer;
+
+
+void skip_white_space(Tokenizer *tokenizer) {
+    char c = tokenizer->data[tokenizer->cursor];
+    while(c && ( c == ' ' || c == '\n' || c == '\r') ) {
+        if (c == '\n') {
+            tokenizer->lines++;
+        }
+        c = tokenizer->data[++tokenizer->cursor];
+    }
+}
+
+Token parse_str_literal(Tokenizer *tokenizer) {
+    Token result = {0};
+    result.kind = Token_StrLiteral;
+
+    int i = 0;
+    char c = tokenizer->data[tokenizer->cursor++];
+    while(c && c != '"') {
+        result.info[i++] = c;
+        c = tokenizer->data[tokenizer->cursor++];
+
+        if (i == 255) {
+            printf("Token info out of memory parsing %s\n", result.info);
+            exit(1);
+        }
+    }
+    return result;
+}
+
+int char_is_numeric(char c) {
+    return (c == '-') || (c == 'e') || (('0' <= c) && (c <= '9'));
+}
+
+Token parse_num(Tokenizer *tokenizer) {
+    Token result = {0};
+    result.kind = Token_Int;
+    int i = 0;
+
+    char c = tokenizer->data[tokenizer->cursor];
+    while(c && ( char_is_numeric(c)|| c == '.') ) {
+        if (c == '.') {
+            result.kind = Token_Float;
+        }
+        result.info[i++] = c;
+        c = tokenizer->data[++tokenizer->cursor];
+
+        if (i == 255) {
+            printf("Token info out of memory parsing %s\n", result.info);
+            exit(1);
+        }
+    }
+    return result;
+}
+
+Token parse_true(Tokenizer *tokenizer) {
+    Token result = {0};
+    result.kind = Token_Bool;
+    for (int i=0; i<4; i++) {
+        result.info[i] = tokenizer->data[tokenizer->cursor++];
+    }
+    if (strcmp(result.info, "true") != 0) {
+        printf("Expected true, got %s\n", result.info);
+        exit(0);
+    }
+    return result;
+}
+
+Token parse_false(Tokenizer *tokenizer) {
+    Token result = {0};
+    result.kind = Token_Bool;
+    for (int i=0; i<5; i++) {
+        result.info[i] = tokenizer->data[tokenizer->cursor++];
+    }
+    if (strcmp(result.info, "false") != 0) {
+        printf("Expected false, got %s\n", result.info);
+        exit(0);
+    }
+    return result;
+}
+
+Token token_next(Tokenizer *tokenizer) {
+    Token new_token = {0};
+    skip_white_space(tokenizer);
+
+    char c = tokenizer->data[tokenizer->cursor];
+
+    if (char_is_numeric(c)) {
+        new_token = parse_num(tokenizer);
+    }
+    else {
+        switch(c) {
+            case '{':
+                tokenizer->cursor++;
+                new_token.kind = Token_OpenCurl;
+                break;
+            case '}':
+                tokenizer->cursor++;
+                new_token.kind = Token_CloseCurl;
+                break;
+            case '[':
+                tokenizer->cursor++;
+                new_token.kind = Token_OpenBra;
+                break;
+            case ']':
+                tokenizer->cursor++;
+                new_token.kind = Token_CloseBra;
+                break;
+            case ':':
+                tokenizer->cursor++;
+                new_token.kind = Token_Colon;
+                break;
+            case ',':
+                tokenizer->cursor++;
+                new_token.kind = Token_Coma;
+                break;
+            case '"':
+                tokenizer->cursor++;
+                new_token = parse_str_literal(tokenizer);
+                break;
+            case 't':
+                new_token = parse_true(tokenizer);
+                break;
+            case 'f':
+                new_token = parse_false(tokenizer);
+                break;
+            case '\0':
+                new_token.kind = Token_EOF;
+                break;
+            default:
+                printf(
+                    "Unknown Token %c in line %d, position %d\n",
+                    c, tokenizer->lines, tokenizer->cursor
+                );
+                exit(1);
+        }
+    }
+
+    return new_token; 
+}
+
+ArrayList *tokenize_input(char *data) {
+    Tokenizer tokenizer = {0};
+    tokenizer.data = data;
+
+    ArrayList *tokens = new_array_list(Token); 
+    for(
+        Token *token = arr_push(tokens, Token);
+        tokenizer.data[tokenizer.cursor];
+        *token = token_next(&tokenizer)
+    ) {
+        token = arr_push(tokens, Token);
+    }
+    
+    return tokens;
+}
+
+typedef struct HashNode HashNode;
+struct HashNode {
+    char name[50];
+    Token first;
+    HashNode *info_next;
+    HashNode *hash_next;
+};
+
+
+int main() {
+    char *file_path = "assets/models/scene.gltf";
+    char *data = read_file(file_path);
+
+    ArrayList *tokens = tokenize_input(data);
+
+
+
+    char *TypeNames[] = {
+        "Token_Unknown",
+        "Token_StrLiteral",
+        "Token_Colon",
+        "Token_Coma",
+        "Token_Int",
+        "Token_Float",
+        "Token_Bool",
+        "Token_OpenCurl",
+        "Token_CloseCurl",
+        "Token_OpenBra",
+        "Token_CloseBra",
+        "Token_EOF"
+    };
+
+    Token token;
+    for (int i=0; i<tokens->counter; i++) {
+        token = ((Token *)tokens->data)[i];
+        printf("TOKEN(%s, %s)\n", TypeNames[token.kind], token.info);
+    }
+
+    return 0;
+}
