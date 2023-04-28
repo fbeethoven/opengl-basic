@@ -311,23 +311,6 @@ void load_assets(
 
     };
 
-    float color[] = {
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0
-    };
-
     unsigned int indices[] = {
         0, 1, 2,
         2, 3, 0,
@@ -346,13 +329,57 @@ void load_assets(
     load_empty_texture_to_model(sphere, uvs, sizeof(uvs));
     sphere->vertex_count = sizeof(indices)/sizeof(unsigned int);
 
-    // Suzanne collider:
-    //  offset: 0 0 0;
-    //  radius: 1;
-    
-    // Dragon collider:
-    //  offset: 0 5 0;
-    //  radius: 5;
+
+    BaseModel *blendercube = &game_ctx->models[ModelType_Blendercube];
+    IntermediateModel blendercube_data = { 0 };
+    parse_obj_file("assets/models/BlenderCube.obj", &blendercube_data);
+    load_data_to_model(
+        blendercube, blendercube_data.vertices, blendercube_data.indices,
+        blendercube_data.vertices_count * sizeof(float),
+        blendercube_data.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        blendercube, "assets/textures/wood-floor.jpg", blendercube_data.uvs,
+        blendercube_data.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(blendercube->vao);
+    store_float_in_attributes(
+        &blendercube->normal,
+        2,
+        3,
+        blendercube_data.normals_count * sizeof(float),
+        blendercube_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    blendercube->vertex_count = blendercube_data.indices_count;
+    intermediate_model_free(&blendercube_data);
+
+
+    sphere = &game_ctx->models[ModelType_sphere];
+    IntermediateModel sphere_data = { 0 };
+    parse_obj_file("assets/models/sphere.obj", &sphere_data);
+    load_data_to_model(
+        sphere, sphere_data.vertices, sphere_data.indices,
+        sphere_data.vertices_count * sizeof(float),
+        sphere_data.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        sphere, "assets/textures/wood-floor.jpg", sphere_data.uvs,
+        sphere_data.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(sphere->vao);
+    store_float_in_attributes(
+        &sphere->normal,
+        2,
+        3,
+        sphere_data.normals_count * sizeof(float),
+        sphere_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    sphere->vertex_count = sphere_data.indices_count;
+    intermediate_model_free(&sphere_data);
 }
 
 
@@ -402,7 +429,6 @@ RandomEntity* add_random_entity(
             r_entity->start_time = t;
             r_entity->end_time = t + (double)(rand() % 9) + 5.0;
             Vec2 ran_pos = get_random_position(ctx, game_ctx);
-            Vec2 dest = get_random_position(ctx, game_ctx);
             
             r_entity->position.x = ran_pos.x;
             r_entity->position.y = scalar;
@@ -415,9 +441,6 @@ RandomEntity* add_random_entity(
             r_entity->dest.x = camera->position.x;
             r_entity->dest.y = scalar;
             r_entity->dest.z = camera->position.z;
-            // r_entity->dest.x = dest.x;
-            // r_entity->dest.y = scalar;
-            // r_entity->dest.z = dest.y;
             *r_entity->active = 1;
             return r_entity;
         }
@@ -453,7 +476,6 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
 
 void update_entities(GameContext *game_ctx, Camera *camera) {
     RandomEntity *r_entity;
-    double dt;
     for (int i=1; i<10; i++) {
         r_entity = &game_ctx->random_entities[i];
         if (*r_entity->active) {
