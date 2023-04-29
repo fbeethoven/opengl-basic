@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "file_handler.h"
-#include "../memory.h"
 
 
 void splitter_reset(StrSplitter *splitter) {
@@ -411,26 +410,32 @@ Token token_next(Tokenizer *tokenizer) {
             case '{':
                 tokenizer->cursor++;
                 new_token.kind = Token_OpenCurl;
+                new_token.info[0] = '{';
                 break;
             case '}':
                 tokenizer->cursor++;
                 new_token.kind = Token_CloseCurl;
+                new_token.info[0] = '}';
                 break;
             case '[':
                 tokenizer->cursor++;
                 new_token.kind = Token_OpenBra;
+                new_token.info[0] = '[';
                 break;
             case ']':
                 tokenizer->cursor++;
                 new_token.kind = Token_CloseBra;
+                new_token.info[0] = ']';
                 break;
             case ':':
                 tokenizer->cursor++;
                 new_token.kind = Token_Colon;
+                new_token.info[0] = ':';
                 break;
             case ',':
                 tokenizer->cursor++;
                 new_token.kind = Token_Coma;
+                new_token.info[0] = ',';
                 break;
             case '"':
                 tokenizer->cursor++;
@@ -457,6 +462,7 @@ Token token_next(Tokenizer *tokenizer) {
     return new_token; 
 }
 
+
 ArrayList *tokenize_input(char *data) {
     Tokenizer tokenizer = {0};
     tokenizer.data = data;
@@ -482,34 +488,574 @@ struct HashNode {
 };
 
 
-int main() {
-    char *file_path = "assets/models/scene.gltf";
-    char *data = read_file(file_path);
+char *TypeNames[] = {
+    "Token_Unknown",
+    "Token_StrLiteral",
+    "Token_Colon",
+    "Token_Coma",
+    "Token_Int",
+    "Token_Float",
+    "Token_Bool",
+    "Token_OpenCurl",
+    "Token_CloseCurl",
+    "Token_OpenBra",
+    "Token_CloseBra",
+    "Token_EOF"
+};
 
-    ArrayList *tokens = tokenize_input(data);
+int token_is_valid(Token *token) {
+    return (token->kind != Token_Unknown) || (token->kind != Token_EOF);
+}
 
 
+int token_expected(Tokenizer *tokenizer, Token token, TokenKind token_kind) {
+    if (token.kind != token_kind) {
+        fprintf(
+            stderr,
+            "Error in line %d: Expected %s but got %s while reading %s\n",
+            tokenizer->lines + 1, TypeNames[token_kind], 
+            TypeNames[token.kind], token.info
+        );
+        return 0;
+    }
+    return 1;
+}
 
-    char *TypeNames[] = {
-        "Token_Unknown",
-        "Token_StrLiteral",
-        "Token_Colon",
-        "Token_Coma",
-        "Token_Int",
-        "Token_Float",
-        "Token_Bool",
-        "Token_OpenCurl",
-        "Token_CloseCurl",
-        "Token_OpenBra",
-        "Token_CloseBra",
-        "Token_EOF"
-    };
 
-    Token token;
-    for (int i=0; i<tokens->counter; i++) {
-        token = ((Token *)tokens->data)[i];
-        printf("TOKEN(%s, %s)\n", TypeNames[token.kind], token.info);
+void accessors_push(GltfData *gltf, Tokenizer *tokenizer) {
+    Token token = {0};
+    GltfAccessor *accessor = arr_push(gltf->accessors, GltfAccessor);
+
+    for (;
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_StrLiteral:
+                if (strcmp(token.info, "bufferView") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    accessor->bufferView = atoi(token.info);
+                }
+                else if (strcmp(token.info, "count") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    accessor->count = atoi(token.info);
+                }
+                break;
+            case Token_CloseCurl:
+                return;
+            default:
+                break;
+        }
+    }
+}
+
+
+void handle_accessors(GltfData *gltf, Tokenizer *tokenizer) {
+    Token token = {0};
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_Colon);
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_OpenBra);
+
+    for (
+        token = token_next(tokenizer);
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_OpenCurl:
+                accessors_push(gltf, tokenizer);
+                break;
+            case Token_CloseBra:
+                return;
+            case Token_Coma:
+                break;
+            default:
+                fprintf(
+                    stderr, "Invalid Token on line %d: %s\n",
+                    tokenizer->lines + 1, token.info
+                );
+                exit(1);
+        }
+    }
+}
+
+void bufferViews_push(GltfData *gltf, Tokenizer *tokenizer) {
+    Token token = {0};
+    GltfBufferView *buffer = arr_push(gltf->bufferViews, GltfBufferView);
+
+    // buffer;
+    // length;
+    // stride;
+    // offset;
+
+    for (;
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_StrLiteral:
+                if (strcmp(token.info, "byteLength") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->length = atoi(token.info);
+                }
+                else if (strcmp(token.info, "byteStride") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->stride = atoi(token.info);
+                }
+                else if (strcmp(token.info, "buffer") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->buffer = atoi(token.info);
+                }
+                else if (strcmp(token.info, "byteOffset") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->offset = atoi(token.info);
+                }
+                break;
+            case Token_CloseCurl:
+                return;
+            default:
+                break;
+        }
+    }
+}
+
+
+void handle_bufferViews(GltfData *gltf, Tokenizer *tokenizer) {
+    Token token = {0};
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_Colon);
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_OpenBra);
+
+    for (
+        token = token_next(tokenizer);
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_OpenCurl:
+                bufferViews_push(gltf, tokenizer);
+                break;
+            case Token_CloseBra:
+                return;
+            case Token_Coma:
+                break;
+            default:
+                fprintf(
+                    stderr, "Invalid Token on line %d: %s\n",
+                    tokenizer->lines + 1, token.info
+                );
+                exit(1);
+        }
+    }
+}
+
+void meshes_push(GltfData *gltf, Tokenizer *tokenizer) {
+    GltfMesh *buffer = arr_push(gltf->meshes, GltfMesh);
+
+
+    int level = 1;
+
+    for (
+        Token token = token_next(tokenizer);
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_StrLiteral:
+                if (strcmp(token.info, "JOINTS_0") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->joints = atoi(token.info);
+                }
+                else if (strcmp(token.info, "NORMAL") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->normal = atoi(token.info);
+                }
+                else if (strcmp(token.info, "POSITION") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->position = atoi(token.info);
+                }
+                else if (strcmp(token.info, "TEXCOORD_0") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->texcoord = atoi(token.info);
+                }
+                else if (strcmp(token.info, "indices") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->indices = atoi(token.info);
+                }
+                else if (strcmp(token.info, "WEIGHTS_0") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->weights = atoi(token.info);
+                }
+                break;
+            case Token_OpenCurl:
+                level++;
+                break;
+            case Token_CloseCurl:
+                level--;
+                if (level == 0) {
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+
+void handle_meshes(GltfData *gltf, Tokenizer *tokenizer) {
+    Token token = {0};
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_Colon);
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_OpenBra);
+
+    for (
+        token = token_next(tokenizer);
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_OpenCurl:
+                meshes_push(gltf, tokenizer);
+                break;
+            case Token_CloseBra:
+                return;
+            case Token_Coma:
+                break;
+            default:
+                fprintf(
+                    stderr, "Invalid Token on line %d: %s\n",
+                    tokenizer->lines + 1, token.info
+                );
+                exit(1);
+        }
+    }
+}
+
+void buffers_push(GltfData *gltf, Tokenizer *tokenizer) {
+    Token token = {0};
+    GltfBuffer *buffer = arr_push(gltf->buffers, GltfBuffer);
+
+    for (;
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_StrLiteral:
+                if (strcmp(token.info, "byteLength") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Int);
+                    
+                    buffer->length = atoi(token.info);
+                }
+                else if (strcmp(token.info, "uri") == 0) {
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_Colon);
+
+                    token = token_next(tokenizer);
+                    token_expected(tokenizer, token, Token_StrLiteral);
+                    
+                    strcpy(buffer->uri, token.info);
+                }
+                break;
+            case Token_CloseCurl:
+                return;
+            default:
+                break;
+        }
+    }
+}
+
+
+void handle_buffers(GltfData *gltf, Tokenizer *tokenizer) {
+    Token token = {0};
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_Colon);
+
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_OpenBra);
+
+    for (
+        token = token_next(tokenizer);
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_OpenCurl:
+                buffers_push(gltf, tokenizer);
+                break;
+            case Token_CloseBra:
+                return;
+            case Token_Coma:
+                break;
+            default:
+                fprintf(
+                    stderr, "Invalid Token on line %d: %s\n",
+                    tokenizer->lines + 1, token.info
+                );
+                exit(1);
+        }
+    }
+}
+
+void skip_array(GltfData *gltf, Tokenizer *tokenizer) {
+    int level = 1;
+
+    for (
+        Token token = token_next(tokenizer);
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_OpenBra:
+                level++;
+                break;
+            case Token_CloseBra:
+                level--;
+                if (level == 0) {
+                    return;
+                }
+                break;
+            default: 
+                break;
+        }
+    }
+}
+
+void skip_struct(GltfData *gltf, Tokenizer *tokenizer) {
+    int level = 1;
+
+    for (
+        Token token = token_next(tokenizer);
+        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
+        token = token_next(tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_OpenCurl:
+                level++;
+                break;
+            case Token_CloseCurl:
+                level--;
+                if (level == 0) {
+                    return;
+                }
+                break;
+            default: 
+                break;
+        }
+    }
+}
+
+void handle_key_value_pair(GltfData *gltf, Tokenizer *tokenizer, Token token) {
+    if (strcmp(token.info, "accessors") == 0) {
+        handle_accessors(gltf, tokenizer);
+        return;
+    }
+    if (strcmp(token.info, "buffers") == 0) {
+        printf(" NEW BUFFER: %s\n", token.info);
+        handle_buffers(gltf, tokenizer);
+        return;
+    }
+    if (strcmp(token.info, "bufferViews") == 0) {
+        handle_bufferViews(gltf, tokenizer);
+        return;
+    }
+    if (strcmp(token.info, "meshes") == 0) {
+        handle_meshes(gltf, tokenizer);
+        return;
+    }
+    
+    token = token_next(tokenizer);
+    token_expected(tokenizer, token, Token_Colon);
+
+    token = token_next(tokenizer);
+    if (token.kind == Token_OpenCurl) {
+        skip_struct(gltf, tokenizer);
+        return;
+    }
+    if (token.kind == Token_OpenBra) {
+        skip_array(gltf, tokenizer);
+        return;
+    }
+    return;
+}
+
+
+GltfData parse_gltf_data(char *data) {
+    GltfData gltf_data = {0};
+
+    ArrayList *accessors = new_array_list(GltfAccessor); 
+    ArrayList *buffers = new_array_list(GltfBuffer); 
+    ArrayList *bufferViews = new_array_list(GltfBufferView); 
+    ArrayList *meshes = new_array_list(GltfMesh); 
+
+    gltf_data.accessors = accessors;
+    gltf_data.buffers = buffers;
+    gltf_data.bufferViews = bufferViews;
+    gltf_data.meshes = meshes;
+
+
+    Tokenizer tokenizer = {0};
+    tokenizer.data = data;
+
+    int parsing = 0;
+
+    for (
+        Token token = token_next(&tokenizer);
+        tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
+        token = token_next(&tokenizer)
+    ) {
+        // printf("TOKEN(%s, %s)\n", TypeNames[token.kind], token.info);
+        switch(token.kind) {
+            case Token_OpenCurl:
+                if (parsing != 0) {
+                    fprintf(
+                        stderr, "Error on line %d while reading %s\n",
+                        tokenizer.lines + 1, token.info
+                    );
+                    exit(1);
+                }
+                parsing = 1;
+                break;
+            case Token_CloseCurl:
+                if (parsing != 1) {
+                    fprintf(
+                        stderr, "Error on line %d while reading %s\n",
+                        tokenizer.lines + 1, token.info
+                    );
+                    exit(1);
+                }
+                parsing = 1;
+                break;
+            case Token_StrLiteral:
+                handle_key_value_pair(&gltf_data, &tokenizer, token);
+                break;
+            case Token_Coma:
+                break;
+            default:
+                fprintf(
+                    stderr, "Invalid Token on line %d: %s\n",
+                    tokenizer.lines + 1, token.info
+                );
+                exit(1);
+        };
     }
 
-    return 0;
+    return gltf_data;
 }
+
+
+// int main() {
+//     char *file_path = "assets/models/scene.gltf";
+//     char *data = read_file(file_path);
+// 
+//     GltfData gltf = parse_gltf_data(data);
+// 
+//     printf("Accessors: %ld\n", gltf.accessors->counter);
+//     printf("buffers: %ld\n", gltf.buffers->counter);
+//     printf("bufferViews: %ld\n", gltf.bufferViews->counter);
+//     printf("meshes: %ld\n", gltf.meshes->counter);
+// 
+//     char *binary = read_file("assets/models/scene.bin");
+// 
+//     int i = 256;
+//     printf("Value: %d\n", *(char *)&i);
+// 
+//     // ArrayList *tokens = tokenize_input(data);
+// 
+//     // char *TypeNames[] = {
+//     //     "Token_Unknown",
+//     //     "Token_StrLiteral",
+//     //     "Token_Colon",
+//     //     "Token_Coma",
+//     //     "Token_Int",
+//     //     "Token_Float",
+//     //     "Token_Bool",
+//     //     "Token_OpenCurl",
+//     //     "Token_CloseCurl",
+//     //     "Token_OpenBra",
+//     //     "Token_CloseBra",
+//     //     "Token_EOF"
+//     // };
+// 
+//     // Token token;
+//     // for (int i=0; i<tokens->counter; i++) {
+//     //     token = ((Token *)tokens->data)[i];
+//     //     printf("TOKEN(%s, %s)\n", TypeNames[token.kind], token.info);
+//     // }
+// 
+//     return 0;
+// }

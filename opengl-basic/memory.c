@@ -1,13 +1,13 @@
 #include "memory.h"
 
 
-Arena *init_arena() {
-    void *memory = calloc(1, MemoryCapacity);
-    MemoryStack *last_pointer = calloc(1, sizeof(MemoryStack));
+Arena *init_arena(unsigned long memory_capacity) {
+    void *memory = calloc(1, memory_capacity);
+    MemoryStack *last_pointer = calloc(1, sizeof(memory_capacity));
     Arena *arena = calloc(1, sizeof(Arena));
     arena->memory = memory;
     arena->last_pointer = last_pointer;
-    arena->capacity = MemoryCapacity;
+    arena->capacity = memory_capacity;
     return arena;
 }
 
@@ -72,7 +72,7 @@ void arr_free(ArrayList *arr) {
 // FNV-1a hash function in 64 bits
 unsigned long hash_function(void *key, int len) {
     unsigned long hash = 0xcbf29ce484222325;
-    unsigned long fnv_prime = 0x00000100000001B3;
+    // unsigned long fnv_prime = 0x00000100000001B3;
 
     for(unsigned int i=0; i<len; i++) {
         hash ^= *(unsigned char *)key + i;
@@ -85,7 +85,7 @@ unsigned long hash_function(void *key, int len) {
 // DJB2
 unsigned long hash_string(char *str) {
     unsigned long hash = 5381;
-    int c = *str++;
+    // int c = *str++;
 
     for(
         int c=*(unsigned char *)str++;

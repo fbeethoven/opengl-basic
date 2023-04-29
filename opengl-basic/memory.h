@@ -29,6 +29,7 @@ typedef struct Arena {
 } Arena;
 
 
+Arena *init_arena(unsigned long memory_capacity);
 void *_push_struct(Arena *arena, U64 n);
 #define mem_push(arena_ptr, type) \
     (type *)_push_struct((arena_ptr), (sizeof(type)))
