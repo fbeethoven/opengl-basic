@@ -34,6 +34,7 @@ int game_run() {
     //  [ ] OBJ Parser Update:
     //      [ ] normalize normal vectors
     //      [ ] handle EOF
+    //  [ ] Fix file_handler for big endian
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
