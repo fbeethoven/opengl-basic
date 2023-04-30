@@ -977,7 +977,6 @@ GltfData parse_gltf_data(char *data) {
         tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
         token = token_next(&tokenizer)
     ) {
-        // printf("TOKEN(%s, %s)\n", TypeNames[token.kind], token.info);
         switch(token.kind) {
             case Token_OpenCurl:
                 if (parsing != 0) {
@@ -1048,25 +1047,15 @@ typedef unsigned char uchar;
 
 float load_float(char *data, unsigned int offset) {
     int i = 1;
-    int b0 = data[offset];
-    int b1 = data[offset + 1];
-    int b2 = data[offset + 2];
-    int b3 = data[offset + 3];
-    printf("%d %d %d %d\n", b0, b1, b2, b3);
-    printf("OFFSET %u\n", offset);
     if ( *(char *)&i == 1) {
-        i = b0 | b1 << 8 | b2 << 16 | b3 << 24;
-        printf("TSET %d\n", i);
-        // float val = *(float *)&data[offset];
-        float val = *(float *)&i;
-        printf("value %f\n", val);
         return *(float *)&data[offset];
     }
 
-    // int b0 = data[offset];
-    // int b1 = data[offset + 1];
-    // int b2 = data[offset + 2];
-    // int b3 = data[offset + 3];
+    int b0 = 0xFF & data[offset];
+    int b1 = 0xFF & data[offset + 1];
+    int b2 = 0xFF & data[offset + 2];
+    int b3 = 0xFF & data[offset + 3];
+
     i = b0 << 24 | b1 << 16 | b2 << 8 | b3;
     return *(float *)&i;
 }
@@ -1075,27 +1064,16 @@ typedef unsigned int uint;
 
 uint load_uint(char *data, unsigned int offset) {
     int i = 1;
-    int b0 = data[offset];
-    int b1 = data[offset + 1];
-    int b2 = data[offset + 2];
-    int b3 = data[offset + 3];
-    printf("%d %d %d %d\n", b0, b1, b2, b3);
-    printf("OFFSET %u\n", offset);
     if ( *(char *)&i == 1) {
-        i = b0 | b1 << 8 | b2 << 16 | b3 << 24;
-        printf("TSET %d\n", i);
-        // float val = *(float *)&data[offset];
-        float val = *(float *)&i;
-        printf("value %f\n", val);
         return *(uint *)&data[offset];
     }
 
-    // int b0 = data[offset];
-    // int b1 = data[offset + 1];
-    // int b2 = data[offset + 2];
-    // int b3 = data[offset + 3];
+    int b0 = 0xFF & data[offset];
+    int b1 = 0xFF & data[offset + 1];
+    int b2 = 0xFF & data[offset + 2];
+    int b3 = 0xFF & data[offset + 3];
     i = b0 << 24 | b1 << 16 | b2 << 8 | b3;
-    return *(float *)&i;
+    return *(uint *)&i;
 }
 
 
@@ -1111,19 +1089,8 @@ void gltf_load_attributes(
     uint len = accessors->count * fac;
     uint offset = bufferViews->offset;
 
-    float val, val1;
     for (int i=0; i<len; i++) {
-        val = load_float(data, offset + (i*4));
-        if ((val <= -1.1) || (val >= 3.71)) {
-            printf("Error index %d, got %f\n", i, val);
-            exit(1);
-        }
-        *arr_push(model_buffer, float) = val;
-        val1 = ((float *)model_buffer->data)[model_buffer->counter-1];
-        if ((val1 <= -1.1) || (val1 >= 3.71)) {
-            printf("Error index %d, wrote %f instead of %f\n", i, val1, val);
-            exit(1);
-        }
+        *arr_push(model_buffer, float) = load_float(data, offset + (i*4));
     }
 }
 
@@ -1135,29 +1102,13 @@ void gltf_load_indices(
         gltf, accessors->bufferView
     );
 
-    
-    printf(
-        "Accessors: bufferView %u, count %u\n",
-        accessors->bufferView, accessors->count
-    );
-    printf(
-        "BufferViews: buffer %u, length %u, stride %u, offset %u\n",
-        bufferViews->buffer, bufferViews->length,
-        bufferViews->stride, bufferViews->offset
-    );
-
-
     uint len = accessors->count;
     uint offset = bufferViews->offset;
 
-    float val;
     for (int i=0; i<len; i++) {
-        val = load_uint(data, offset + (i*4));
-        *arr_push(model_buffer, unsigned int) = val;
-        printf("%f %u\n", val, (unsigned int)val);
-        // *arr_push(model_buffer, unsigned int) = (
-        //     (unsigned int)load_float(data, offset + (i*4))
-        // );
+        *arr_push(model_buffer, unsigned int) = (
+            load_uint(data, offset + (i*4))
+        );
     }
 }
 
@@ -1168,13 +1119,11 @@ IntermediateModel load_data_from_gltf(GltfData *gltf, char *data) {
     ArrayList *uvs = new_array_list(float);
     ArrayList *indices = new_array_list(unsigned int);
 
-    printf("\n\n");
     GltfMesh *mesh = gltf_get_mesh(gltf, 0);
     gltf_load_attributes(gltf, data, vertices, mesh->position, 3);
     gltf_load_attributes(gltf, data, normals, mesh->normal, 3);
     gltf_load_attributes(gltf, data, uvs, mesh->texcoord, 2);
     gltf_load_indices(gltf, data, indices, mesh->indices);
-
 
 
     IntermediateModel result = {0};
@@ -1188,6 +1137,11 @@ IntermediateModel load_data_from_gltf(GltfData *gltf, char *data) {
     result.normals_count = normals->counter;
     result.uvs_count = uvs->counter;
     result.indices_count = indices->counter;
+
+    free(vertices);
+    free(normals);
+    free(uvs);
+    free(indices);
 
 
     return result;

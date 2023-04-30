@@ -394,8 +394,8 @@ void load_assets(
     char *binary = read_file("assets/models/scene.bin");
 
     IntermediateModel trooper_data = load_data_from_gltf(&gltf, binary);
-    // free(data);
-    // free(binary);
+    free(data);
+    free(binary);
     
 
     load_data_to_model(
@@ -419,13 +419,12 @@ void load_assets(
     );
     log_if_err("Issue after loading normals\n");
     trooper->vertex_count = trooper_data.indices_count;
-    // intermediate_model_free(&trooper_data);
+    intermediate_model_free(&trooper_data);
 
 
     entity = &renderer->entities[10];
     strcpy(entity->debug_name, "Storm Trooper");
     entity->model = trooper;
-    // entity->model = &game_ctx->models[ModelType_Dragon];
 
     Vec3 *pos = malloc(sizeof(Vec3));
     *pos = newVec3(0.0, 1.0, 0.0);
@@ -433,25 +432,6 @@ void load_assets(
 
     entity->active = 1;
     entity->scale = 2.0;
-
-
-    // int j = trooper_data.vertices_count/3;
-    unsigned int ind;
-    // for (int i=0; i<trooper_data.indices_count/3; i += 3) {
-    for (int i=0; i<12; i += 3) {
-        printf("%u %u %u\n",
-            trooper_data.indices[i],
-            trooper_data.indices[i + 1],
-            trooper_data.indices[i + 2]
-        );
-    }
-    // printf("vertices %d | normals %d | uvs %d indices %d\n",
-    //     trooper_data.vertices_count,
-    //     trooper_data.normals_count,
-    //     trooper_data.uvs_count,
-    //     trooper_data.indices_count
-    // );
-    // exit(0);
 }
 
 
