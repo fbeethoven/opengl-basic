@@ -144,32 +144,37 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
         camera->position.z -= speed * foward.z;
     }
 
-    // int shift_press = shift_is_pressed(ctx);
-    // if (shift_press){
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-    //         camera->position.y -= speed;
-    //     }
-    // }
-    if (
-        player_is_grounded &&
-        glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS
-    ) {
-            player_momentum = -0.4;
-            params->player_is_grounded = 0;
+    int shift_press = shift_is_pressed(ctx);
+    if (shift_press){
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera->position.y -= speed;
+        }
     }
+    else {
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera->position.y += speed;
+        }
+    }
+    // if (
+    //     player_is_grounded &&
+    //     glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS
+    // ) {
+    //         player_momentum = -0.4;
+    //         params->player_is_grounded = 0;
+    // }
 
     camera->yaw += 0.001 * (float)ctx->dmouse[0];
     camera->pitch += 0.001 * (float)ctx->dmouse[1];
     ctx->dmouse[0] = 0.0;
     ctx->dmouse[1] = 0.0;
 
-    float gravity = 1.0;
-    if (!player_is_grounded) {
-        player_momentum += gravity * params->dt;
-        if (player_momentum > 3) {
-            player_momentum = 3;
-        }
-    }
+    // float gravity = 1.0;
+    // if (!player_is_grounded) {
+    //     player_momentum += gravity * params->dt;
+    //     if (player_momentum > 3) {
+    //         player_momentum = 3;
+    //     }
+    // }
     camera->position.y -= player_momentum;
 
     camera->centre.x = (

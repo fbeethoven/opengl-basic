@@ -380,6 +380,63 @@ void load_assets(
     log_if_err("Issue after loading normals\n");
     sphere->vertex_count = sphere_data.indices_count;
     intermediate_model_free(&sphere_data);
+
+
+
+
+
+    BaseModel *trooper= malloc(sizeof(BaseModel));
+
+    char *data = read_file("assets/models/scene.gltf");
+    GltfData gltf = parse_gltf_data(data);
+    char *binary = read_file("assets/models/scene.bin");
+
+    IntermediateModel trooper_data = load_data_from_gltf(&gltf, binary);
+    // free(data);
+    // free(binary);
+
+    load_data_to_model(
+        trooper, trooper_data.vertices, trooper_data.indices,
+        trooper_data.vertices_count * sizeof(float),
+        trooper_data.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        trooper, "assets/textures/Stormtroopermat_baseColor.png",
+        trooper_data.uvs,
+        trooper_data.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(trooper->vao);
+    store_float_in_attributes(
+        &trooper->normal,
+        2,
+        3,
+        trooper_data.normals_count * sizeof(float),
+        trooper_data.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    trooper->vertex_count = trooper_data.indices_count;
+    // intermediate_model_free(&trooper_data);
+
+
+    entity = &renderer->entities[10];
+    strcpy(entity->debug_name, "Storm Trooper");
+    entity->model = trooper;
+
+    Vec3 *pos = malloc(sizeof(Vec3));
+    *pos = newVec3(0.0, 1.0, 0.0);
+    entity->position = pos;
+
+    entity->active = 1;
+    entity->scale = 2.0;
+
+
+    printf("vertices %d | normals %d | uvs %d indices %d\n",
+        trooper_data.vertices_count,
+        trooper_data.normals_count,
+        trooper_data.uvs_count,
+        trooper_data.indices_count
+    );
 }
 
 

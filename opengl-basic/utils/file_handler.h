@@ -136,6 +136,7 @@ void intermediate_model_init(IntermediateModel *model);
 void intermediate_model_free(IntermediateModel *model);
 void transform_obj_file(char *file_path, char *file_output);
 GltfData parse_gltf_data(char *data);
+IntermediateModel load_data_from_gltf(GltfData *gltf, char *data);
 
 
 #endif  // FILE_HANDLER_H

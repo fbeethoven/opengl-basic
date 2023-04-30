@@ -378,7 +378,7 @@ Token parse_true(Tokenizer *tokenizer) {
     }
     if (strcmp(result.info, "true") != 0) {
         printf("Expected true, got %s\n", result.info);
-        exit(0);
+        exit(1);
     }
     return result;
 }
@@ -391,7 +391,7 @@ Token parse_false(Tokenizer *tokenizer) {
     }
     if (strcmp(result.info, "false") != 0) {
         printf("Expected false, got %s\n", result.info);
-        exit(0);
+        exit(1);
     }
     return result;
 }
@@ -925,7 +925,6 @@ void handle_key_value_pair(GltfData *gltf, Tokenizer *tokenizer, Token token) {
         return;
     }
     if (strcmp(token.info, "buffers") == 0) {
-        printf(" NEW BUFFER: %s\n", token.info);
         handle_buffers(gltf, tokenizer);
         return;
     }
@@ -1017,6 +1016,139 @@ GltfData parse_gltf_data(char *data) {
     return gltf_data;
 }
 
+GltfMesh *gltf_get_mesh(GltfData *gltf, int i) {
+    
+    GltfMesh *result = 0;
+    if (gltf->meshes->counter > i) {
+        result = &((GltfMesh *)gltf->meshes->data)[i];
+    }
+    return result;
+}
+
+GltfAccessor *gltf_get_accessors(GltfData *gltf, int i) {
+    
+    GltfAccessor *result = 0;
+    if (gltf->accessors->counter > i) {
+        result = &((GltfAccessor *)gltf->accessors->data)[i];
+    }
+    return result;
+}
+
+GltfBufferView *gltf_get_bufferViews(GltfData *gltf, int i) {
+    
+    GltfBufferView *result = 0;
+    if (gltf->bufferViews->counter > i) {
+        result = &((GltfBufferView *)gltf->bufferViews->data)[i];
+    }
+    return result;
+}
+
+
+typedef unsigned char uchar;
+
+float load_float(char *data, unsigned int offset) {
+    int i = 1;
+    if ( *(char *)&i == 1) {
+        return *(float *)&data[offset];
+    }
+
+    int b0 = data[offset];
+    int b1 = data[offset + 1];
+    int b2 = data[offset + 2];
+    int b3 = data[offset + 3];
+    i = b0 << 24 | b1 << 16 | b2 << 8 | b3;
+    return *(float *)&i;
+}
+
+
+typedef unsigned int uint;
+
+void gltf_load_attributes(
+    GltfData *gltf, char *data, ArrayList *model_buffer, uint index, uint fac
+) {
+    GltfAccessor *accessors = gltf_get_accessors(gltf, index);
+    GltfBufferView *bufferViews = gltf_get_bufferViews(
+        gltf, accessors->bufferView
+    );
+
+    // printf(
+    //     "Accessor: bufferViews %u | count %u\n",
+    //     accessors->bufferView, accessors->count
+    // );
+    // printf(
+    //     "BufferView: buffer %u | length %u | stride: %u | offset: %u\n",
+    //     bufferViews->buffer, bufferViews->length,
+    //     bufferViews->stride, bufferViews->offset
+    // );
+
+    uint len = accessors->count * fac;
+    uint offset = bufferViews->offset;
+
+    float val, val1;
+    for (int i=0; i<len; i++) {
+        val = load_float(data, offset + (i*4));
+        if ((val <= -1.1) || (val >= 3.71)) {
+            printf("Error index %d, got %f\n", i, val);
+            exit(1);
+        }
+        *arr_push(model_buffer, float) = val;
+        val1 = ((float *)model_buffer->data)[model_buffer->counter-1];
+        if ((val1 <= -1.1) || (val1 >= 3.71)) {
+            printf("Error index %d, wrote %f instead of %f\n", i, val1, val);
+            exit(1);
+        }
+    }
+}
+
+void gltf_load_indices(
+    GltfData *gltf, char *data, ArrayList *model_buffer, uint index
+) {
+    GltfAccessor *accessors = gltf_get_accessors(gltf, index);
+    GltfBufferView *bufferViews = gltf_get_bufferViews(
+        gltf, accessors->bufferView
+    );
+
+    uint len = accessors->count;
+    uint offset = bufferViews->offset;
+
+    for (int i=0; i<len; i++) {
+        *arr_push(model_buffer, unsigned int) = (
+            (unsigned int)load_float(data, offset + (i*4))
+        );
+    }
+}
+
+
+IntermediateModel load_data_from_gltf(GltfData *gltf, char *data) {
+    ArrayList *vertices = new_array_list(float);
+    ArrayList *normals = new_array_list(float);
+    ArrayList *uvs = new_array_list(float);
+    ArrayList *indices = new_array_list(unsigned int);
+
+    printf("\n\n");
+    GltfMesh *mesh = gltf_get_mesh(gltf, 0);
+    gltf_load_attributes(gltf, data, vertices, mesh->position, 3);
+    gltf_load_attributes(gltf, data, normals, mesh->normal, 3);
+    gltf_load_attributes(gltf, data, uvs, mesh->texcoord, 2);
+    gltf_load_indices(gltf, data, indices, mesh->indices);
+
+
+
+    IntermediateModel result = {0};
+
+    result.vertices = vertices->data;
+    result.normals = normals->data;
+    result.uvs = uvs->data;
+    result.indices = indices->data;
+
+    result.vertices_count = vertices->counter;
+    result.normals_count = normals->counter;
+    result.uvs_count = uvs->counter;
+    result.indices_count = indices->counter;
+
+
+    return result;
+}
 
 // int main() {
 //     char *file_path = "assets/models/scene.gltf";
@@ -1031,8 +1163,8 @@ GltfData parse_gltf_data(char *data) {
 // 
 //     char *binary = read_file("assets/models/scene.bin");
 // 
-//     int i = 256;
-//     printf("Value: %d\n", *(char *)&i);
+//     IntermediateModel model = load_data_from_gltf(&gltf, binary);
+// 
 // 
 //     // ArrayList *tokens = tokenize_input(data);
 // 
