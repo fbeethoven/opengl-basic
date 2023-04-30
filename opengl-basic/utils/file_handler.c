@@ -1048,20 +1048,57 @@ typedef unsigned char uchar;
 
 float load_float(char *data, unsigned int offset) {
     int i = 1;
-    if ( *(char *)&i == 1) {
-        return *(float *)&data[offset];
-    }
-
     int b0 = data[offset];
     int b1 = data[offset + 1];
     int b2 = data[offset + 2];
     int b3 = data[offset + 3];
+    printf("%d %d %d %d\n", b0, b1, b2, b3);
+    printf("OFFSET %u\n", offset);
+    if ( *(char *)&i == 1) {
+        i = b0 | b1 << 8 | b2 << 16 | b3 << 24;
+        printf("TSET %d\n", i);
+        // float val = *(float *)&data[offset];
+        float val = *(float *)&i;
+        printf("value %f\n", val);
+        return *(float *)&data[offset];
+    }
+
+    // int b0 = data[offset];
+    // int b1 = data[offset + 1];
+    // int b2 = data[offset + 2];
+    // int b3 = data[offset + 3];
+    i = b0 << 24 | b1 << 16 | b2 << 8 | b3;
+    return *(float *)&i;
+}
+
+typedef unsigned int uint;
+
+uint load_uint(char *data, unsigned int offset) {
+    int i = 1;
+    int b0 = data[offset];
+    int b1 = data[offset + 1];
+    int b2 = data[offset + 2];
+    int b3 = data[offset + 3];
+    printf("%d %d %d %d\n", b0, b1, b2, b3);
+    printf("OFFSET %u\n", offset);
+    if ( *(char *)&i == 1) {
+        i = b0 | b1 << 8 | b2 << 16 | b3 << 24;
+        printf("TSET %d\n", i);
+        // float val = *(float *)&data[offset];
+        float val = *(float *)&i;
+        printf("value %f\n", val);
+        return *(uint *)&data[offset];
+    }
+
+    // int b0 = data[offset];
+    // int b1 = data[offset + 1];
+    // int b2 = data[offset + 2];
+    // int b3 = data[offset + 3];
     i = b0 << 24 | b1 << 16 | b2 << 8 | b3;
     return *(float *)&i;
 }
 
 
-typedef unsigned int uint;
 
 void gltf_load_attributes(
     GltfData *gltf, char *data, ArrayList *model_buffer, uint index, uint fac
@@ -1070,16 +1107,6 @@ void gltf_load_attributes(
     GltfBufferView *bufferViews = gltf_get_bufferViews(
         gltf, accessors->bufferView
     );
-
-    // printf(
-    //     "Accessor: bufferViews %u | count %u\n",
-    //     accessors->bufferView, accessors->count
-    // );
-    // printf(
-    //     "BufferView: buffer %u | length %u | stride: %u | offset: %u\n",
-    //     bufferViews->buffer, bufferViews->length,
-    //     bufferViews->stride, bufferViews->offset
-    // );
 
     uint len = accessors->count * fac;
     uint offset = bufferViews->offset;
@@ -1108,13 +1135,29 @@ void gltf_load_indices(
         gltf, accessors->bufferView
     );
 
+    
+    printf(
+        "Accessors: bufferView %u, count %u\n",
+        accessors->bufferView, accessors->count
+    );
+    printf(
+        "BufferViews: buffer %u, length %u, stride %u, offset %u\n",
+        bufferViews->buffer, bufferViews->length,
+        bufferViews->stride, bufferViews->offset
+    );
+
+
     uint len = accessors->count;
     uint offset = bufferViews->offset;
 
+    float val;
     for (int i=0; i<len; i++) {
-        *arr_push(model_buffer, unsigned int) = (
-            (unsigned int)load_float(data, offset + (i*4))
-        );
+        val = load_uint(data, offset + (i*4));
+        *arr_push(model_buffer, unsigned int) = val;
+        printf("%f %u\n", val, (unsigned int)val);
+        // *arr_push(model_buffer, unsigned int) = (
+        //     (unsigned int)load_float(data, offset + (i*4))
+        // );
     }
 }
 
@@ -1150,44 +1193,3 @@ IntermediateModel load_data_from_gltf(GltfData *gltf, char *data) {
     return result;
 }
 
-// int main() {
-//     char *file_path = "assets/models/scene.gltf";
-//     char *data = read_file(file_path);
-// 
-//     GltfData gltf = parse_gltf_data(data);
-// 
-//     printf("Accessors: %ld\n", gltf.accessors->counter);
-//     printf("buffers: %ld\n", gltf.buffers->counter);
-//     printf("bufferViews: %ld\n", gltf.bufferViews->counter);
-//     printf("meshes: %ld\n", gltf.meshes->counter);
-// 
-//     char *binary = read_file("assets/models/scene.bin");
-// 
-//     IntermediateModel model = load_data_from_gltf(&gltf, binary);
-// 
-// 
-//     // ArrayList *tokens = tokenize_input(data);
-// 
-//     // char *TypeNames[] = {
-//     //     "Token_Unknown",
-//     //     "Token_StrLiteral",
-//     //     "Token_Colon",
-//     //     "Token_Coma",
-//     //     "Token_Int",
-//     //     "Token_Float",
-//     //     "Token_Bool",
-//     //     "Token_OpenCurl",
-//     //     "Token_CloseCurl",
-//     //     "Token_OpenBra",
-//     //     "Token_CloseBra",
-//     //     "Token_EOF"
-//     // };
-// 
-//     // Token token;
-//     // for (int i=0; i<tokens->counter; i++) {
-//     //     token = ((Token *)tokens->data)[i];
-//     //     printf("TOKEN(%s, %s)\n", TypeNames[token.kind], token.info);
-//     // }
-// 
-//     return 0;
-// }
