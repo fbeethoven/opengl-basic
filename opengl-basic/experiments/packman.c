@@ -277,9 +277,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         glfwSetWindowShouldClose(ctx->window, GL_TRUE);
     }
 
-    if (toggle_button_press(ctx, GLFW_KEY_P, &pulse_p)) {
-        entity->fill = 1 - entity->fill;
-    }
     if(glfwGetKey(ctx->window, GLFW_KEY_X) == GLFW_PRESS) {
         camera_reset(camera);
     }
@@ -311,6 +308,12 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
         show_debug_info = 1 - show_debug_info;
+        if (show_debug_info) {
+            glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+        else {
+            glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
     }
     if (toggle_button_press(ctx, GLFW_KEY_R, &pulse_r)){
         game_ctx->start_time = time;
@@ -322,19 +325,37 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         // random_experiment = 1 - random_experiment;
     }
 
-
-    camera_focus_movement(
-        ctx, camera, second_per_frame, distance_from_player
-    );
+    if (!show_debug_info) {
+        camera_focus_movement(
+            ctx, camera, second_per_frame, distance_from_player
+        );
+    }
     if (camera->position.y <= -20.0) {
         game_ctx->game_over = 1;
     }
 
 
-    float aspect_ratio = (float)ctx->width / (float)ctx->height;
-    font_buffer_reset(renderer->font, aspect_ratio);
+    font_buffer_reset(renderer->font, (float)ctx->width, (float)ctx->height);
     char msg[500];
-    entity = &renderer->font_entities[0];
+    if (show_debug_info) {
+        if (ui_button(ctx, renderer, newVec2(50.0, 50.0), "Show Mesh Wire")) {
+            if (pulse_p == 0) {
+                pulse_p = 1;
+            }
+        }
+        else {
+            if (pulse_p == 1) {
+                entity->fill = 1 - entity->fill;
+                pulse_p = 0;
+            }
+        }
+    }
+    else {
+        entity = &renderer->gui_entities[0];
+        entity->active = 0;
+    }
+    entity = get_entity_selected(renderer);
+
     // int timer = 3 + (int)game_ctx->start_time - (int)time;
     // if (timer > 0) {
     //     entity->scale = 5.0;
@@ -400,6 +421,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     //     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
     // }
 
+
+
     if (glfwGetKey(ctx->window, GLFW_KEY_H) == GLFW_PRESS) {
         entity->position->x -= 0.1;
     }
@@ -412,6 +435,12 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     if (glfwGetKey(ctx->window, GLFW_KEY_K) == GLFW_PRESS) {
         entity->position->y += 0.1;
     }
+    printf("FONT: %f %f %f\n", 
+        entity->position->x,
+        entity->position->y,
+        entity->position->z
+    );
+    printf("%d %d\n", ctx->width, ctx->height);
 
     // if (show_debug_info) {
     //     handle_debug_info(ctx, renderer, camera, second_per_frame);

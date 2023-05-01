@@ -29,7 +29,8 @@ typedef struct Font {
     U32 charCount;
     stbtt_packedchar char_info[127];
     U32 texture;
-    float aspect_ratio;
+    float width;
+    float height;
 
 
     Mesh *font_mesh;
@@ -52,11 +53,11 @@ GlyphInfo getGlyphInfo(
     Font *font, uint32_t character, float offsetX, float offsetY
 );
 
-void font_init(Font *font, char *font_file_path, float aspect_ratio);
-void font_buffer_reset(Font *font, float aspect_ratio);
-void font_buffer_push(Font *font, char *msg);
-void font_buffer_push_color(Font *font, char *msg, Vec3 color);
-void _font_buffer_push(Font *font, char *msg, Vec2 position, Vec3 color);
+void font_init(Font *font, char *font_file_path, float width, float height);
+void font_buffer_reset(Font *font, float width, float height);
+Vec2 font_buffer_push(Font *font, char *msg);
+Vec2 font_buffer_push_color(Font *font, char *msg, Vec3 color);
+Vec2 _font_buffer_push(Font *font, char *msg, Vec2 position, Vec3 color);
 void font_free(Font *font);
 void font_update_buffer(Font *font);
 

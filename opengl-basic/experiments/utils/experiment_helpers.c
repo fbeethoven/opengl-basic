@@ -68,8 +68,10 @@ void load_assets(
 
 
     log_if_err("Issue before Font initiation\n");
-    float aspect_ratio = (float)ctx->width / (float)ctx->height;
-    font_init(font, "assets/fonts/VictorMono-Regular.ttf", aspect_ratio);
+    font_init(
+        font, "assets/fonts/VictorMono-Regular.ttf",
+        (float)ctx->width, (float)ctx->height
+    );
     renderer->font = font;
     log_if_err("Issue with Font initiation\n");
 
