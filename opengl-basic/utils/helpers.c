@@ -144,32 +144,37 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
         camera->position.z -= speed * foward.z;
     }
 
-    // int shift_press = shift_is_pressed(ctx);
-    // if (shift_press){
-    //     if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-    //         camera->position.y -= speed;
-    //     }
-    // }
-    if (
-        player_is_grounded &&
-        glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS
-    ) {
-            player_momentum = -0.4;
-            params->player_is_grounded = 0;
+    int shift_press = shift_is_pressed(ctx);
+    if (shift_press){
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera->position.y -= speed;
+        }
     }
+    else {
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera->position.y += speed;
+        }
+    }
+    // if (
+    //     player_is_grounded &&
+    //     glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS
+    // ) {
+    //         player_momentum = -0.4;
+    //         params->player_is_grounded = 0;
+    // }
 
     camera->yaw += 0.001 * (float)ctx->dmouse[0];
     camera->pitch += 0.001 * (float)ctx->dmouse[1];
     ctx->dmouse[0] = 0.0;
     ctx->dmouse[1] = 0.0;
 
-    float gravity = 1.0;
-    if (!player_is_grounded) {
-        player_momentum += gravity * params->dt;
-        if (player_momentum > 3) {
-            player_momentum = 3;
-        }
-    }
+    // float gravity = 1.0;
+    // if (!player_is_grounded) {
+    //     player_momentum += gravity * params->dt;
+    //     if (player_momentum > 3) {
+    //         player_momentum = 3;
+    //     }
+    // }
     camera->position.y -= player_momentum;
 
     camera->centre.x = (
@@ -383,3 +388,49 @@ Vec3 mouse_to_plane(
     return ray_to_plane(camera->position, dir, normal, distance);
 }
 
+
+int ui_button(
+    GraphicsContext *ctx, Renderer *renderer, Vec2 position, char *text
+) {
+    Vec3 button_color = newVec3(0.55, 0.55, 0.40);
+    Vec3 font_color = newVec3(0.88, 0.88, 0.88);
+    Vec2 padding = newVec2(10.0, 5.0);
+
+    Entity *entity = &renderer->font_entities[0];
+    Vec2 button_position = _font_buffer_push(
+        renderer->font, text, position, font_color
+    );
+
+    float x_min = position.x - padding.x; 
+    float x_max = x_min + button_position.x + 2*padding.x;
+    button_position.x = x_max - x_min;
+    float y_min = position.y - button_position.y - padding.y;
+    float y_max = y_min + button_position.y + 2*padding.y;
+    button_position.y = y_max - y_min;
+    int is_hot = 0;
+    if (
+        (x_min <= ctx->mouse_position[0]) &&
+        (x_max >= ctx->mouse_position[0]) &&
+        (y_min <= ctx->mouse_position[1]) &&
+        (y_max >= ctx->mouse_position[1])
+    ) {
+        button_color = newVec3(0.66, 0.66, 0.6);
+        font_color = newVec3(0.88, 0.88, 0.5);
+        is_hot = 1;
+    }
+    _font_buffer_push(renderer->font, text, position, font_color);
+
+    entity = &renderer->gui_entities[0];
+    gui_quad_in_pos(
+        ctx,  entity, newVec2(x_min, y_min), button_position, button_color
+    );
+
+    int result = 0;
+    if (is_hot &&
+        glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS
+    ) {
+        result = 1;
+    }
+
+    return result;
+}

@@ -34,6 +34,7 @@ int game_run() {
     //  [ ] OBJ Parser Update:
     //      [ ] normalize normal vectors
     //      [ ] handle EOF
+    //  [ ] Fix file_handler for big endian
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
@@ -52,7 +53,7 @@ int game_run() {
     distance_from_player = 5.0;
     random_experiment = 0;
 
-    entity_index = 12;
+    entity_index = 10;
     entity_category_index = 0;
     entity_categories[0] = "Entity";
     entity_categories[1] = "GUI Entity";
@@ -232,6 +233,13 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     game_ctx->current_time = time;
 
     Entity *entity = get_entity_selected(renderer);
+    printf(
+        "POSITION: %f %f %f is active: %d\n",
+        entity->position->x,
+        entity->position->y,
+        entity->position->z,
+        entity->active
+    );
     if ( (time - game_ctx->start_time) > 5.0 && stage < 0) {
         for (int i=1; i<10; i++) {
             entity = &renderer->entities[i];
@@ -252,13 +260,13 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // }
 
 
-    if (random_experiment) {
-        update_entities(game_ctx, camera);
-        if (time - game_ctx->prev_rand_time > 3.0) {
-            game_ctx->prev_rand_time = time;
-            add_random_entity(ctx, game_ctx, camera);
-        }
-    }
+    // if (random_experiment) {
+    //     update_entities(game_ctx, camera);
+    //     if (time - game_ctx->prev_rand_time > 3.0) {
+    //         game_ctx->prev_rand_time = time;
+    //         add_random_entity(ctx, game_ctx, camera);
+    //     }
+    // }
 
     entity = get_entity_selected(renderer);
 
@@ -269,9 +277,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         glfwSetWindowShouldClose(ctx->window, GL_TRUE);
     }
 
-    if (toggle_button_press(ctx, GLFW_KEY_P, &pulse_p)) {
-        entity->fill = 1 - entity->fill;
-    }
     if(glfwGetKey(ctx->window, GLFW_KEY_X) == GLFW_PRESS) {
         camera_reset(camera);
     }
@@ -303,6 +308,12 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
         show_debug_info = 1 - show_debug_info;
+        if (show_debug_info) {
+            glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+        else {
+            glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
     }
     if (toggle_button_press(ctx, GLFW_KEY_R, &pulse_r)){
         game_ctx->start_time = time;
@@ -314,83 +325,103 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         // random_experiment = 1 - random_experiment;
     }
 
-
-    camera_focus_movement(
-        ctx, camera, second_per_frame, distance_from_player
-    );
+    if (!show_debug_info) {
+        camera_focus_movement(
+            ctx, camera, second_per_frame, distance_from_player
+        );
+    }
     if (camera->position.y <= -20.0) {
         game_ctx->game_over = 1;
     }
 
 
-    float aspect_ratio = (float)ctx->width / (float)ctx->height;
-    font_buffer_reset(renderer->font, aspect_ratio);
+    font_buffer_reset(renderer->font, (float)ctx->width, (float)ctx->height);
     char msg[500];
-    entity = &renderer->font_entities[0];
-    int timer = 3 + (int)game_ctx->start_time - (int)time;
-    if (timer > 0) {
-        entity->scale = 5.0;
-        *entity->position = newVec3(5.0, -4.5, 0.0);
-        sprintf(msg, "%d", timer);
-        font_buffer_push(renderer->font, msg);
-        for(int i=1; i<10; i++) {
-            entity = &renderer->entities[i];
-            if (entity->active) {
-                entity->active = 0;
-                entity->color = newVec3(0.0, 0.0, 0.0);
+    if (show_debug_info) {
+        if (ui_button(ctx, renderer, newVec2(50.0, 50.0), "Show Mesh Wire")) {
+            if (pulse_p == 0) {
+                pulse_p = 1;
             }
         }
-    }
-    else if (timer >= -1) {
-        entity->scale = 5.0;
-        *entity->position = newVec3(4.95, -4.5, 0.0);
-        font_buffer_push_color(
-            renderer->font, "GO!", newVec3(1.0, 1.0, 0.0)
-        );
-    }
-    else if (game_ctx->game_over) {
-        entity->scale = 5.0;
-        *entity->position = newVec3(4.5, -4.5, 0.0);
-        font_buffer_push_color(
-            renderer->font, "GAME OVER", newVec3(1.0, 0.0, 0.0)
-        );
-        font_buffer_push_color(
-            renderer->font, game_ctx->msg, newVec3(1.0, 0.0, 0.0)
-        );
-        font_buffer_push_color(
-            renderer->font, "R to Restart", newVec3(1.0, 1.0, 0.0)
-        );
-        font_buffer_push_color(
-            renderer->font, game_ctx->msg, newVec3(1.0, 0.0, 0.0)
-        );
-        random_experiment = 0;
-        stage = -1;
-        if (game_ctx->max_points < game_ctx->points) {
-            game_ctx->max_points = game_ctx->points;
-        }
-        game_ctx->points = 0;
-        for(int i=1; i<10; i++) {
-            entity = &renderer->entities[i];
-            if (entity->active) {
-                entity->color = newVec3(1.0, 0.0, 0.0);
+        else {
+            if (pulse_p == 1) {
+                entity->fill = 1 - entity->fill;
+                pulse_p = 0;
             }
         }
     }
     else {
-        *entity->position = newVec3(0.0, 0.0, 0.0);
-        entity->scale = 1.0;
-
-        sprintf(msg, "TIME: %.3f", time - game_ctx->start_time);
-        font_buffer_push(renderer->font, msg);
-        sprintf(
-            msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
-        );
-        font_buffer_push(renderer->font, msg);
-        sprintf(msg, "POINTS: %d", game_ctx->points);
-        font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-        sprintf(msg, "MAX POINTS: %d", game_ctx->max_points);
-        font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+        entity = &renderer->gui_entities[0];
+        entity->active = 0;
     }
+    entity = get_entity_selected(renderer);
+
+    // int timer = 3 + (int)game_ctx->start_time - (int)time;
+    // if (timer > 0) {
+    //     entity->scale = 5.0;
+    //     *entity->position = newVec3(5.0, -4.5, 0.0);
+    //     sprintf(msg, "%d", timer);
+    //     font_buffer_push(renderer->font, msg);
+    //     for(int i=1; i<10; i++) {
+    //         entity = &renderer->entities[i];
+    //         if (entity->active) {
+    //             entity->active = 0;
+    //             entity->color = newVec3(0.0, 0.0, 0.0);
+    //         }
+    //     }
+    // }
+    // else if (timer >= -1) {
+    //     entity->scale = 5.0;
+    //     *entity->position = newVec3(4.95, -4.5, 0.0);
+    //     font_buffer_push_color(
+    //         renderer->font, "GO!", newVec3(1.0, 1.0, 0.0)
+    //     );
+    // }
+    // else if (game_ctx->game_over) {
+    //     entity->scale = 5.0;
+    //     *entity->position = newVec3(4.5, -4.5, 0.0);
+    //     font_buffer_push_color(
+    //         renderer->font, "GAME OVER", newVec3(1.0, 0.0, 0.0)
+    //     );
+    //     font_buffer_push_color(
+    //         renderer->font, game_ctx->msg, newVec3(1.0, 0.0, 0.0)
+    //     );
+    //     font_buffer_push_color(
+    //         renderer->font, "R to Restart", newVec3(1.0, 1.0, 0.0)
+    //     );
+    //     font_buffer_push_color(
+    //         renderer->font, game_ctx->msg, newVec3(1.0, 0.0, 0.0)
+    //     );
+    //     random_experiment = 0;
+    //     stage = -1;
+    //     if (game_ctx->max_points < game_ctx->points) {
+    //         game_ctx->max_points = game_ctx->points;
+    //     }
+    //     game_ctx->points = 0;
+    //     for(int i=1; i<10; i++) {
+    //         entity = &renderer->entities[i];
+    //         if (entity->active) {
+    //             entity->color = newVec3(1.0, 0.0, 0.0);
+    //         }
+    //     }
+    // }
+    // else {
+    //     *entity->position = newVec3(0.0, 0.0, 0.0);
+    //     entity->scale = 1.0;
+
+    //     sprintf(msg, "TIME: %.3f", time - game_ctx->start_time);
+    //     font_buffer_push(renderer->font, msg);
+    //     sprintf(
+    //         msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
+    //     );
+    //     font_buffer_push(renderer->font, msg);
+    //     sprintf(msg, "POINTS: %d", game_ctx->points);
+    //     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+    //     sprintf(msg, "MAX POINTS: %d", game_ctx->max_points);
+    //     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
+    // }
+
+
 
     if (glfwGetKey(ctx->window, GLFW_KEY_H) == GLFW_PRESS) {
         entity->position->x -= 0.1;
@@ -404,6 +435,12 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     if (glfwGetKey(ctx->window, GLFW_KEY_K) == GLFW_PRESS) {
         entity->position->y += 0.1;
     }
+    printf("FONT: %f %f %f\n", 
+        entity->position->x,
+        entity->position->y,
+        entity->position->z
+    );
+    printf("%d %d\n", ctx->width, ctx->height);
 
     // if (show_debug_info) {
     //     handle_debug_info(ctx, renderer, camera, second_per_frame);

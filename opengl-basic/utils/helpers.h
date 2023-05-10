@@ -53,6 +53,9 @@ Vec3 mouse_to_plane(
 );
 Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance);
 Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance);
+int ui_button(
+    GraphicsContext *ctx, Renderer *renderer, Vec2 position, char *text
+);
 
 
 #endif  // HELPERS_H

@@ -3,18 +3,15 @@ LIBS = -lglfw -ldl -lm
 
 INCLUDES = -I ../external
 BIN = ../build
+EXP_DIR = experiments
 OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c \
 	  utils/helpers.c utils/file_handler.c \
 	  $(EXP_DIR)/packman.c $(EXP_DIR)/utils/experiment_helpers.c
 PROG = $(BIN)/p
-
-EXP_DIR = experiments
-PACKMAN_OBJ = memory.c font.c mesh.c shader.c graphics.c common.c image.c \
-	utils/helpers.c utils/file_handler.c $(EXP_DIR)/utils/experiment_helpers.c
-PACKMAN = $(BIN)/packman
+GLTF = $(BIN)/gltf
 
 
-.PHONY: clean dev all packman main
+.PHONY: clean dev all main tmp
 
 all: clean $(PROG)
 	$(PROG)
@@ -22,15 +19,14 @@ all: clean $(PROG)
 main: $(PROG)
 	$(PROG)
 
-packman: clean $(PACKMAN)
-	$(PACKMAN)
+tmp: $(GLTF)
+	$(GLTF)
 
 $(PROG): main.c $(OBJ)
 	gcc -o $@ $(CFLAGS) $(INCLUDES) $(OBJ) main.c $(LIBS)
 
-$(PACKMAN): $(EXP_DIR)/random.c $(PACKMAN_OBJ)
-	gcc -o $@ $(CFLAGS) $(INCLUDES) $(PACKMAN_OBJ) \
-		$(EXP_DIR)/random.c $(LIBS)
+$(GLTF): utils/file_handler.c memory.c
+	gcc -o $@ $(CFLAGS) $(INCLUDES) memory.c utils/file_handler.c $(LIBS)
 
 dev:
 	apt install libglfw3 libglfw3-dev

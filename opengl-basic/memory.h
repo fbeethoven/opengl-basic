@@ -29,6 +29,7 @@ typedef struct Arena {
 } Arena;
 
 
+Arena *init_arena(unsigned long memory_capacity);
 void *_push_struct(Arena *arena, U64 n);
 #define mem_push(arena_ptr, type) \
     (type *)_push_struct((arena_ptr), (sizeof(type)))
@@ -43,6 +44,9 @@ void *_arr_pop(ArrayList *arr, U64 n);
 #define arr_pop(arr, type) (type *)_arr_pop((arr), sizeof(type))
 
 void arr_free(ArrayList *arr);
+
+unsigned long hash_function(void *key, int len);
+unsigned long hash_string(char *key);
 
 
 #endif  // MEMORY_H

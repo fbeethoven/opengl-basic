@@ -6,9 +6,6 @@ GlyphInfo getGlyphInfo(
 ) {
     stbtt_aligned_quad quad;
 
-    float x_num = 400.0 * font->aspect_ratio;
-    float y_num = 300.0;
-
     stbtt_GetPackedQuad(
         font->char_info,
         font->atlasWidth,
@@ -19,10 +16,10 @@ GlyphInfo getGlyphInfo(
         &quad,
         1
     );
-    float xmin = quad.x0/x_num;
-    float xmax = quad.x1/x_num;
-    float ymin = -quad.y1/y_num;
-    float ymax = -quad.y0/y_num;
+    float xmin = 2*quad.x0/font->width - 1.0;
+    float xmax = 2*quad.x1/font->width - 1.0;
+    float ymin = 1.0 -2*quad.y1/font->height;
+    float ymax = 1.0 -2*quad.y0/font->height;
 
     GlyphInfo info = {0};
     info.offsetX = offsetX;
@@ -65,11 +62,8 @@ void font_mesh_free(Mesh *font_mesh) {
 }
 
 
-
-
-
-void font_init(Font *font, char *font_file_path, float aspect_ratio) {
-    font->size = 20;
+void font_init(Font *font, char *font_file_path, float width, float height) {
+    font->size = 25;
     font->atlasWidth = 1024;
     font->atlasHeight = 1024;
     font->oversampleX = 2;
@@ -79,10 +73,11 @@ void font_init(Font *font, char *font_file_path, float aspect_ratio) {
     font->texture = 0;
 
     font->y_step = 20.0;
-    font->base_x = -400.0 * aspect_ratio;
-    font->base_y = -280.0;
+    font->base_x = 0.0;
+    font->base_y = 0.0;
 
-    font->aspect_ratio = aspect_ratio;
+    font->width = width;
+    font->height = height;
 
 
     glGenVertexArrays(1, &font->vao);
@@ -185,17 +180,18 @@ void font_init(Font *font, char *font_file_path, float aspect_ratio) {
 }
 
 
-void font_buffer_reset(Font *font, float aspect_ratio) {
+void font_buffer_reset(Font *font, float width, float height) {
     font->font_mesh->vertices_len = 0;
     font->font_mesh->uvs_len = 0;
     font->font_mesh->color_len = 0;
     font->font_mesh->indices_len = 0;
 
     font->y_step = 20.0;
-    font->base_x = -400.0 * aspect_ratio;
-    font->base_y = -280.0;
+    font->base_x = 0.0;
+    font->base_y = 0.0;
 
-    font->aspect_ratio = aspect_ratio;
+    font->width = width;
+    font->height = height;
 }
 
 
@@ -232,9 +228,11 @@ void font_update_buffer(Font *font) {
 }
 
 
-void _font_buffer_push(Font *font, char *msg, Vec2 position, Vec3 color) {
+Vec2 _font_buffer_push(Font *font, char *msg, Vec2 position, Vec3 color) {
+    Vec2 size = {0};
     Mesh *mesh = font->font_mesh;
-    float offsetX = position.x, offsetY = position.y;
+    float offsetX = position.x;
+    float offsetY = position.y;
     int counter = mesh->vertices_len;
     int indices_counter = mesh->indices_len;
     char c;
@@ -268,27 +266,41 @@ void _font_buffer_push(Font *font, char *msg, Vec2 position, Vec3 color) {
 
         counter += 4;
         indices_counter += 6;
+
+        if (glyph_info.positions[2].y > size.y) {
+            size.y = glyph_info.positions[2].y;
+        }
+        size.x = glyph_info.positions[2].x;
     }
+
     mesh->vertices_len = counter;
     mesh->uvs_len = counter;
     mesh->color_len = counter;
     mesh->indices_len = indices_counter;
+
+
+    return newVec2(
+        (0.5 + 0.5*size.x) * font->width - position.x,
+        position.y - (0.5 - 0.5*size.y) * font->height
+    );
 }
 
 
-void font_buffer_push(Font *font, char *msg) {
-    _font_buffer_push(
+Vec2 font_buffer_push(Font *font, char *msg) {
+    Vec2 result = _font_buffer_push(
         font, msg, newVec2(font->base_x, font->base_y), newVec3(1.0, 1.0, 1.0)
     );
     font->base_y += font->y_step;
+    return result;
 }
 
 
-void font_buffer_push_color(Font *font, char *msg, Vec3 color) {
-    _font_buffer_push(
+Vec2 font_buffer_push_color(Font *font, char *msg, Vec3 color) {
+    Vec2 result = _font_buffer_push(
         font, msg, newVec2(font->base_x, font->base_y), color
     );
     font->base_y += font->y_step;
+    return result;
 }
 
 
