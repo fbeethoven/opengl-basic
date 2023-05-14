@@ -45,7 +45,7 @@ void quad_in_pos(
 
     entity->position = rect_pos;
     entity->active = 1;
-    entity->scale = 1.0;
+    entity->scale = newVec3(1.0, 1.0, 1.0);
 }
 
 
@@ -100,7 +100,7 @@ void gui_quad_in_pos(
 
     entity->position = rect_pos;
     entity->active = 1;
-    entity->scale = 1.0;
+    entity->scale = newVec3(1.0, 1.0, 1.0);
 }
 
 
@@ -163,8 +163,8 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
     //         params->player_is_grounded = 0;
     // }
 
-    camera->yaw += 0.001 * (float)ctx->dmouse[0];
-    camera->pitch += 0.001 * (float)ctx->dmouse[1];
+    camera->yaw += 0.0005 * (float)ctx->dmouse[0];
+    camera->pitch += 0.0005 * (float)ctx->dmouse[1];
     ctx->dmouse[0] = 0.0;
     ctx->dmouse[1] = 0.0;
 
@@ -185,10 +185,6 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
         camera->position.z + sin(camera->pitch) * sin(camera->yaw)
     );
 
-    printf(
-        "%f %f => %f\n",
-        camera->position.x, camera->position.z, player_is_grounded
-    );
     if (
         (camera->position.x <= -100) || (camera->position.z <= -100) ||
         (camera->position.x >= 95) || (camera->position.z >= 95)

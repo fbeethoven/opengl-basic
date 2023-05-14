@@ -39,11 +39,27 @@ typedef struct Entity {
     float rotation_x;
     float rotation_y;
     float rotation_z;
-    float scale;
+    Vec3 scale;
     int active;
     int fill;
     char debug_name[50];
 } Entity;
+
+typedef struct Transform {
+    Vec3 translation;
+    Vec3 rotation;
+    Vec3 scale;
+} Transform;
+
+typedef struct Joint Joint;
+
+typedef struct Joint {
+    Transform local_transform;
+    Joint *children;
+    Joint *next;
+
+    Entity *entity;
+} Joint;
 
 
 typedef struct Renderer {
@@ -59,6 +75,7 @@ typedef struct Renderer {
 
 	int shader;
     Entity entities[20];
+    Entity debug_entities[100];
 
 	int circle_shader;
 	int gui_shader;
@@ -67,6 +84,8 @@ typedef struct Renderer {
 
     Font *font;
     Light *light;
+
+    Joint *root;
 
 } Renderer;
 
@@ -122,5 +141,10 @@ void bind_indices_buffer(
 );
 void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh);
 
+Joint *new_joint(Entity *entity);
+// void joint_update(Joint *parent, Joint *joint);
+void joint_update_all(Joint *root);
+// void joint_update_children(Joint *root);
+Joint *joint_push(Joint *joint, Entity *entity);
 
 #endif  // GRAPHICS_H

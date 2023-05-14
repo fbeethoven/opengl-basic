@@ -292,7 +292,67 @@ void render_entities(Renderer *rh) {
             entity.rotation_x,
             entity.rotation_y,
             entity.rotation_z,
-            entity.scale
+            &entity.scale
+        );
+        shader_load_matrix(
+            rh->shader,
+            "transformation_matrix",
+            &transformation_matrix
+        );
+
+        if ( (entity.fill & 1) == 0) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        glDrawElements(
+            GL_TRIANGLES, entity.model->vertex_count,
+            GL_UNSIGNED_INT, 0
+        );
+
+        if (!vec3_is_equal(entity.color, light_color)) {
+            log_if_err("Issue before loading light\n");
+            rh->light->color = light_color;
+            shader_load_light(rh->shader, rh->light);
+            log_if_err("There was a problem loading lights");
+        }
+	}
+
+    for (int i=0; i<100; i++) {
+        Entity entity = rh->debug_entities[i];
+
+        if (entity.active == 0) {
+            continue;
+        }
+        if (
+            !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
+            !vec3_is_equal(entity.color, light_color)
+        ) {
+            log_if_err(
+                "Entity Renderer found an issue before loading light\n"
+            );
+            rh->light->color = entity.color;
+            shader_load_light(rh->shader, rh->light);
+            log_if_err("Entity Renderer found problem loading lights");
+        }
+
+        glBindVertexArray(entity.model->vao);
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        log_if_err("There was an issue with attributes\n");
+        
+        Mat4 transformation_matrix = create_transformation_matrix(
+            entity.position,
+            entity.rotation_x,
+            entity.rotation_y,
+            entity.rotation_z,
+            &entity.scale
         );
         shader_load_matrix(
             rh->shader,
@@ -342,7 +402,7 @@ void render_entities(Renderer *rh) {
     //         entity.rotation_x,
     //         entity.rotation_y,
     //         entity.rotation_z,
-    //         entity.scale
+    //         &entity.scale
     //     );
     //     shader_load_matrix(
     //         rh->circle_shader,
@@ -400,7 +460,7 @@ void render_font_entities(Renderer *rh) {
             entity.rotation_x,
             entity.rotation_y,
             entity.rotation_z,
-            entity.scale
+            &entity.scale
         );
         shader_load_matrix(
             rh->gui_shader,
@@ -452,7 +512,7 @@ void render_gui_entities(Renderer *rh) {
             entity.rotation_x,
             entity.rotation_y,
             entity.rotation_z,
-            entity.scale
+            &entity.scale
         );
 
         shader_load_matrix(
@@ -547,3 +607,74 @@ void increase_rotation(Entity *entity, float dx, float dy, float dz) {
     entity->rotation_z += dz;
 }
 
+
+void joint_update(Joint *parent, Joint *joint, int is_root) {
+    Entity *entity = joint->entity;
+
+    if (is_root) {
+        *entity->position = joint->local_transform.translation;
+        entity->rotation_x = joint->local_transform.rotation.x;
+        entity->rotation_y = joint->local_transform.rotation.y;
+        entity->rotation_z = joint->local_transform.rotation.z;
+        return;
+    }
+    if (!parent) { return; }
+
+    Entity *e_parent = parent->entity;
+    Vec3 scale = newVec3(1.0, 1.0, 1.0);
+    Mat4 parent_transformation = create_transformation_matrix(
+        e_parent->position,
+        e_parent->rotation_x, e_parent->rotation_y, e_parent->rotation_z,
+        &scale
+    );
+    parent_transformation = mat4_transpose(&parent_transformation);
+
+    Vec4 transform = newVec4(
+        joint->local_transform.translation.x,
+        joint->local_transform.translation.y,
+        joint->local_transform.translation.z,
+        1.0
+    );
+    transform = vec4_multiply(&parent_transformation, &transform);
+    *entity->position = newVec3(transform.x, transform.y, transform.z);
+
+    entity->rotation_x = (
+        e_parent->rotation_x + joint->local_transform.rotation.x
+    );
+    entity->rotation_y = (
+        e_parent->rotation_y + joint->local_transform.rotation.y
+    );
+    entity->rotation_z = (
+        e_parent->rotation_z + joint->local_transform.rotation.z
+    );
+}
+
+void joint_update_children(Joint *root, int is_root) {
+    joint_update(0, root, is_root);
+    for (
+        Joint *current = root->children;
+        current;
+        current = current->next
+    ) {
+        current->entity->position->y = 1.0;
+        joint_update(root, current, 0);
+        joint_update_children(current, 0);
+    }
+}
+
+void joint_update_all(Joint *root) {
+    joint_update_children(root, 1);
+}
+
+Joint *new_joint(Entity *entity) {
+    Joint *joint = calloc(sizeof(Joint), 1);
+    joint->entity = entity;
+    return joint;
+}
+
+Joint *joint_push(Joint *joint, Entity *entity) {
+    Joint *child = new_joint(entity);
+    child->next = joint->children;
+    joint->children = child;
+    return child;
+}

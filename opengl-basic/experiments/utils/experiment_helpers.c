@@ -1,6 +1,5 @@
 #include "experiment_helpers.h"
 
-
 int get_new_random(GameContext *game_ctx) {
     double time_v = glfwGetTime();
     if (time_v - game_ctx->prev_rand_time > 1.0) {
@@ -22,7 +21,7 @@ Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx) {
 }
 
 void load_assets(
-    GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font
+    GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font, Camera *camera
 ) {
     Mesh *mesh = (Mesh *)malloc(sizeof(Mesh));
     int mesh_size = 128 * 128;
@@ -83,14 +82,14 @@ void load_assets(
     entity->position = font_position;
     *entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
-    entity->scale = 1;
+    entity->scale = newVec3(1.0, 1.0, 1.0);
 
     entity = &renderer->entities[0];
     strcpy(entity->debug_name, "World Floor");
     entity->model = world_model;
     entity->position = &game_ctx->world_center;
     entity->active = 1;
-    entity->scale = 1.0;
+    entity->scale = newVec3(1.0, 1.0, 1.0);
 
 
     BaseModel *cube_model = &game_ctx->models[ModelType_Cube];
@@ -389,6 +388,28 @@ void load_assets(
 
 
 
+#if 1
+
+    Vec3 pos_a = newVec3(0.0, 1.0, 0.0);
+    Entity *e_root = get_new_debug_entity(game_ctx, renderer, pos_a);
+    Joint *root = new_joint(e_root);
+    root->local_transform.rotation = newVec3(0.0, 0.0, 1.5707);
+
+    renderer->root = root;
+
+
+    Joint *j_child = joint_push(
+        root, get_new_debug_entity(game_ctx, renderer, newVec3(0.0, 0.0, 0.0))
+    );
+
+
+    j_child->local_transform.translation = newVec3(1.0, 0.0, 0.0);
+
+
+
+
+
+
     BaseModel *trooper= malloc(sizeof(BaseModel));
 
     char *data = read_file("assets/models/scene.gltf");
@@ -429,11 +450,62 @@ void load_assets(
     entity->model = trooper;
 
     Vec3 *pos = malloc(sizeof(Vec3));
-    *pos = newVec3(0.0, 1.0, 0.0);
+    *pos = newVec3(0.0, 0.0, 0.0);
     entity->position = pos;
 
     entity->active = 1;
-    entity->scale = 2.0;
+    entity->scale = newVec3(1.0, 1.0, 1.0);
+    entity->fill = 1;
+#endif
+
+
+#if 1
+
+    ArrayList *bones = get_anim_bones();
+
+    Mat4 C = {0};
+    Vec3 position = {0};
+    Vec4 origin = newVec4(0.0, 0.0, 0.0, 1.0);
+    Vec4 result = {0};
+    for (int i=0; i<bones->counter; i++) {
+        C = ((Mat4 *)bones->data)[i];
+        C = mat4_inverse(&C);
+        C = mat4_transpose(&C);
+        result = vec4_multiply(&C, &origin);
+        position.x = result.x;
+        position.y = result.y;
+        position.z = result.z;
+
+        get_new_debug_entity(game_ctx, renderer, position);
+    }
+
+#endif
+}
+
+
+Entity* get_new_debug_entity(
+    GameContext *game_ctx, Renderer *renderer, Vec3 pos
+) {
+    Entity *entity;
+    for (int i=0; i<100; i++) {
+        entity = &renderer->debug_entities[i];
+        if (entity->active == 0) {
+            char msg[50];
+            sprintf(entity->debug_name, "Debug Entity %d", i); 
+
+            entity->model = &game_ctx->models[ModelType_sphere];
+
+            Vec3 *new_pos = malloc(sizeof(Vec3));
+            *new_pos = pos;
+            entity->position = new_pos;
+
+            entity->active = 1;
+            entity->color = newVec3(1.0, 1.0, 0.0);
+            entity->scale = newVec3(0.05, 0.05, 0.05);
+            return entity;
+        }
+    }
+    return 0;
 }
 
 
@@ -474,7 +546,7 @@ RandomEntity* add_random_entity(
             else if (ran_model == ModelType_Spoon){ scalar = 10.0;}
             else if (ran_model == ModelType_Teapot){ scalar = 1.5;}
             else { scalar = 3.0;}
-            r_entity->entity->scale = scalar;
+            r_entity->entity->scale = newVec3(scalar, scalar, scalar);
 
             float rot = (float)(rand() % 3000000)/3000000;
             r_entity->entity->rotation_y = rot * 3.1415;
@@ -522,7 +594,7 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
         rand_entity->entity = entity;
         rand_entity->active = &entity->active;
         entity->position = &rand_entity->position;
-        entity->scale = 1.0;
+        entity->scale = newVec3(1.0, 1.0, 1.0);
         entity->active = 0;
     }
     rand_init(game_ctx);
@@ -562,7 +634,7 @@ void new_circle_entity(GameContext *game_ctx) {
         if (*entity->active == 0) {
             entity->entity->model = &game_ctx->models[ModelType_SimpleSphere];
             entity->position = newVec3(0.0, 0.0, 0.0);
-            entity->entity->scale = 1.0;
+            entity->entity->scale = newVec3(1.0, 1.0, 1.0);
             entity->entity->color = newVec3(1.0, 1.0, 0.0);
             *entity->active = 1;
             return;

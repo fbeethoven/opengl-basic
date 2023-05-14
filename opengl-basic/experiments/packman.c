@@ -42,7 +42,7 @@ int game_run() {
 
     Font font = {0};
 
-    speed = 1.0;
+    speed = 0.5;
     player_is_grounded = 0;
     show_debug_info = 0;
     pulse_n = 0;
@@ -53,7 +53,8 @@ int game_run() {
     distance_from_player = 5.0;
     random_experiment = 0;
 
-    entity_index = 10;
+    // entity_index = 10;
+    entity_index = 0;
     entity_category_index = 0;
     entity_categories[0] = "Entity";
     entity_categories[1] = "GUI Entity";
@@ -73,10 +74,14 @@ int game_run() {
 
     Camera camera = {0};
 
-    camera.position = newVec3(0.0, 60.0, 0.0);
-    camera.centre = newVec3(0.0, 55.0, 0.0);
-    camera.pitch = 2.2;
-    camera.yaw = 1.57;
+    // camera.position = newVec3(0.0, 60.0, 0.0);
+    // camera.centre = newVec3(0.0, 55.0, 0.0);
+    // camera.pitch = 2.2;
+    // camera.yaw = 1.57;
+    camera.position = newVec3(0.0, 1.0, 5.0);
+    camera.centre = newVec3(0.0, 1.0, 0.0);
+    camera.pitch = 1.57;
+    camera.yaw = -1.57;
 
     Light light = {0};
     light.position = newVec3(0.0, -1.0, 0.0);
@@ -84,7 +89,7 @@ int game_run() {
 
     renderer.light = &light;
 
-    load_assets(&ctx, &renderer, game_ctx, &font);
+    load_assets(&ctx, &renderer, game_ctx, &font, &camera);
 
 
     // Entity *entity = &renderer.gui_entities[1];
@@ -95,7 +100,6 @@ int game_run() {
 
 
     while (!glfwWindowShouldClose(ctx.window)) {
-        printf("Entity SELETED: %d\n", entity_index);
         handle_input(&ctx, &renderer, &camera);
 
         render(&renderer, &camera);
@@ -110,6 +114,8 @@ int game_run() {
 
 
 Entity *get_entity_selected(Renderer *renderer) {
+    return &renderer->debug_entities[entity_index];
+
     if (entity_category_index == 0) {
         return &renderer->entities[entity_index];
     }
@@ -233,13 +239,14 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     game_ctx->current_time = time;
 
     Entity *entity = get_entity_selected(renderer);
-    printf(
-        "POSITION: %f %f %f is active: %d\n",
-        entity->position->x,
-        entity->position->y,
-        entity->position->z,
-        entity->active
-    );
+
+    // mouse picking
+    // entity = &renderer->entities[10];
+    // Vec3 position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
+    // *entity->position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
+
+
+
     if ( (time - game_ctx->start_time) > 5.0 && stage < 0) {
         for (int i=1; i<10; i++) {
             entity = &renderer->entities[i];
@@ -422,25 +429,24 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // }
 
 
+    Joint *root = renderer->root;
+
 
     if (glfwGetKey(ctx->window, GLFW_KEY_H) == GLFW_PRESS) {
-        entity->position->x -= 0.1;
+        root->local_transform.translation.x -= 0.1;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_L) == GLFW_PRESS) {
-        entity->position->x += 0.1;
+        root->local_transform.translation.x += 0.1;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_J) == GLFW_PRESS) {
-        entity->position->y -= 0.1;
+        root->local_transform.translation.y -= 0.1;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_K) == GLFW_PRESS) {
-        entity->position->y += 0.1;
+        root->local_transform.translation.y += 0.1;
     }
-    printf("FONT: %f %f %f\n", 
-        entity->position->x,
-        entity->position->y,
-        entity->position->z
-    );
-    printf("%d %d\n", ctx->width, ctx->height);
+
+    joint_update_all(root);
+
 
     // if (show_debug_info) {
     //     handle_debug_info(ctx, renderer, camera, second_per_frame);

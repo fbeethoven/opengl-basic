@@ -32,6 +32,7 @@ typedef struct StrSplitter {
 typedef enum TokenKind {
     Token_Unknown,
     Token_StrLiteral,
+    Token_Declaration,
     Token_Colon,
     Token_Coma,
     Token_Int,
@@ -137,6 +138,7 @@ void intermediate_model_free(IntermediateModel *model);
 void transform_obj_file(char *file_path, char *file_output);
 GltfData parse_gltf_data(char *data);
 IntermediateModel load_data_from_gltf(GltfData *gltf, char *data);
+ArrayList *get_anim_bones();
 
 
 #endif  // FILE_HANDLER_H

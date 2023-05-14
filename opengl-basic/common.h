@@ -88,7 +88,7 @@ Mat4 Mat4I();
 
 Mat4 mat4_copy(Mat4 *A);
 Mat4 mat4_add(Mat4 *A, Mat4 *B);
-Mat4 mat4_mult(Mat4 *A, Mat4 *B);
+Mat4 mat4_multiply(Mat4 *A, Mat4 *B);
 void mat4_scale(Vec3 *vec, Mat4 *source);
 Mat4 mat4_translate(Vec3 *vec, Mat4 *A);
 Mat4 mat4_transpose(Mat4 *A);
@@ -102,7 +102,8 @@ Mat4 mat4_rotate_z(float angle, Mat4 *A);
 Mat4 create_view_matrix(Vec3 *position, float pitch, float yaw);
 Mat4 create_transformation_matrix(
     Vec3 *translation,
-    float rx, float ry, float rz, float scale_factor
+    float rx, float ry, float rz,
+    Vec3 *scale
 );
 
 Mat4 create_transformation_matrix_2d(
