@@ -480,6 +480,18 @@ void load_assets(
     }
 
 #endif
+
+    entity = &renderer->entities[11];
+    strcpy(entity->debug_name, "Cube");
+    entity->model = &game_ctx->models[ModelType_Cube];
+
+    Vec3 *pos_b = malloc(sizeof(Vec3));
+    *pos_b = newVec3(5.0, 2.0, 0.0);
+    entity->position = pos_b;
+
+    entity->active = 1;
+    entity->scale = newVec3(5.0, 10.0, 0.05);
+
 }
 
 
