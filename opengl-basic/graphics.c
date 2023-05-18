@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include "common.h"
+#include "memory.h"
 #include "shader.h"
 #include "image.h"
 
@@ -13,6 +14,27 @@ void camera_move(Camera *camera, float dx, float dy, float dz) {
     camera->position.x += dx;
     camera->position.y += dy;
     camera->position.z += dz;
+}
+
+void store_int_in_attributes(
+    unsigned int *buffer_id,
+    int attribute_index,
+    int coordinate_size,
+    int buffer_size,
+    int *data
+) {
+    glGenBuffers(1, buffer_id);
+	glBindBuffer(GL_ARRAY_BUFFER, *buffer_id);
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        buffer_size,
+        data,
+        GL_STATIC_DRAW
+    );
+    glVertexAttribIPointer(attribute_index, coordinate_size, GL_INT,
+        coordinate_size * sizeof(int), 0
+    );
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void store_float_in_attributes(
@@ -175,7 +197,7 @@ static Mat4 create_projection_matrix(
     GraphicsContext *ctx, Renderer* rh
 ) {
     float aspectRatio = (float)ctx->width / (float)ctx->height;
-    float y_scale = (float) ((1.0f / tan(rh->FOV / 2.0f)) * aspectRatio);
+    float y_scale = (float) ((1.0f / tan(rh->FOV*0.5)) * aspectRatio);
     float x_scale = y_scale / aspectRatio;
     float frustum_length = rh->FAR_PLANE - rh->NEAR_PLANE;
 
@@ -202,6 +224,12 @@ void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh) {
         "projection_matrix",
         &rh->projection_matrix
     );
+    shader_push(rh->anim_shader);
+    shader_load_matrix(
+        rh->anim_shader,
+        "projection_matrix",
+        &rh->projection_matrix
+    );
     shader_push(rh->circle_shader);
     shader_load_matrix(
         rh->circle_shader,
@@ -213,7 +241,7 @@ void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh) {
 
 
 void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
-    rh->FOV = 1.19377;
+    rh->FOV = 1.19;
 	rh->NEAR_PLANE = 0.1f;
 	rh->FAR_PLANE = 1000;
 
@@ -224,6 +252,9 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     rh->projection_matrix = create_projection_matrix(ctx, rh);
 
     rh->shader = shader_get_program();
+    rh->anim_shader = shader_get_program_general(
+        "shaders/anim_vertex.glsl", "shaders/anim_fragment.glsl"
+    );
     rh->circle_shader = shader_get_program_general(
         "shaders/circle_vertex.glsl", "shaders/circle_fragment.glsl"
     );
@@ -235,6 +266,12 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     shader_push(rh->shader);
     shader_load_matrix(
         rh->shader,
+        "projection_matrix",
+        &rh->projection_matrix
+    );
+    shader_push(rh->anim_shader);
+    shader_load_matrix(
+        rh->circle_shader,
         "projection_matrix",
         &rh->projection_matrix
     );
@@ -328,6 +365,28 @@ void render_entities(Renderer *rh) {
         if (entity.active == 0) {
             continue;
         }
+        int shader;
+        if (i == 99 && rh->do_animation) {
+            shader = rh->anim_shader;
+            shader_push(shader);
+
+            ArrayList *joints = rh->animation_controller->joints;
+            ArrayList *tmp = new_array_list(Mat4);
+            for (int m=0; m<joints->counter; m++) {
+                Joint joint = arr_get(joints, Joint, m);
+                *arr_push(tmp, Mat4) = joint.local_transform;
+            }
+            int uniform_location = glGetUniformLocation(
+                shader, "joint_transform");
+            glUniformMatrix4fv(
+                uniform_location, tmp->counter, GL_FALSE, (float *)tmp->data
+            );
+            arr_free(tmp);
+            log_if_err("Animation Joint Transpose\n");
+        }
+        else {
+            shader = rh->shader;
+        }
         if (
             !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
             !vec3_is_equal(entity.color, light_color)
@@ -336,7 +395,7 @@ void render_entities(Renderer *rh) {
                 "Entity Renderer found an issue before loading light\n"
             );
             rh->light->color = entity.color;
-            shader_load_light(rh->shader, rh->light);
+            shader_load_light(shader, rh->light);
             log_if_err("Entity Renderer found problem loading lights");
         }
 
@@ -345,8 +404,11 @@ void render_entities(Renderer *rh) {
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(3);
+        glEnableVertexAttribArray(4);
         log_if_err("There was an issue with attributes\n");
         
+
         Mat4 transformation_matrix = create_transformation_matrix(
             entity.position,
             entity.rotation_x,
@@ -354,10 +416,9 @@ void render_entities(Renderer *rh) {
             entity.rotation_z,
             &entity.scale
         );
+
         shader_load_matrix(
-            rh->shader,
-            "transformation_matrix",
-            &transformation_matrix
+            shader, "transformation_matrix", &transformation_matrix
         );
 
         if ( (entity.fill & 1) == 0) {
@@ -377,7 +438,7 @@ void render_entities(Renderer *rh) {
         if (!vec3_is_equal(entity.color, light_color)) {
             log_if_err("Issue before loading light\n");
             rh->light->color = light_color;
-            shader_load_light(rh->shader, rh->light);
+            shader_load_light(shader, rh->light);
             log_if_err("There was a problem loading lights");
         }
 	}
@@ -549,6 +610,12 @@ void render(Renderer *rh, Camera *camera) {
         camera->centre,
         newVec3(0.0, 1.0, 0.0)
     );
+    shader_push(rh->anim_shader);
+    shader_load_matrix(
+        rh->circle_shader,
+        "view_matrix",
+        &view_matrix
+    );
     shader_push(rh->circle_shader);
     shader_load_matrix(
         rh->circle_shader,
@@ -566,6 +633,7 @@ void render(Renderer *rh, Camera *camera) {
 
     log_if_err("Renderer found an issue before loading light\n");
     shader_load_light(rh->shader, rh->light);
+    shader_load_light(rh->anim_shader, rh->light);
     log_if_err("Renderer found problem loading lights");
 
     render_entities(rh);
@@ -608,73 +676,3 @@ void increase_rotation(Entity *entity, float dx, float dy, float dz) {
 }
 
 
-void joint_update(Joint *parent, Joint *joint, int is_root) {
-    Entity *entity = joint->entity;
-
-    if (is_root) {
-        *entity->position = joint->local_transform.translation;
-        entity->rotation_x = joint->local_transform.rotation.x;
-        entity->rotation_y = joint->local_transform.rotation.y;
-        entity->rotation_z = joint->local_transform.rotation.z;
-        return;
-    }
-    if (!parent) { return; }
-
-    Entity *e_parent = parent->entity;
-    Vec3 scale = newVec3(1.0, 1.0, 1.0);
-    Mat4 parent_transformation = create_transformation_matrix(
-        e_parent->position,
-        e_parent->rotation_x, e_parent->rotation_y, e_parent->rotation_z,
-        &scale
-    );
-    parent_transformation = mat4_transpose(&parent_transformation);
-
-    Vec4 transform = newVec4(
-        joint->local_transform.translation.x,
-        joint->local_transform.translation.y,
-        joint->local_transform.translation.z,
-        1.0
-    );
-    transform = vec4_multiply(&parent_transformation, &transform);
-    *entity->position = newVec3(transform.x, transform.y, transform.z);
-
-    entity->rotation_x = (
-        e_parent->rotation_x + joint->local_transform.rotation.x
-    );
-    entity->rotation_y = (
-        e_parent->rotation_y + joint->local_transform.rotation.y
-    );
-    entity->rotation_z = (
-        e_parent->rotation_z + joint->local_transform.rotation.z
-    );
-}
-
-void joint_update_children(Joint *root, int is_root) {
-    joint_update(0, root, is_root);
-    for (
-        Joint *current = root->children;
-        current;
-        current = current->next
-    ) {
-        current->entity->position->y = 1.0;
-        joint_update(root, current, 0);
-        joint_update_children(current, 0);
-    }
-}
-
-void joint_update_all(Joint *root) {
-    joint_update_children(root, 1);
-}
-
-Joint *new_joint(Entity *entity) {
-    Joint *joint = calloc(sizeof(Joint), 1);
-    joint->entity = entity;
-    return joint;
-}
-
-Joint *joint_push(Joint *joint, Entity *entity) {
-    Joint *child = new_joint(entity);
-    child->next = joint->children;
-    joint->children = child;
-    return child;
-}

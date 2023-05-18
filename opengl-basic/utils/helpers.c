@@ -416,10 +416,10 @@ int ui_button(
     }
     _font_buffer_push(renderer->font, text, position, font_color);
 
-    entity = &renderer->gui_entities[0];
-    gui_quad_in_pos(
-        ctx,  entity, newVec2(x_min, y_min), button_position, button_color
-    );
+    // entity = &renderer->gui_entities[0];
+    // gui_quad_in_pos(
+    //     ctx,  entity, newVec2(x_min, y_min), button_position, button_color
+    // );
 
     int result = 0;
     if (is_hot &&

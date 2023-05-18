@@ -41,6 +41,119 @@ Vec3 vec3_add(Vec3 *a, Vec3 *b) {
 }
 
 
+Quat quat_new(float x, float y, float z, float w) {
+    Quat result = {.x = x, .y = y, .z = z, .w = w};
+    return result;
+}
+
+
+Quat quat_rotation(Vec3 dir, float angle) {
+    Quat result = {0};
+    Vec3 normalize_dir = dir;
+    vec3_normalize(&normalize_dir);
+    float s = sinf(angle * 0.5);
+    float c = cosf(angle * 0.5);
+    result.x = s * normalize_dir.x;
+    result.y = s * normalize_dir.y;
+    result.z = s * normalize_dir.z;
+    result.w = c;
+
+    return result;
+}
+
+Quat quat_add(Quat a, Quat b) {
+    Quat result = {0};
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    result.z = a.z + b.z;
+    result.w = a.w + b.w;
+    return result;
+}
+
+Quat quat_mult(Quat a, Quat b) {
+    Quat result = {0};
+    result.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y;
+	result.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x;
+	result.z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w;
+	result.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
+
+    return result;
+}
+
+Quat quat_from_euler(float pitch, float yaw, float roll) {
+    Quat rot_x = quat_rotation(newVec3(1.0, 0.0, 0.0), pitch);
+    Quat rot_y = quat_rotation(newVec3(1.0, 0.0, 0.0), yaw);
+    Quat rot_z = quat_rotation(newVec3(1.0, 0.0, 0.0), roll);
+
+    Quat result = quat_mult(rot_x, rot_y);
+    return quat_mult(result, rot_z);
+}
+
+float quat_dot(Quat a, Quat b) {
+    return (a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
+}
+
+Quat quat_normalize(Quat a) {
+    float norm = quat_dot(a, a);
+    Quat result = {
+        .x = a.x / norm, .y = a.y / norm, .z = a.z / norm, .w = a.w / norm
+    };
+    return result; 
+}
+
+Quat quat_conjugate(Quat a) {
+    Quat result = {.x = -a.x, .y = -a.y, .z = -a.z, .w = a.w};
+    return result;
+}
+
+Quat quat_inv(Quat a) {
+    float norm = quat_dot(a, a);
+    Quat result = {
+        .x = -a.x / norm, .y = -a.y / norm, .z = -a.z / norm, .w = a.w / norm
+    };
+    return result; 
+}
+
+Vec3 vec3_rotate_quat(Vec3 v, Quat rot) {
+    Quat tmp = {.x = v.x, .y = v.y, .z = v.z, .w = 0.0};
+    tmp = quat_mult(tmp, quat_conjugate(rot));
+    tmp = quat_mult(rot, tmp);
+
+    return newVec3(tmp.x, tmp.y, tmp.z);
+}
+
+Mat4 quat_to_mat4(Quat q) {
+	Mat4 result = {0};
+    float x = q.x;
+    float y = q.y;
+    float z = q.z;
+    float w = q.w;
+
+    result.m00 = w*w + x*x - y*y - z*z;
+    result.m01 = 2*x*y - 2*w*z;
+    result.m02 = 2*x*z + 2*w*y;
+    result.m03 = 0.0;
+
+    result.m10 = 2*x*y + 2*w*z;
+    result.m11 = w*w + y*y - x*x - z*z;
+    result.m12 = 2*y*z - 2*w*x;
+    result.m13 = 0.0;
+
+    result.m20 = 2*x*z - 2*w*y;
+    result.m21 = 2*y*z + 2*w*x;
+    result.m22 = w*w + z*z - x*x - y*y;
+    result.m23 = 0.0;
+
+    result.m30 = 0.0;
+    result.m31 = 0.0;
+    result.m32 = 0.0;
+    result.m33 = 1.0;
+
+    return result; 
+}
+
+
+
 int vec3_is_equal(Vec3 a, Vec3 b) {
     return ((a.x == b.x) && (a.y == b.y) && (a.z == b.z)); 
 }
@@ -368,6 +481,21 @@ Vec2 vec2_lerp(Vec2 a, Vec2 b, float t) {
 
 Vec3 vec3_lerp(Vec3 a, Vec3 b, float t) {
     return newVec3(lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t));
+}
+
+Vec4 vec4_normalize(Vec4 vec) {
+    float norm = vec.x*vec.x + vec.y*vec.y + vec.z*vec.z + vec.w*vec.w;
+    norm = sqrt(norm);
+    return newVec4(vec.x / norm, vec.y / norm, vec.z / norm, vec.w / norm);
+}
+
+Vec4 vec4_lerp(Vec4 a, Vec4 b, float t) {
+    return newVec4(
+        lerp(a.x, b.x, t),
+        lerp(a.y, b.y, t),
+        lerp(a.z, b.z, t),
+        lerp(a.w, b.w, t)
+    );
 }
 
 

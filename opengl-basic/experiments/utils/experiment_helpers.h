@@ -4,6 +4,7 @@
 
 #include "../../common.h"
 #include "../../graphics.h"
+#include "../../animation.h"
 #include "../../utils/helpers.h"
 #include <time.h>
 

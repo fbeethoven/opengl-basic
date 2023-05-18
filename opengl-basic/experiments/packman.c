@@ -2,6 +2,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 
 #include "packman.h"
+#include "../animation.h"
 #include "../mesh.h"
 #include "../font.h"
 #include "../utils/file_handler.h"
@@ -13,16 +14,27 @@ int random_experiment;
 int pulse_r;
 int stage;
 
+
+int animation_test;
+int do_animation;
+int show_skeleton;
+int show_skeleton_toggle;
+
+
 int game_run() {
+    animation_test = 0;
+    do_animation = 0;
+    show_skeleton = 0;
+    show_skeleton_toggle = 0;
     // TODO:
     //  [X] add color to textures (gamma correction)
-    //  [ ] gui buttons
+    //  [X] gui buttons
     //  [ ] gui sliders
     //  [ ] collision:
     //      [ ] AABB
     //      [ ] SAT
-    //      [ ] Spherical
-    //  [ ] add gravity
+    //      [X] Spherical
+    //  [X] add gravity
     //  [ ] rotate entity towards target point
     //  [X] camera movement using mouse
     //  [ ] quad sprite facing the camera
@@ -34,7 +46,7 @@ int game_run() {
     //  [ ] OBJ Parser Update:
     //      [ ] normalize normal vectors
     //      [ ] handle EOF
-    //  [ ] Fix file_handler for big endian
+    //  [X] Fix file_handler for big endian
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
@@ -214,10 +226,22 @@ void player_focus_movement(
 void update_graphic_state(GraphicsContext *ctx, Renderer *renderer) {
     float prev_width = ctx->width;
     float prev_height = ctx->height;
+    float FOV = renderer->FOV;
+    if (glfwGetKey(ctx->window, GLFW_KEY_UP) == GLFW_PRESS){
+        FOV -= 0.001;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_DOWN) == GLFW_PRESS){
+        FOV += 0.001;
+    }
     glfwGetWindowSize(ctx->window, &ctx->width, &ctx->height);
-    if (prev_width != ctx->width || prev_height != ctx->height) {
+    if (
+        prev_width != ctx->width || prev_height != ctx->height ||
+        renderer->FOV != FOV
+    ) {
+        renderer->FOV = FOV;
         reload_projection_matrix(ctx, renderer);
     }
+    reload_projection_matrix(ctx, renderer);
 
     double prev_x = ctx->mouse_position[0];
     double prev_y = ctx->mouse_position[1];
@@ -230,7 +254,6 @@ void update_graphic_state(GraphicsContext *ctx, Renderer *renderer) {
 
 
 void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
-
     update_graphic_state(ctx, renderer);
 
     double time = glfwGetTime();
@@ -238,8 +261,103 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     ctx->previous_time = time;
     game_ctx->current_time = time;
 
-    Entity *entity = get_entity_selected(renderer);
 
+    Entity *entity;
+
+
+#if 0  // Animation Experiment
+    if (time >= 5.0 && animation_test == 0) {
+        Vec3 translation = newVec3(0.0, 1.0, 0.0);
+        Vec4 rotation = newVec4(sin(1.57), 0.0, 0.0, cos(1.57));
+        Vec3 scale = newVec3(1.0, 1.0, 1.0);
+
+        Mat4 C = Mat4I();
+        C = mat4_translate(&translation, &C);
+        Quat q = quat_new(rotation.x, rotation.y, rotation.z, rotation.w);
+        q = quat_normalize(q);
+        Mat4 R = quat_to_mat4(q);
+        C = mat4_multiply(&C, &R);
+        mat4_scale(&scale, &C);
+        C = mat4_transpose(&C);
+
+        // C = Mat4I();
+
+        animation_test = 1;
+        ArrayList *joints = renderer->animation_controller->joints;
+        for(int i=0; i<joints->counter; i++) {
+            entity = &renderer->debug_entities[i];
+            Vec4 result = newVec4(
+                entity->position->x, entity->position->y, entity->position->z, 1.0
+            );
+            result = vec4_multiply(&C, &result);
+            entity->position->x = result.x;
+            entity->position->y = result.y;
+            entity->position->z = result.z;
+        }
+    }
+#endif
+
+#if 1  // Animation Experiment
+    
+    float time_warp = 1.0;
+
+    AnimationController *anim = renderer->animation_controller;
+    ArrayList *joints = renderer->animation_controller->joints;
+    for(int i=0; i<joints->counter; i++) {
+        Vec4 origin = newVec4(0.0, 0.0, 0.0, 1.0);
+        Joint joint = arr_get(joints, Joint, i);
+        Mat4 C = joint.inverse_bind_matrix;
+        C = mat4_inverse(&C);
+        C = mat4_transpose(&C);
+
+        Vec4 result = vec4_multiply(&C, &origin);
+        entity = &renderer->debug_entities[i];
+        if (!entity->active) {
+            break;
+        }
+        entity->position->x = result.x;
+        entity->position->y = result.y;
+        entity->position->z = result.z;
+    }
+
+    if ((anim->current_time + time_warp * second_per_frame) < 3.833) {
+        animation_update(anim, time_warp * second_per_frame);
+    }
+    else {
+        anim->current_time = 0.0;
+        animation_update(anim, 0.0);
+
+    }
+
+    for(int i=0; i<joints->counter; i++) {
+        entity = &renderer->debug_entities[i];
+        if (!entity->active) {
+            break;
+        }
+        Joint joint = arr_get(joints, Joint, i);
+        Mat4 D = joint.local_transform;
+
+        // D = mat4_inverse(&D);
+        D = mat4_transpose(&D);
+        Vec4 result = newVec4(
+            entity->position->x, entity->position->y, entity->position->z, 1.0
+        );
+        result = vec4_multiply(&D, &result);
+        entity->position->x = result.x;
+        entity->position->y = result.y;
+        entity->position->z = result.z;
+    }
+
+#endif  // Animation Experiment
+
+
+
+
+
+
+
+
+    entity = get_entity_selected(renderer);
     // mouse picking
     // entity = &renderer->entities[10];
     // Vec3 position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
@@ -345,7 +463,15 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     font_buffer_reset(renderer->font, (float)ctx->width, (float)ctx->height);
     char msg[500];
     if (show_debug_info) {
-        if (ui_button(ctx, renderer, newVec2(50.0, 50.0), "Show Mesh Wire")) {
+        float button_x_pos = 50.0;
+        float button_y_pos = 50.0;
+        float button_step = 50.0;
+
+        entity = &renderer->debug_entities[99];
+        char *button_text = entity->fill ? "Wiremesh: ON" : "Wiremesh: OFF";
+        if (ui_button(
+            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text
+        )) {
             if (pulse_p == 0) {
                 pulse_p = 1;
             }
@@ -354,6 +480,48 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             if (pulse_p == 1) {
                 entity->fill = 1 - entity->fill;
                 pulse_p = 0;
+            }
+        }
+
+        button_text = (
+            renderer->do_animation ? "Animation: ON" : "Animation OFF"
+        );
+        button_y_pos += button_step;
+        if (ui_button(
+            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
+        ) {
+            if (do_animation == 0) {
+                do_animation = 1;
+            }
+        }
+        else {
+            if (do_animation == 1) {
+                renderer->do_animation = 1 - renderer->do_animation;
+                do_animation = 0;
+            }
+        }
+        button_y_pos += button_step;
+        button_text = show_skeleton ? "Skeleton: ON" : "Skeleton: OFF";
+        if (ui_button(
+            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
+        ) {
+            if (show_skeleton_toggle == 0) {
+                show_skeleton_toggle = 1;
+            }
+        }
+        else {
+            if (show_skeleton_toggle == 1) {
+                show_skeleton_toggle = 0;
+                show_skeleton = 1 - show_skeleton;
+
+                int total_joints = (
+                    renderer->animation_controller->joints->counter
+                );
+
+                for(int i=0; i<total_joints; i++) {
+                    entity = &renderer->debug_entities[i];
+                    entity->active = 1 - entity->active;
+                }
             }
         }
     }
@@ -429,26 +597,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // }
 
 
-    Joint *root = renderer->root;
-
-
-    if (glfwGetKey(ctx->window, GLFW_KEY_H) == GLFW_PRESS) {
-        root->local_transform.translation.x -= 0.1;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_L) == GLFW_PRESS) {
-        root->local_transform.translation.x += 0.1;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_J) == GLFW_PRESS) {
-        root->local_transform.translation.y -= 0.1;
-    }
-    if (glfwGetKey(ctx->window, GLFW_KEY_K) == GLFW_PRESS) {
-        root->local_transform.translation.y += 0.1;
-    }
-
-    joint_update_all(root);
-
-
     // if (show_debug_info) {
     //     handle_debug_info(ctx, renderer, camera, second_per_frame);
     // }
+    
 }

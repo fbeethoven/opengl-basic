@@ -310,11 +310,10 @@ void transform_obj_file(char *file_path, char *file_output) {
 }
 
 
-typedef struct Tokenizer {
-    char *data;
-    int cursor;
-    int lines;
-} Tokenizer;
+void tokenizer_reset(Tokenizer *tokenizer) {
+    tokenizer->cursor = 0;
+    tokenizer->lines = 0;
+}
 
 
 void skip_white_space(Tokenizer *tokenizer) {
@@ -1134,112 +1133,4 @@ IntermediateModel load_data_from_gltf(GltfData *gltf, char *data) {
     return result;
 }
 
-
-Mat4 get_matrix(Tokenizer *tokenizer) {
-    Mat4 C = {0};
-    float result[16] = {0};
-    for (
-        Token token = token_next(tokenizer);
-        tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
-        token = token_next(tokenizer)
-    ) {
-        if (
-            token.kind == Token_StrLiteral &&
-            strcmp(token.info, "inverse_bind_matrix") == 0
-        ) {
-            token = token_next(tokenizer);
-            token_expected(tokenizer, token, Token_Colon);
-            token = token_next(tokenizer);
-            token_expected(tokenizer, token, Token_OpenBra);
-
-            for (int i=0; i<16; i++) {
-                token = token_next(tokenizer);
-                token_expected(tokenizer, token, Token_Float);
-
-                result[i] = atof(token.info);                
-
-                token = token_next(tokenizer);
-            }
-            break;
-        }
-    }
-
-    memcpy(&C, result, sizeof(float)*16);
-    return C;
-} 
-
-
-typedef struct Joint Joint;
-struct Joint {
-    Joint *next;
-    Joint *children;
-
-    Vec3 transform;
-    Vec4 rotation;
-    Vec3 scale;
-    Mat4 inverse_bind_matrix;
-};
-
-void joint_add_child(Joint *parent, Joint *child) {
-    child->next = parent->children;
-    parent->children = child;
-}
-
-
-ArrayList *get_joint_hierarchy() {
-    char *data = read_file("assets/models/trooper.skin");
-    ArrayList *bones = new_array_list(Mat4);
-
-    Tokenizer tokenizer = {0};
-    tokenizer.data = data;
-
-    Vec3 *bone_pos;
-
-    for (
-        Token token = token_next(&tokenizer);
-        tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
-        token = token_next(&tokenizer)
-    ) {
-        printf("(%s, %s)\n", TypeNames[token.kind], token.info);
-        if (token.kind == Token_OpenCurl) {
-            *arr_push(bones, Mat4) = get_matrix(&tokenizer);
-        }
-    }
-
-    free(data);
-    return bones;
-}
-
-
-ArrayList *get_anim_bones() {
-    char *data = read_file("assets/models/trooper.skin");
-    ArrayList *bones = new_array_list(Mat4);
-
-    Tokenizer tokenizer = {0};
-    tokenizer.data = data;
-
-    Vec3 *bone_pos;
-
-    for (
-        Token token = token_next(&tokenizer);
-        tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
-        token = token_next(&tokenizer)
-    ) {
-        printf("(%s, %s)\n", TypeNames[token.kind], token.info);
-        if (token.kind == Token_OpenCurl) {
-            *arr_push(bones, Mat4) = get_matrix(&tokenizer);
-        }
-    }
-
-    free(data);
-    return bones;
-}
-
-
-int main1() {
-    // ArrayList *bones = get_anim_bones();
-    // printf("Animation!!\n");
-    
-    return 0;
-}
 

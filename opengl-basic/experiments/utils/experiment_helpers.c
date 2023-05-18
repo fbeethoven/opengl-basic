@@ -389,28 +389,8 @@ void load_assets(
 
 
 #if 1
-
-    Vec3 pos_a = newVec3(0.0, 1.0, 0.0);
-    Entity *e_root = get_new_debug_entity(game_ctx, renderer, pos_a);
-    Joint *root = new_joint(e_root);
-    root->local_transform.rotation = newVec3(0.0, 0.0, 1.5707);
-
-    renderer->root = root;
-
-
-    Joint *j_child = joint_push(
-        root, get_new_debug_entity(game_ctx, renderer, newVec3(0.0, 0.0, 0.0))
-    );
-
-
-    j_child->local_transform.translation = newVec3(1.0, 0.0, 0.0);
-
-
-
-
-
-
-    BaseModel *trooper= malloc(sizeof(BaseModel));
+    AnimatedModel *anim_trooper = get_animated_model();
+    BaseModel *trooper = (BaseModel *) anim_trooper;
 
     char *data = read_file("assets/models/scene.gltf");
     GltfData gltf = parse_gltf_data(data);
@@ -445,7 +425,21 @@ void load_assets(
     intermediate_model_free(&trooper_data);
 
 
-    entity = &renderer->entities[10];
+    glBindVertexArray(trooper->vao);
+    store_int_in_attributes(&anim_trooper->jbo, 3, 4,
+        anim_trooper->joints->counter * sizeof(int),
+        (int *)anim_trooper->joints->data
+    );
+    log_if_err("Issue loading joints\n");
+    glBindVertexArray(trooper->vao);
+    store_float_in_attributes(&anim_trooper->wbo, 4, 4,
+        anim_trooper->weights->counter * sizeof(float),
+        (float *)anim_trooper->weights->data
+    );
+    log_if_err("Issue loading weights\n");
+
+
+    entity = &renderer->debug_entities[99];
     strcpy(entity->debug_name, "Storm Trooper");
     entity->model = trooper;
 
@@ -455,11 +449,57 @@ void load_assets(
 
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
-    entity->fill = 1;
 #endif
 
 
+
+#if 0
+
+    Vec3 pos_a = newVec3(0.0, 1.0, 0.0);
+    Entity *e_root = get_new_debug_entity(game_ctx, renderer, pos_a);
+    Joint *root = new_joint(e_root);
+    root->local_transform.rotation = newVec3(0.0, 0.0, 1.5707);
+
+    renderer->root = root;
+
+
+    Joint *j_child = joint_push(
+        root, get_new_debug_entity(game_ctx, renderer, newVec3(0.0, 0.0, 0.0))
+    );
+
+
+    j_child->local_transform.translation = newVec3(1.0, 0.0, 0.0);
+
+#endif
+
+
+    renderer->animation_controller = calloc(1, sizeof(AnimationController));
+    renderer->animation_controller->joints = get_anim_bones();
+
+    animation_update(renderer->animation_controller, 0.0);
+    
 #if 1
+    ArrayList *joints = renderer->animation_controller->joints;
+    for(int i=0; i<joints->counter; i++) {
+
+        Vec4 origin = newVec4(0.0, 0.0, 0.0, 1.0);
+        Joint joint = arr_get(joints, Joint, i);
+        Mat4 D = joint.local_transform;
+        Mat4 C = joint.inverse_bind_matrix;
+        C = mat4_inverse(&C);
+        C = mat4_transpose(&C);
+
+        Vec4 result = vec4_multiply(&C, &origin);
+        Vec3 position = newVec3(result.x, result.y, result.z);
+        get_new_debug_entity(game_ctx, renderer, position);
+    }
+#endif
+
+
+    (&renderer->entities[0])->active = 0;
+
+
+#if 0
 
     ArrayList *bones = get_anim_bones();
 
@@ -480,17 +520,6 @@ void load_assets(
     }
 
 #endif
-
-    entity = &renderer->entities[11];
-    strcpy(entity->debug_name, "Cube");
-    entity->model = &game_ctx->models[ModelType_Cube];
-
-    Vec3 *pos_b = malloc(sizeof(Vec3));
-    *pos_b = newVec3(5.0, 2.0, 0.0);
-    entity->position = pos_b;
-
-    entity->active = 1;
-    entity->scale = newVec3(5.0, 10.0, 0.05);
 
 }
 

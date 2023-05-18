@@ -41,6 +41,13 @@ typedef struct Vec4 {
     float w;
 } Vec4;
 
+typedef struct Quat {
+    float x;
+    float y;
+    float z;
+    float w;
+} Quat;
+
 
 typedef struct Mat4 {
     float m00;
@@ -81,7 +88,20 @@ Vec2 vec2_lerp(Vec2 a, Vec2 b, float t);
 Vec3 vec3_lerp(Vec3 a, Vec3 b, float t);
 
 Vec4 newVec4(float x, float y, float z, float w);
+Vec4 vec4_lerp(Vec4 a, Vec4 b, float t);
+Vec4 vec4_normalize(Vec4 vec);
 
+Quat quat_new(float x, float y, float z, float w);
+Quat quat_rotation(Vec3 dir, float angle);
+Quat quat_add(Quat a, Quat b);
+Quat quat_mult(Quat a, Quat b);
+float quat_dot(Quat a, Quat b);
+Quat quat_normalize(Quat a);
+Quat quat_conjugate(Quat a);
+Quat quat_inv(Quat a);
+Quat quat_from_euler(float pitch, float yaw, float roll);
+Vec3 vec3_rotate_quat(Vec3 v, Quat rot);
+Mat4 quat_to_mat4(Quat q);
 
 Mat4 mat4_diag(float x, float y, float z, float w);
 Mat4 Mat4I();
