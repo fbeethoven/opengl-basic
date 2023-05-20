@@ -2,9 +2,11 @@
 #define GRAPHICS_H
 
 #include "common.h"
+#include "animation.h"
 #include "mesh.h"
 #include "font.h"
 #include "shader.h"
+#include "config.h"
 
 
 typedef struct GraphicsContext {
@@ -14,6 +16,7 @@ typedef struct GraphicsContext {
     double mouse_position[2];
     double dmouse[2];
     GLFWwindow* window;
+
 } GraphicsContext;
 
 
@@ -39,7 +42,7 @@ typedef struct Entity {
     float rotation_x;
     float rotation_y;
     float rotation_z;
-    float scale;
+    Vec3 scale;
     int active;
     int fill;
     char debug_name[50];
@@ -58,15 +61,21 @@ typedef struct Renderer {
 	Mat4 projection_matrix;
 
 	int shader;
-    Entity entities[20];
-
+    int anim_shader;
 	int circle_shader;
 	int gui_shader;
+
+    Entity entities[20];
+    Entity debug_entities[100];
+
     Entity gui_entities[10];
     Entity font_entities[10];
 
     Font *font;
     Light *light;
+
+    int do_animation;
+    AnimationController *animation_controller;
 
 } Renderer;
 
@@ -115,6 +124,14 @@ void store_float_in_attributes(
     float *data
 );
 
+void store_int_in_attributes(
+    unsigned int *buffer_id,
+    int attribute_index,
+    int coordinate_size,
+    int buffer_size,
+    int *data
+);
+
 void bind_indices_buffer(
     unsigned int *buffer_id,
     int buffer_size,
@@ -122,5 +139,10 @@ void bind_indices_buffer(
 );
 void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh);
 
+// Joint *new_joint(Entity *entity);
+// void joint_update(Joint *parent, Joint *joint);
+// void joint_update_all(Joint *root);
+// void joint_update_children(Joint *root);
+// Joint *joint_push(Joint *joint, Entity *entity);
 
 #endif  // GRAPHICS_H

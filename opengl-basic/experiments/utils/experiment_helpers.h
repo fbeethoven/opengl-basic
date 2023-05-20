@@ -4,6 +4,8 @@
 
 #include "../../common.h"
 #include "../../graphics.h"
+#include "../../animation.h"
+#include "../../utils/helpers.h"
 #include <time.h>
 
 
@@ -56,7 +58,9 @@ void rand_init(GameContext *game_ctx);
 int get_new_random(GameContext *game_ctx);
 Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx);
 void load_assets(
-    GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font
+    GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font,
+    Camera *camera
+
 );
 RandomEntity* add_random_entity(
     GraphicsContext *ctx, GameContext *game_ctx, Camera *camera
@@ -64,6 +68,9 @@ RandomEntity* add_random_entity(
 void sync_entities(GameContext *game_ctx, Renderer *renderer);
 void update_entities(GameContext *game_ctx, Camera *camera);
 void new_circle_entity(GameContext *game_ctx);
+Entity* get_new_debug_entity(
+    GameContext *game_ctx, Renderer *renderer, Vec3 pos
+);
 
 
 #endif  // EXPERIMENT_HELPERS_H

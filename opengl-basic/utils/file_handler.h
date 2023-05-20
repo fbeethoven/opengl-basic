@@ -32,6 +32,7 @@ typedef struct StrSplitter {
 typedef enum TokenKind {
     Token_Unknown,
     Token_StrLiteral,
+    Token_Declaration,
     Token_Colon,
     Token_Coma,
     Token_Int,
@@ -50,6 +51,12 @@ typedef struct Token {
     TokenKind kind;
     char info[256];
 } Token;
+
+typedef struct Tokenizer {
+    char *data;
+    int cursor;
+    int lines;
+} Tokenizer;
 
 
 typedef struct GltfAccessor {
@@ -137,6 +144,10 @@ void intermediate_model_free(IntermediateModel *model);
 void transform_obj_file(char *file_path, char *file_output);
 GltfData parse_gltf_data(char *data);
 IntermediateModel load_data_from_gltf(GltfData *gltf, char *data);
+Token token_next(Tokenizer *tokenizer);
+int token_is_valid(Token *token);
+int token_expected(Tokenizer *tokenizer, Token token, TokenKind token_kind);
+void tokenizer_reset(Tokenizer *tokenizer);
 
 
 #endif  // FILE_HANDLER_H

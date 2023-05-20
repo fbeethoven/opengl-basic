@@ -310,11 +310,10 @@ void transform_obj_file(char *file_path, char *file_output) {
 }
 
 
-typedef struct Tokenizer {
-    char *data;
-    int cursor;
-    int lines;
-} Tokenizer;
+void tokenizer_reset(Tokenizer *tokenizer) {
+    tokenizer->cursor = 0;
+    tokenizer->lines = 0;
+}
 
 
 void skip_white_space(Tokenizer *tokenizer) {
@@ -346,7 +345,7 @@ Token parse_str_literal(Tokenizer *tokenizer) {
 }
 
 int char_is_numeric(char c) {
-    return (c == '-') || (c == 'e') || (('0' <= c) && (c <= '9'));
+    return (c == '-') || (('0' <= c) && (c <= '9'));
 }
 
 Token parse_num(Tokenizer *tokenizer) {
@@ -355,7 +354,7 @@ Token parse_num(Tokenizer *tokenizer) {
     int i = 0;
 
     char c = tokenizer->data[tokenizer->cursor];
-    while(c && ( char_is_numeric(c)|| c == '.') ) {
+    while(c && ( char_is_numeric(c)|| c == 'e' || c == '.') ) {
         if (c == '.') {
             result.kind = Token_Float;
         }
@@ -370,31 +369,29 @@ Token parse_num(Tokenizer *tokenizer) {
     return result;
 }
 
-Token parse_true(Tokenizer *tokenizer) {
+int char_is_alpha(char c) {
+    return (('a' <= c) && (c <= 'z')) || (('A' <= c) && (c <= 'Z'));
+}
+
+
+Token parse_declaration(Tokenizer *tokenizer) {
     Token result = {0};
-    result.kind = Token_Bool;
-    for (int i=0; i<4; i++) {
-        result.info[i] = tokenizer->data[tokenizer->cursor++];
-    }
-    if (strcmp(result.info, "true") != 0) {
-        printf("Expected true, got %s\n", result.info);
-        exit(1);
+    result.kind = Token_Declaration;
+
+    int i = 0;
+    char c = tokenizer->data[tokenizer->cursor++];
+    while(c && c != ' ' && c != '\0') {
+        result.info[i++] = c;
+        c = tokenizer->data[tokenizer->cursor++];
+
+        if (i == 255) {
+            printf("Token info out of memory parsing %s\n", result.info);
+            exit(1);
+        }
     }
     return result;
 }
 
-Token parse_false(Tokenizer *tokenizer) {
-    Token result = {0};
-    result.kind = Token_Bool;
-    for (int i=0; i<5; i++) {
-        result.info[i] = tokenizer->data[tokenizer->cursor++];
-    }
-    if (strcmp(result.info, "false") != 0) {
-        printf("Expected false, got %s\n", result.info);
-        exit(1);
-    }
-    return result;
-}
 
 Token token_next(Tokenizer *tokenizer) {
     Token new_token = {0};
@@ -404,6 +401,12 @@ Token token_next(Tokenizer *tokenizer) {
 
     if (char_is_numeric(c)) {
         new_token = parse_num(tokenizer);
+    }
+    else if (char_is_alpha(c)) {
+        new_token = parse_declaration(tokenizer);
+        if (strcmp(new_token.info, "true") == 0) {
+            new_token.kind = Token_Bool;
+        }
     }
     else {
         switch(c) {
@@ -441,12 +444,6 @@ Token token_next(Tokenizer *tokenizer) {
                 tokenizer->cursor++;
                 new_token = parse_str_literal(tokenizer);
                 break;
-            case 't':
-                new_token = parse_true(tokenizer);
-                break;
-            case 'f':
-                new_token = parse_false(tokenizer);
-                break;
             case '\0':
                 new_token.kind = Token_EOF;
                 break;
@@ -479,18 +476,11 @@ ArrayList *tokenize_input(char *data) {
     return tokens;
 }
 
-typedef struct HashNode HashNode;
-struct HashNode {
-    char name[50];
-    Token first;
-    HashNode *info_next;
-    HashNode *hash_next;
-};
-
 
 char *TypeNames[] = {
     "Token_Unknown",
     "Token_StrLiteral",
+    "Token_Declaration",
     "Token_Colon",
     "Token_Coma",
     "Token_Int",
@@ -516,6 +506,7 @@ int token_expected(Tokenizer *tokenizer, Token token, TokenKind token_kind) {
             tokenizer->lines + 1, TypeNames[token_kind], 
             TypeNames[token.kind], token.info
         );
+        exit(1);
         return 0;
     }
     return 1;
@@ -595,11 +586,6 @@ void handle_accessors(GltfData *gltf, Tokenizer *tokenizer) {
 void bufferViews_push(GltfData *gltf, Tokenizer *tokenizer) {
     Token token = {0};
     GltfBufferView *buffer = arr_push(gltf->bufferViews, GltfBufferView);
-
-    // buffer;
-    // length;
-    // stride;
-    // offset;
 
     for (;
         tokenizer->data[tokenizer->cursor] && token_is_valid(&token);
@@ -1146,4 +1132,5 @@ IntermediateModel load_data_from_gltf(GltfData *gltf, char *data) {
 
     return result;
 }
+
 
