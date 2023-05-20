@@ -16,16 +16,20 @@ int stage;
 
 
 int animation_test;
-int do_animation;
+int do_animation_toggle;
 int show_skeleton;
 int show_skeleton_toggle;
+int anim_play;
+int anim_play_toggle;
 
 
 int game_run() {
     animation_test = 0;
-    do_animation = 0;
-    show_skeleton = 0;
+    do_animation_toggle = 0;
+    show_skeleton = SHOW_SKELETON;
     show_skeleton_toggle = 0;
+    anim_play = ANIMATION_PLAY;
+    anim_play_toggle = 0;
     // TODO:
     //  [X] add color to textures (gamma correction)
     //  [X] gui buttons
@@ -86,31 +90,26 @@ int game_run() {
 
     Camera camera = {0};
 
-    // camera.position = newVec3(0.0, 60.0, 0.0);
-    // camera.centre = newVec3(0.0, 55.0, 0.0);
-    // camera.pitch = 2.2;
-    // camera.yaw = 1.57;
-    camera.position = newVec3(0.0, 1.0, 5.0);
-    camera.centre = newVec3(0.0, 1.0, 0.0);
-    camera.pitch = 1.57;
-    camera.yaw = -1.57;
+    camera.position = newVec3(CAMERA_POSITION);
+    camera.centre = newVec3(CAMERA_CENTRE);
+    camera.pitch = CAMERA_PITCH;
+    camera.yaw = CAMERA_YAW;
 
     Light light = {0};
-    light.position = newVec3(0.0, -1.0, 0.0);
-    light.color = newVec3(0.8, 0.8, 1.0);
+    light.position = newVec3(LIGHT_DIR);
+    light.color = newVec3(LIGHT_COLOR);
 
     renderer.light = &light;
 
     load_assets(&ctx, &renderer, game_ctx, &font, &camera);
 
 
-    // Entity *entity = &renderer.gui_entities[1];
-    // gui_quad_in_pos(
-    //     &ctx,  entity, newVec2(0.5*ctx.width, 0.5*ctx.height),
-    //     newVec2(100.0, 250.0), newVec3(1.0, 1.0, 1.0)
-    // );
-
-
+    ArrayList *joints = renderer.animation_controller->joints;
+    Entity *entity_skeleton;
+    for(int i=0; i<joints->counter; i++) {
+        entity_skeleton = &renderer.debug_entities[i];
+        entity_skeleton->active = SHOW_SKELETON;
+    }
     while (!glfwWindowShouldClose(ctx.window)) {
         handle_input(&ctx, &renderer, &camera);
 
@@ -320,13 +319,17 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         entity->position->z = result.z;
     }
 
-    if ((anim->current_time + time_warp * second_per_frame) < 3.833) {
-        animation_update(anim, time_warp * second_per_frame);
-    }
-    else {
-        anim->current_time = 0.0;
-        animation_update(anim, 0.0);
 
+    if (anim_play) {
+        if ((anim->current_time + time_warp * second_per_frame) < 3.833) {
+            animation_update(anim, time_warp * second_per_frame);
+        }
+        else {
+            anim->current_time = 0.0;
+            animation_update(anim, 0.0);
+        }
+    } else {
+            animation_update(anim, 0.0);
     }
 
     for(int i=0; i<joints->counter; i++) {
@@ -465,7 +468,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     if (show_debug_info) {
         float button_x_pos = 50.0;
         float button_y_pos = 50.0;
-        float button_step = 50.0;
+        float button_step = 25.0;
 
         entity = &renderer->debug_entities[99];
         char *button_text = entity->fill ? "Wiremesh: ON" : "Wiremesh: OFF";
@@ -484,20 +487,21 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         }
 
         button_text = (
-            renderer->do_animation ? "Animation: ON" : "Animation OFF"
+            renderer->do_animation ? 
+            "Animation Shader: ON" : "Animation Shader: OFF"
         );
         button_y_pos += button_step;
         if (ui_button(
             ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
         ) {
-            if (do_animation == 0) {
-                do_animation = 1;
+            if (do_animation_toggle == 0) {
+                do_animation_toggle = 1;
             }
         }
         else {
-            if (do_animation == 1) {
+            if (do_animation_toggle == 1) {
                 renderer->do_animation = 1 - renderer->do_animation;
-                do_animation = 0;
+                do_animation_toggle = 0;
             }
         }
         button_y_pos += button_step;
@@ -520,8 +524,23 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
                 for(int i=0; i<total_joints; i++) {
                     entity = &renderer->debug_entities[i];
-                    entity->active = 1 - entity->active;
+                    entity->active = show_skeleton;
                 }
+            }
+        }
+        button_y_pos += button_step;
+        button_text = anim_play ? "Animation: Play" : "Animation: Pause";
+        if (ui_button(
+            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
+        ) {
+            if (anim_play_toggle == 0) {
+                anim_play_toggle = 1;
+            }
+        }
+        else {
+            if (anim_play_toggle == 1) {
+                anim_play_toggle = 0;
+                anim_play = 1 - anim_play;
             }
         }
     }

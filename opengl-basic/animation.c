@@ -1,6 +1,4 @@
 #include "animation.h"
-#include "common.h"
-#include "utils/file_handler.h"
 
 
 Mat4 get_matrix(Tokenizer *tokenizer) {
@@ -551,6 +549,7 @@ Mat4 animation_get_joint_transform(Joint *joint, float dt) {
     Vec4 rotation = animation_get_rotation(anim, dt);
     Vec3 scale = animation_get_scale(anim, dt);
     scale = newVec3(0.0, 0.0858, 0.0194);
+    // scale = newVec3(0.5, 0.5, 0.5);
 
     Mat4 C = Mat4I();
     C = mat4_translate(&translation, &C);
@@ -608,78 +607,3 @@ void animation_update(AnimationController *anim_control, float dt) {
     );
 }
 
-
-#if 0
-{
-    void joint_update(Joint *parent, Joint *joint, int is_root) {
-        Entity *entity = joint->entity;
-
-        if (is_root) {
-            *entity->position = joint->local_transform.translation;
-            entity->rotation_x = joint->local_transform.rotation.x;
-            entity->rotation_y = joint->local_transform.rotation.y;
-            entity->rotation_z = joint->local_transform.rotation.z;
-            return;
-        }
-        if (!parent) { return; }
-
-        Entity *e_parent = parent->entity;
-        Vec3 scale = newVec3(1.0, 1.0, 1.0);
-        Mat4 parent_transformation = create_transformation_matrix(
-            e_parent->position,
-            e_parent->rotation_x, e_parent->rotation_y, e_parent->rotation_z,
-            &scale
-        );
-        parent_transformation = mat4_transpose(&parent_transformation);
-
-        Vec4 transform = newVec4(
-            joint->local_transform.translation.x,
-            joint->local_transform.translation.y,
-            joint->local_transform.translation.z,
-            1.0
-        );
-        transform = vec4_multiply(&parent_transformation, &transform);
-        *entity->position = newVec3(transform.x, transform.y, transform.z);
-
-        entity->rotation_x = (
-            e_parent->rotation_x + joint->local_transform.rotation.x
-        );
-        entity->rotation_y = (
-            e_parent->rotation_y + joint->local_transform.rotation.y
-        );
-        entity->rotation_z = (
-            e_parent->rotation_z + joint->local_transform.rotation.z
-        );
-    }
-
-    void joint_update_children(Joint *root, int is_root) {
-        joint_update(0, root, is_root);
-        for (
-            Joint *current = root->children;
-            current;
-            current = current->next
-        ) {
-            current->entity->position->y = 1.0;
-            joint_update(root, current, 0);
-            joint_update_children(current, 0);
-        }
-    }
-
-    void joint_update_all(Joint *root) {
-        joint_update_children(root, 1);
-    }
-
-    Joint *new_joint(Entity *entity) {
-        Joint *joint = calloc(sizeof(Joint), 1);
-        joint->entity = entity;
-        return joint;
-    }
-
-    Joint *joint_push(Joint *joint, Entity *entity) {
-        Joint *child = new_joint(entity);
-        child->next = joint->children;
-        joint->children = child;
-        return child;
-    }
-}
-#endif

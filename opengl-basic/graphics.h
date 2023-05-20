@@ -6,6 +6,7 @@
 #include "mesh.h"
 #include "font.h"
 #include "shader.h"
+#include "config.h"
 
 
 typedef struct GraphicsContext {

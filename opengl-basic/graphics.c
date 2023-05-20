@@ -241,19 +241,21 @@ void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh) {
 
 
 void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
-    rh->FOV = 1.19;
-	rh->NEAR_PLANE = 0.1f;
-	rh->FAR_PLANE = 1000;
+    rh->FOV = RENDERER_FOV;
+	rh->NEAR_PLANE = RENDERER_NEAR_PLANE;
+	rh->FAR_PLANE = RENDERER_FAR_PLANE;
 
-	rh->RED = 0.4f;
-	rh->GREEN = 0.4f;
-	rh->BLUE = 0.4f;
+	rh->RED = RENDERER_RED;
+	rh->GREEN = RENDERER_GREEN;
+	rh->BLUE = RENDERER_BLUE;
+
+    rh->do_animation = DO_ANIMATION;
 
     rh->projection_matrix = create_projection_matrix(ctx, rh);
 
     rh->shader = shader_get_program();
     rh->anim_shader = shader_get_program_general(
-        "shaders/anim_vertex.glsl", "shaders/anim_fragment.glsl"
+        "shaders/anim_vertex.glsl", "shaders/fragment_shader.glsl"
     );
     rh->circle_shader = shader_get_program_general(
         "shaders/circle_vertex.glsl", "shaders/circle_fragment.glsl"
