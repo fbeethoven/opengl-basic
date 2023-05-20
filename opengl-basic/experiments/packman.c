@@ -24,6 +24,25 @@ int anim_play_toggle;
 
 
 int game_run() {
+    // TODO(CLEAN UP):
+    // [ ] Lists with types
+    // [ ] Clean warnings
+    // [ ] Fix Entity Struct
+    // [ ] Fix Render Struct
+    //      [ ] Use a layer stack for entities
+    // [ ] Add Layers
+    // [ ] Improve Font rendereing
+    // [ ] Improve UI (double buffering vs full ImGui)
+    // [ ] Event System (Maybe we just want a toggle?)
+
+
+    // TODO(Weekend):
+    // [ ] Add sound (not really part of clean up but I 
+    printf("Hello World\n");
+    return 0;
+
+}
+int game_run1() {
     animation_test = 0;
     do_animation_toggle = 0;
     show_skeleton = SHOW_SKELETON;
