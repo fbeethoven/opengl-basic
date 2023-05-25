@@ -1,35 +1,6 @@
 #include "memory.h"
 
 
-Arena *init_arena(unsigned long memory_capacity) {
-    void *memory = calloc(1, memory_capacity);
-    MemoryStack *last_pointer = calloc(1, sizeof(memory_capacity));
-    Arena *arena = calloc(1, sizeof(Arena));
-    arena->memory = memory;
-    arena->last_pointer = last_pointer;
-    arena->capacity = memory_capacity;
-    return arena;
-}
-
-
-void *_push_struct(Arena *arena, U64 n) {
-    U32 pointer = arena->last_pointer->pointer;
-    if (pointer + n >= arena->capacity) {
-        printf(
-            "[ERROR] Could not allocate %lu memory, only %lu space left\n",
-            n, arena->capacity - pointer
-        );
-        return (void *)0;
-    }
-    arena->last_pointer->pointer += n;
-    return (U8 *)arena->memory + pointer;
-}
-
-
-#define mem_push(arena_ptr, type) \
-    (type *)_push_struct((arena_ptr), (sizeof(type)))
-
-
 ArrayList *_new_array_list(U64 n) {
     void *data = calloc(ArrayInitCapacity, n);
     ArrayList *arr = malloc(sizeof(ArrayList));
@@ -38,7 +9,6 @@ ArrayList *_new_array_list(U64 n) {
     arr->capacity = ArrayInitCapacity;
     return arr;
 }
-
 
 
 void *_arr_push(ArrayList *arr, U64 n) {

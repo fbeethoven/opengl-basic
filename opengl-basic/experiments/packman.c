@@ -1,12 +1,18 @@
 #define GLAD_GL_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 
+
 #include "packman.h"
 #include "../animation.h"
 #include "../mesh.h"
 #include "../font.h"
 #include "../utils/file_handler.h"
 #include "../utils/helpers.h"
+#include "../memory.h"
+
+#include "../audio.h"
+
+
 
 
 float player_rotation;
@@ -23,10 +29,37 @@ int anim_play;
 int anim_play_toggle;
 
 
+LIST_ADD(float);
+LIST_ADD(int);
+
+typedef struct TestNode TestNode;
+
+struct TestNode {
+    int data;
+};
+
+LIST_ADD(TestNode);
+
+
+int clean_up();
+int game_run1();
+
+
 int game_run() {
+
+    sound_init();
+    return game_run1();
+}
+
+int clean_up() {
     // TODO(CLEAN UP):
-    // [ ] Lists with types
-    // [ ] Clean warnings
+    // [X] Lists with types
+    // [X] Clean warnings
+    // [ ] Remove experiment helper
+    //      [ ] add utils/random module
+    //      [ ] move entity helpers and load assets to graphics module
+    //      [ ] move animation params to animation module
+    //          (including debug options)
     // [ ] Fix Entity Struct
     // [ ] Fix Render Struct
     //      [ ] Use a layer stack for entities
@@ -34,14 +67,19 @@ int game_run() {
     // [ ] Improve Font rendereing
     // [ ] Improve UI (double buffering vs full ImGui)
     // [ ] Event System (Maybe we just want a toggle?)
+    // [ ] Remove all debug printing
 
 
     // TODO(Weekend):
-    // [ ] Add sound (not really part of clean up but I 
-    printf("Hello World\n");
+    // [X] Add sound (not really part of clean up but I 
+
+
+    printf("Everything is working\n");
     return 0;
 
 }
+
+
 int game_run1() {
     animation_test = 0;
     do_animation_toggle = 0;
@@ -483,7 +521,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
 
     font_buffer_reset(renderer->font, (float)ctx->width, (float)ctx->height);
-    char msg[500];
     if (show_debug_info) {
         float button_x_pos = 50.0;
         float button_y_pos = 50.0;
@@ -562,6 +599,21 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
                 anim_play = 1 - anim_play;
             }
         }
+        button_y_pos += 2*button_step;
+        button_text = play_audio ? "Sound Test: On" : "Sound Test: Off";
+        if (ui_button(
+            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
+        ) {
+            if (play_audio == 0) {
+                last_play = time;
+                play_sound();
+            }
+        }
+        else {
+            if (time - last_play >= 1.0) {
+                play_audio = 0;
+            }
+        }
     }
     else {
         entity = &renderer->gui_entities[0];
@@ -569,6 +621,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
     entity = get_entity_selected(renderer);
 
+    // char msg[500];
     // int timer = 3 + (int)game_ctx->start_time - (int)time;
     // if (timer > 0) {
     //     entity->scale = 5.0;
@@ -640,3 +693,4 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // }
     
 }
+

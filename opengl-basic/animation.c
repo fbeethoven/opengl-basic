@@ -308,46 +308,6 @@ void joint_add_children(
 
 }
 
-static void dump_joint_info(ArrayList *joints) {
-    printf("We have %ld joints\n", joints->counter);
-    for (int i=0; i<joints->counter; i++) {
-        Joint joint = arr_get(joints, Joint, i);
-        KeyFrame translation = joint.animation.joint_translation;
-        KeyFrame rotation = joint.animation.joint_rotation;
-        KeyFrame scale = joint.animation.joint_scale;
-
-        if (!translation.time_stamp) {
-            printf("Joint %d has no translation\n", i);
-        }
-        else {
-            printf(
-                "We have (%ld, %ld) steps in translation\n",
-                translation.time_stamp->counter,
-                translation.value->counter
-            );
-        }
-        if (!rotation.time_stamp) {
-            printf("Joint %d has no rotation\n", i);
-        }
-        else {
-            printf(
-                "We have (%ld, %ld) steps in rotation\n",
-                rotation.time_stamp->counter,
-                rotation.value->counter
-            );
-        }
-        if (!scale.time_stamp) {
-            printf("Joint %d has no scale\n", i);
-        }
-        else {
-            printf(
-                "We have (%ld, %ld) steps in scale\n",
-                scale.time_stamp->counter,
-                scale.value->counter
-            );
-        }
-    }
-}
 
 ArrayList *get_anim_bones() {
     char *data = read_file("assets/models/trooper.anim");
@@ -355,8 +315,6 @@ ArrayList *get_anim_bones() {
 
     Tokenizer tokenizer = {0};
     tokenizer.data = data;
-
-    int index = 0;
 
 
     for (
@@ -379,7 +337,6 @@ ArrayList *get_anim_bones() {
     
     tokenizer_reset(&tokenizer);
     int i = 0;
-    Joint *parent;
 
     for (
         Token token = token_next(&tokenizer);

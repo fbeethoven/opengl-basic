@@ -112,6 +112,7 @@ void gui_quad_free(Entity *entity) {
 
 void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
     float player_is_grounded = params->player_is_grounded;
+    printf("We are using player_is_grounded: %f\n", player_is_grounded);
     float speed = params->camera_speed * params->dt * 50;
     float player_momentum = params->player_rotation;
 
@@ -392,7 +393,6 @@ int ui_button(
     Vec3 font_color = newVec3(0.88, 0.88, 0.88);
     Vec2 padding = newVec2(10.0, 5.0);
 
-    Entity *entity = &renderer->font_entities[0];
     Vec2 button_position = _font_buffer_push(
         renderer->font, text, position, font_color
     );
@@ -416,7 +416,8 @@ int ui_button(
     }
     _font_buffer_push(renderer->font, text, position, font_color);
 
-    // entity = &renderer->gui_entities[0];
+    printf("Using Button Color: %f\n", button_color.x);
+    // Entity *entity = &renderer->gui_entities[0];
     // gui_quad_in_pos(
     //     ctx,  entity, newVec2(x_min, y_min), button_position, button_color
     // );

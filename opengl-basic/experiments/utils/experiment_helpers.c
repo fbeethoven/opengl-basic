@@ -484,7 +484,6 @@ void load_assets(
 
         Vec4 origin = newVec4(0.0, 0.0, 0.0, 1.0);
         Joint joint = arr_get(joints, Joint, i);
-        Mat4 D = joint.local_transform;
         Mat4 C = joint.inverse_bind_matrix;
         C = mat4_inverse(&C);
         C = mat4_transpose(&C);
@@ -499,28 +498,6 @@ void load_assets(
     (&renderer->entities[0])->active = 0;
 
 
-#if 0
-
-    ArrayList *bones = get_anim_bones();
-
-    Mat4 C = {0};
-    Vec3 position = {0};
-    Vec4 origin = newVec4(0.0, 0.0, 0.0, 1.0);
-    Vec4 result = {0};
-    for (int i=0; i<bones->counter; i++) {
-        C = ((Mat4 *)bones->data)[i];
-        C = mat4_inverse(&C);
-        C = mat4_transpose(&C);
-        result = vec4_multiply(&C, &origin);
-        position.x = result.x;
-        position.y = result.y;
-        position.z = result.z;
-
-        get_new_debug_entity(game_ctx, renderer, position);
-    }
-
-#endif
-
 }
 
 
@@ -531,7 +508,6 @@ Entity* get_new_debug_entity(
     for (int i=0; i<100; i++) {
         entity = &renderer->debug_entities[i];
         if (entity->active == 0) {
-            char msg[50];
             sprintf(entity->debug_name, "Debug Entity %d", i); 
 
             entity->model = &game_ctx->models[ModelType_sphere];
