@@ -3,7 +3,6 @@
 
 
 #include "packman.h"
-#include "../animation.h"
 #include "../mesh.h"
 #include "../font.h"
 #include "../utils/file_handler.h"
@@ -19,14 +18,6 @@ float player_rotation;
 int random_experiment;
 int pulse_r;
 int stage;
-
-
-int animation_test;
-int do_animation_toggle;
-int show_skeleton;
-int show_skeleton_toggle;
-int anim_play;
-int anim_play_toggle;
 
 
 LIST_ADD(float);
@@ -58,7 +49,7 @@ int clean_up() {
     // [ ] Remove experiment helper
     //      [ ] add utils/random module
     //      [ ] move entity helpers and load assets to graphics module
-    //      [ ] move animation params to animation module
+    //      [X] move animation params to animation module
     //          (including debug options)
     // [ ] Fix Entity Struct
     // [ ] Fix Render Struct
@@ -81,12 +72,6 @@ int clean_up() {
 
 
 int game_run1() {
-    animation_test = 0;
-    do_animation_toggle = 0;
-    show_skeleton = SHOW_SKELETON;
-    show_skeleton_toggle = 0;
-    anim_play = ANIMATION_PLAY;
-    anim_play_toggle = 0;
     // TODO:
     //  [X] add color to textures (gamma correction)
     //  [X] gui buttons
@@ -160,13 +145,6 @@ int game_run1() {
 
     load_assets(&ctx, &renderer, game_ctx, &font, &camera);
 
-
-    ArrayList *joints = renderer.animation_controller->joints;
-    Entity *entity_skeleton;
-    for(int i=0; i<joints->counter; i++) {
-        entity_skeleton = &renderer.debug_entities[i];
-        entity_skeleton->active = SHOW_SKELETON;
-    }
     while (!glfwWindowShouldClose(ctx.window)) {
         handle_input(&ctx, &renderer, &camera);
 
@@ -321,102 +299,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     Entity *entity;
 
 
-#if 0  // Animation Experiment
-    if (time >= 5.0 && animation_test == 0) {
-        Vec3 translation = newVec3(0.0, 1.0, 0.0);
-        Vec4 rotation = newVec4(sin(1.57), 0.0, 0.0, cos(1.57));
-        Vec3 scale = newVec3(1.0, 1.0, 1.0);
-
-        Mat4 C = Mat4I();
-        C = mat4_translate(&translation, &C);
-        Quat q = quat_new(rotation.x, rotation.y, rotation.z, rotation.w);
-        q = quat_normalize(q);
-        Mat4 R = quat_to_mat4(q);
-        C = mat4_multiply(&C, &R);
-        mat4_scale(&scale, &C);
-        C = mat4_transpose(&C);
-
-        // C = Mat4I();
-
-        animation_test = 1;
-        ArrayList *joints = renderer->animation_controller->joints;
-        for(int i=0; i<joints->counter; i++) {
-            entity = &renderer->debug_entities[i];
-            Vec4 result = newVec4(
-                entity->position->x, entity->position->y, entity->position->z, 1.0
-            );
-            result = vec4_multiply(&C, &result);
-            entity->position->x = result.x;
-            entity->position->y = result.y;
-            entity->position->z = result.z;
-        }
-    }
-#endif
-
-#if 1  // Animation Experiment
-    
-    float time_warp = 1.0;
-
-    AnimationController *anim = renderer->animation_controller;
-    ArrayList *joints = renderer->animation_controller->joints;
-    for(int i=0; i<joints->counter; i++) {
-        Vec4 origin = newVec4(0.0, 0.0, 0.0, 1.0);
-        Joint joint = arr_get(joints, Joint, i);
-        Mat4 C = joint.inverse_bind_matrix;
-        C = mat4_inverse(&C);
-        C = mat4_transpose(&C);
-
-        Vec4 result = vec4_multiply(&C, &origin);
-        entity = &renderer->debug_entities[i];
-        if (!entity->active) {
-            break;
-        }
-        entity->position->x = result.x;
-        entity->position->y = result.y;
-        entity->position->z = result.z;
-    }
-
-
-    if (anim_play) {
-        if ((anim->current_time + time_warp * second_per_frame) < 3.833) {
-            animation_update(anim, time_warp * second_per_frame);
-        }
-        else {
-            anim->current_time = 0.0;
-            animation_update(anim, 0.0);
-        }
-    } else {
-            animation_update(anim, 0.0);
-    }
-
-    for(int i=0; i<joints->counter; i++) {
-        entity = &renderer->debug_entities[i];
-        if (!entity->active) {
-            break;
-        }
-        Joint joint = arr_get(joints, Joint, i);
-        Mat4 D = joint.local_transform;
-
-        // D = mat4_inverse(&D);
-        D = mat4_transpose(&D);
-        Vec4 result = newVec4(
-            entity->position->x, entity->position->y, entity->position->z, 1.0
-        );
-        result = vec4_multiply(&D, &result);
-        entity->position->x = result.x;
-        entity->position->y = result.y;
-        entity->position->z = result.z;
-    }
-
-#endif  // Animation Experiment
-
-
-
-
-
-
-
-
     entity = get_entity_selected(renderer);
     // mouse picking
     // entity = &renderer->entities[10];
@@ -542,63 +424,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             }
         }
 
-        button_text = (
-            renderer->do_animation ? 
-            "Animation Shader: ON" : "Animation Shader: OFF"
-        );
-        button_y_pos += button_step;
-        if (ui_button(
-            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
-        ) {
-            if (do_animation_toggle == 0) {
-                do_animation_toggle = 1;
-            }
-        }
-        else {
-            if (do_animation_toggle == 1) {
-                renderer->do_animation = 1 - renderer->do_animation;
-                do_animation_toggle = 0;
-            }
-        }
-        button_y_pos += button_step;
-        button_text = show_skeleton ? "Skeleton: ON" : "Skeleton: OFF";
-        if (ui_button(
-            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
-        ) {
-            if (show_skeleton_toggle == 0) {
-                show_skeleton_toggle = 1;
-            }
-        }
-        else {
-            if (show_skeleton_toggle == 1) {
-                show_skeleton_toggle = 0;
-                show_skeleton = 1 - show_skeleton;
-
-                int total_joints = (
-                    renderer->animation_controller->joints->counter
-                );
-
-                for(int i=0; i<total_joints; i++) {
-                    entity = &renderer->debug_entities[i];
-                    entity->active = show_skeleton;
-                }
-            }
-        }
-        button_y_pos += button_step;
-        button_text = anim_play ? "Animation: Play" : "Animation: Pause";
-        if (ui_button(
-            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
-        ) {
-            if (anim_play_toggle == 0) {
-                anim_play_toggle = 1;
-            }
-        }
-        else {
-            if (anim_play_toggle == 1) {
-                anim_play_toggle = 0;
-                anim_play = 1 - anim_play;
-            }
-        }
         button_y_pos += 2*button_step;
         button_text = play_audio ? "Sound Test: On" : "Sound Test: Off";
         if (ui_button(

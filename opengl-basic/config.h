@@ -2,12 +2,6 @@
 #define CONFIG_H
 
 
-//  Animation test
-#define DO_ANIMATION 0
-#define ANIMATION_PLAY 0
-#define SHOW_SKELETON 0
-
-
 // Renderer
 #define RENDERER_FOV 1.19
 #define RENDERER_NEAR_PLANE 0.1

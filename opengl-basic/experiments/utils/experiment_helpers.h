@@ -4,7 +4,6 @@
 
 #include "../../common.h"
 #include "../../graphics.h"
-#include "../../animation.h"
 #include "../../utils/helpers.h"
 #include <time.h>
 
@@ -13,7 +12,6 @@
 
 enum ModelType {
     ModelType_World,
-    ModelType_SimpleSphere,
     ModelType_Spoon,
     ModelType_Teacup,
     ModelType_Teapot,
@@ -22,6 +20,7 @@ enum ModelType {
     ModelType_Dragon,
     ModelType_Blendercube,
     ModelType_sphere,
+    ModelType_Trooper,
     ModelType_Count
 };
 

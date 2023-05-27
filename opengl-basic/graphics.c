@@ -249,8 +249,6 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 	rh->GREEN = RENDERER_GREEN;
 	rh->BLUE = RENDERER_BLUE;
 
-    rh->do_animation = DO_ANIMATION;
-
     rh->projection_matrix = create_projection_matrix(ctx, rh);
 
     rh->shader = shader_get_program();
@@ -354,144 +352,13 @@ void render_entities(Renderer *rh) {
         );
 
         if (!vec3_is_equal(entity.color, light_color)) {
-            log_if_err("Issue before loading light\n");
+            printf("%d\n", i);
+            log_if_err("Issue before restoring light\n");
             rh->light->color = light_color;
             shader_load_light(rh->shader, rh->light);
-            log_if_err("There was a problem loading lights");
+            log_if_err("There was a problem restoring lights");
         }
 	}
-
-    for (int i=0; i<100; i++) {
-        Entity entity = rh->debug_entities[i];
-
-        if (entity.active == 0) {
-            continue;
-        }
-        int shader;
-        if (i == 99 && rh->do_animation) {
-            shader = rh->anim_shader;
-            shader_push(shader);
-
-            ArrayList *joints = rh->animation_controller->joints;
-            ArrayList *tmp = new_array_list(Mat4);
-            for (int m=0; m<joints->counter; m++) {
-                Joint joint = arr_get(joints, Joint, m);
-                *arr_push(tmp, Mat4) = joint.local_transform;
-            }
-            int uniform_location = glGetUniformLocation(
-                shader, "joint_transform");
-            glUniformMatrix4fv(
-                uniform_location, tmp->counter, GL_FALSE, (float *)tmp->data
-            );
-            arr_free(tmp);
-            log_if_err("Animation Joint Transpose\n");
-        }
-        else {
-            shader = rh->shader;
-        }
-        if (
-            !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
-            !vec3_is_equal(entity.color, light_color)
-        ) {
-            log_if_err(
-                "Entity Renderer found an issue before loading light\n"
-            );
-            rh->light->color = entity.color;
-            shader_load_light(shader, rh->light);
-            log_if_err("Entity Renderer found problem loading lights");
-        }
-
-        glBindVertexArray(entity.model->vao);
-
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-        glEnableVertexAttribArray(3);
-        glEnableVertexAttribArray(4);
-        log_if_err("There was an issue with attributes\n");
-        
-
-        Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
-        );
-
-        shader_load_matrix(
-            shader, "transformation_matrix", &transformation_matrix
-        );
-
-        if ( (entity.fill & 1) == 0) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-        else {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-        glDrawElements(
-            GL_TRIANGLES, entity.model->vertex_count,
-            GL_UNSIGNED_INT, 0
-        );
-
-        if (!vec3_is_equal(entity.color, light_color)) {
-            log_if_err("Issue before loading light\n");
-            rh->light->color = light_color;
-            shader_load_light(shader, rh->light);
-            log_if_err("There was a problem loading lights");
-        }
-	}
-
-    // shader_push(rh->circle_shader);
-    // for (int i=10; i<20; i++) {
-    //     Entity entity = rh->entities[i];
-
-    //     if (entity.active == 0) {
-    //         continue;
-    //     }
-    //     glBindVertexArray(entity.model->vao);
-
-    //     glEnableVertexAttribArray(0);
-    //     glEnableVertexAttribArray(1);
-    //     glEnableVertexAttribArray(2);
-    //     printf("ENTITY: %s\n", entity.debug_name);
-    //     log_if_err("There was an issue with attributes\n");
-    //     
-    //     Mat4 transformation_matrix = create_transformation_matrix(
-    //         entity.position,
-    //         entity.rotation_x,
-    //         entity.rotation_y,
-    //         entity.rotation_z,
-    //         &entity.scale
-    //     );
-    //     shader_load_matrix(
-    //         rh->circle_shader,
-    //         "transformation_matrix",
-    //         &transformation_matrix
-    //     );
-    //     shader_load_vec3(
-    //         rh->circle_shader,
-    //         "color",
-    //         &entity.color
-    //     );
-
-    //     if ( (entity.fill & 1) == 0) {
-    //         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //     }
-    //     else {
-    //         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //     }
-
-    //     glActiveTexture(GL_TEXTURE0);
-    //     glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-    //     glDrawElements(
-    //         GL_TRIANGLES, entity.model->vertex_count,
-    //         GL_UNSIGNED_INT, 0
-    //     );
-	// }
 }
 
 
@@ -678,3 +545,108 @@ void increase_rotation(Entity *entity, float dx, float dy, float dz) {
 }
 
 
+void init_floor_model(BaseModel *world_model) {
+    Mesh *mesh = (Mesh *)malloc(sizeof(Mesh));
+    int mesh_size = 128 * 128;
+
+    mesh->vertices = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
+    mesh->uvs = (Vec2 *)malloc(mesh_size * sizeof(Vec2));
+    mesh->normal = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
+    mesh->indices = (unsigned int*)malloc(mesh_size * sizeof(unsigned int));
+    mesh_init(mesh);
+
+    load_data_to_model(
+        world_model, (float *) mesh->vertices, mesh->indices,
+        3*sizeof(float)*mesh->vertices_len,
+        sizeof(unsigned int)*mesh->indices_len
+    );
+    load_texture_to_model(
+        world_model,
+        // "assets/textures/marble-floor.jpg",
+        "assets/textures/wall.jpg",
+        // "assets/textures/wood-floor.jpg",
+        (float *)mesh->uvs, 
+        2 * sizeof(float) * mesh->uvs_len
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(world_model->vao);
+    store_float_in_attributes(
+        &world_model->normal,
+        2,
+        3,
+        3 * mesh->vertices_len * sizeof(float),
+        (float *) mesh->normal
+    );
+    log_if_err("Issue after loading normals\n");
+
+    world_model->vertex_count = mesh->indices_len;
+
+    free(mesh->vertices);
+    free(mesh->uvs);
+    free(mesh->normal);
+    free(mesh->indices);
+    free(mesh);
+}
+
+
+void init_font(GraphicsContext *ctx, Renderer *renderer, Font *font) {
+    log_if_err("Issue before Font initiation\n");
+    font_init(
+        font, "assets/fonts/VictorMono-Regular.ttf",
+        (float)ctx->width, (float)ctx->height
+    );
+    renderer->font = font;
+    log_if_err("Issue with Font initiation\n");
+}
+
+
+void load_model_from_obj(
+    BaseModel *model, char *obj_file, char *texture_file
+) {
+    IntermediateModel tmp = {0};
+    parse_obj_file(obj_file, &tmp);
+    load_data_to_model(
+        model, tmp.vertices, tmp.indices,
+        tmp.vertices_count* sizeof(float),
+        tmp.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        model, texture_file, tmp.uvs, tmp.uvs_count * sizeof(float)
+    );
+    glBindVertexArray(model->vao);
+    store_float_in_attributes(
+        &model->normal, 2, 3, tmp.normals_count * sizeof(float), tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
+}
+
+void load_model_from_gltf(
+    BaseModel *model, char *gltf_file, char *bin_file, char *texture_file
+) {
+    char *data = read_file(gltf_file);
+    GltfData gltf = parse_gltf_data(data);
+    char *binary = read_file(bin_file);
+
+    IntermediateModel tmp = load_data_from_gltf(&gltf, binary);
+    free(data);
+    free(binary);
+    
+    load_data_to_model(
+        model, tmp.vertices, tmp.indices,
+        tmp.vertices_count * sizeof(float),
+        tmp.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        model, texture_file, tmp.uvs, tmp.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(model->vao);
+    store_float_in_attributes(
+        &model->normal, 2, 3, tmp.normals_count * sizeof(float), tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
+}

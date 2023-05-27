@@ -1,4 +1,6 @@
 #include "animation.h"
+#include "utils/file_handler.h"
+#include "graphics.h"
 
 
 Mat4 get_matrix(Tokenizer *tokenizer) {
@@ -564,3 +566,103 @@ void animation_update(AnimationController *anim_control, float dt) {
     );
 }
 
+
+void load_skeleton(AnimatedModel *anim_model) {
+    glBindVertexArray(anim_model->vao);
+    store_int_in_attributes(&anim_model->jbo, 3, 4,
+        anim_model->joints->counter * sizeof(int),
+        (int *)anim_model->joints->data
+    );
+    log_if_err("Issue loading joints\n");
+    glBindVertexArray(anim_model->vao);
+    store_float_in_attributes(&anim_model->wbo, 4, 4,
+        anim_model->weights->counter * sizeof(float),
+        (float *)anim_model->weights->data
+    );
+    log_if_err("Issue loading weights\n");
+}
+
+
+void render_animation_entities(
+    Renderer *rh, AnimationController *animation_controller
+) {
+    Vec3 light_color = rh->light->color;
+    for (int i=0; i<100; i++) {
+        Entity entity = rh->debug_entities[i];
+
+        if (entity.active == 0) {
+            continue;
+        }
+        int shader;
+        shader = rh->anim_shader;
+        shader_push(shader);
+
+        ArrayList *joints = animation_controller->joints;
+        ArrayList *tmp = new_array_list(Mat4);
+        for (int m=0; m<joints->counter; m++) {
+            Joint joint = arr_get(joints, Joint, m);
+            *arr_push(tmp, Mat4) = joint.local_transform;
+        }
+        int uniform_location = glGetUniformLocation(
+            shader, "joint_transform");
+        glUniformMatrix4fv(
+            uniform_location, tmp->counter, GL_FALSE, (float *)tmp->data
+        );
+        arr_free(tmp);
+        log_if_err("Animation Joint Transpose\n");
+        if (
+            !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
+            !vec3_is_equal(entity.color, light_color)
+        ) {
+            log_if_err(
+                "Entity Renderer found an issue before loading light\n"
+            );
+            rh->light->color = entity.color;
+            shader_load_light(shader, rh->light);
+            log_if_err("Entity Renderer found problem loading lights");
+        }
+
+        glBindVertexArray(entity.model->vao);
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(3);
+        glEnableVertexAttribArray(4);
+        log_if_err("There was an issue with attributes\n");
+        
+
+        Mat4 transformation_matrix = create_transformation_matrix(
+            entity.position,
+            entity.rotation_x,
+            entity.rotation_y,
+            entity.rotation_z,
+            &entity.scale
+        );
+
+        shader_load_matrix(
+            shader, "transformation_matrix", &transformation_matrix
+        );
+
+        if ( (entity.fill & 1) == 0) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        glDrawElements(
+            GL_TRIANGLES, entity.model->vertex_count,
+            GL_UNSIGNED_INT, 0
+        );
+
+        if (!vec3_is_equal(entity.color, light_color)) {
+            log_if_err("Issue before loading light\n");
+            rh->light->color = light_color;
+            shader_load_light(shader, rh->light);
+            log_if_err("There was a problem loading lights");
+        }
+	}
+}

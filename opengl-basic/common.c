@@ -650,7 +650,7 @@ void log_if_err(char *err_msg) {
     int err = glGetError();
     if (err != GL_NO_ERROR) {
         printf("[ERROR: %d] GL Error: %s", err, err_msg);
-        exit(1);
+        // exit(1);
     }
 }
 
