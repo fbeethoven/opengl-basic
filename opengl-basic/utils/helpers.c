@@ -40,10 +40,7 @@ void quad_in_pos(
 
     entity->model = quad_model;
 
-    Vec3 *rect_pos = (Vec3 *)malloc(sizeof(Vec3));
-    *rect_pos = center;
-
-    entity->position = rect_pos;
+    entity->position = center;
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
 }
@@ -95,10 +92,7 @@ void gui_quad_in_pos(
 
     float pos_x = (2 * center.x/(float)ctx->width) - 1.0;
     float pos_y = 1.0 - (2 * center.y/(float)ctx->height);
-    Vec3 *rect_pos = (Vec3 *)malloc(sizeof(Vec3));
-    *rect_pos = newVec3(pos_x, pos_y, 0);
-
-    entity->position = rect_pos;
+    entity->position = newVec3(pos_x, pos_y, 0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
 }
@@ -106,7 +100,6 @@ void gui_quad_in_pos(
 
 void gui_quad_free(Entity *entity) {
     free(entity->model);
-    free(entity->position);
 }
 
 
@@ -203,10 +196,16 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
 
 void player_movement(GraphicsContext *ctx, PlayerMovementParams *params) {
     if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
-        increase_rotation(params->player, 0.0, params->rotation_factor, 0.0);
+        params->player->rotation.x = params->player->rotation.x;
+        params->player->rotation.y = (
+            params->player->rotation.y + params->rotation_factor);
+        params->player->rotation.z = params->player->rotation.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
-        increase_rotation(params->player, 0.0, -params->rotation_factor, 0.0);
+        params->player->rotation.x = params->player->rotation.x;
+        params->player->rotation.y = (
+            params->player->rotation.y - params->rotation_factor);
+        params->player->rotation.z = params->player->rotation.z;
     }
     if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
         params->d_player_move += params->speed;
@@ -215,11 +214,11 @@ void player_movement(GraphicsContext *ctx, PlayerMovementParams *params) {
         params->d_player_move -= params->speed;
     }
 
-    params->player->position->x += (
-        params->d_player_move * sinf(params->player->rotation_y)
+    params->player->position.x += (
+        params->d_player_move * sinf(params->player->rotation.y)
     );
-    params->player->position->z += (
-        params->d_player_move * cosf(params->player->rotation_y)
+    params->player->position.z += (
+        params->d_player_move * cosf(params->player->rotation.y)
     );
 }
 

@@ -409,19 +409,17 @@ Mat4 mat4_translate(Vec3 *vec, Mat4 *A) {
 
 
 Mat4 create_transformation_matrix(
-    Vec3 *translation,
-    float rx, float ry, float rz,
-    Vec3 *scale
+    Vec3 translation, Vec3 rotation, Vec3 scale
 ) {
     Mat4 C = Mat4I();
 
-    C = mat4_translate(translation, &C);
+    C = mat4_translate(&translation, &C);
 
-    C = mat4_rotate_x(rx, &C);
-    C = mat4_rotate_y(ry, &C);
-    C = mat4_rotate_z(rz, &C);
+    C = mat4_rotate_x(rotation.x, &C);
+    C = mat4_rotate_y(rotation.y, &C);
+    C = mat4_rotate_z(rotation.z, &C);
 
-    mat4_scale(scale, &C);
+    mat4_scale(&scale, &C);
     return C;
 }
 

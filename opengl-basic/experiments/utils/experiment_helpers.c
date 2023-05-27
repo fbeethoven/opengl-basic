@@ -82,40 +82,34 @@ void load_assets(
     );
 
 
-    Entity *entity = &renderer->font_entities[0];
+    Entity *entity;
+    entity = &renderer->font_entities[0];
     strcpy(entity->debug_name, "Default Font");
-    entity->model = (BaseModel *) &font->vao;
-    Vec3 *font_position = malloc(sizeof(Vec3));
-    entity->position = font_position;
-    *entity->position = newVec3(0.0, 0.0, 0.0);
+    entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
+    entity->model = (BaseModel *) &font->vao;
 
     entity = &renderer->entities[0];
     strcpy(entity->debug_name, "World Floor");
     entity->model = &game_ctx->models[ModelType_World];
-    entity->position = &game_ctx->world_center;
+    entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
 
     entity = &renderer->entities[1];
     strcpy(entity->debug_name, "Storm Trooper");
     entity->model = &game_ctx->models[ModelType_Trooper];
-
-    Vec3 *pos = malloc(sizeof(Vec3));
-    *pos = newVec3(0.0, 0.0, 0.0);
-    entity->position = pos;
-
+    entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
 
     entity = &renderer->entities[2];
     entity->model = &game_ctx->models[ModelType_Cube];
-    Vec3 *new_pos = malloc(sizeof(Vec3));
-    *new_pos = newVec3(1.0, 10.0, 1.0);
-    entity->position = new_pos;
+    entity->position = newVec3(1.0, 10.0, 1.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
+
 }
 
 
@@ -130,9 +124,7 @@ Entity* get_new_debug_entity(
 
             entity->model = &game_ctx->models[ModelType_sphere];
 
-            Vec3 *new_pos = malloc(sizeof(Vec3));
-            *new_pos = pos;
-            entity->position = new_pos;
+            entity->position = pos;
 
             entity->active = 1;
             entity->color = newVec3(1.0, 1.0, 0.0);
@@ -184,7 +176,7 @@ RandomEntity* add_random_entity(
             r_entity->entity->scale = newVec3(scalar, scalar, scalar);
 
             float rot = (float)(rand() % 3000000)/3000000;
-            r_entity->entity->rotation_y = rot * 3.1415;
+            r_entity->entity->rotation.y = rot * 3.1415;
 
             double t = game_ctx->current_time;
             r_entity->start_time = t;
@@ -228,7 +220,7 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
         rand_entity = &game_ctx->random_entities[i];
         rand_entity->entity = entity;
         rand_entity->active = &entity->active;
-        entity->position = &rand_entity->position;
+        entity->position = rand_entity->position;
         entity->scale = newVec3(1.0, 1.0, 1.0);
         entity->active = 0;
     }

@@ -20,9 +20,6 @@ int pulse_r;
 int stage;
 
 
-LIST_ADD(float);
-LIST_ADD(int);
-
 typedef struct TestNode TestNode;
 
 struct TestNode {
@@ -51,9 +48,10 @@ int clean_up() {
     //      [ ] move entity helpers and load assets to graphics module
     //      [X] move animation params to animation module
     //          (including debug options)
-    // [ ] Fix Entity Struct
+    // [X] Fix Entity Struct
     // [ ] Fix Render Struct
-    //      [ ] Use a layer stack for entities
+    //      [ ] Use list for entities first.
+    //          In the future use a layer stack with callbacks
     // [ ] Add Layers
     // [ ] Improve Font rendereing
     // [ ] Improve UI (double buffering vs full ImGui)
@@ -253,7 +251,9 @@ void player_focus_movement(
     camera_movement(ctx, &camera_params);
     distance_from_player = camera_params.distance_from_player;
     // camera_follow_player(player, &camera_params);
-    camera_follow_player(player->position, player->rotation_y, &camera_params);
+    camera_follow_player(
+        &player->position, player->rotation.y, &camera_params
+    );
 }
 
 
@@ -291,8 +291,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     update_graphic_state(ctx, renderer);
 
     double time = glfwGetTime();
-    double second_per_frame = time - ctx->previous_time;
-    ctx->previous_time = time;
+    double second_per_frame = time - ctx->current_time;
+    ctx->current_time = time;
     game_ctx->current_time = time;
 
 

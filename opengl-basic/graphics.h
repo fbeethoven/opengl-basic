@@ -11,7 +11,9 @@
 typedef struct GraphicsContext {
     int width;
     int height;
-    double previous_time;
+    double current_time;
+    double dtime;
+    double game_time;
     double mouse_position[2];
     double dmouse[2];
     GLFWwindow* window;
@@ -36,16 +38,18 @@ typedef struct BaseModel {
 
 typedef struct Entity {
     BaseModel *model;
-    Vec3 *position;
+    Vec3 position;
     Vec3 color;
-    float rotation_x;
-    float rotation_y;
-    float rotation_z;
+    Vec3 rotation;
     Vec3 scale;
     int active;
     int fill;
-    char debug_name[50];
+    char debug_name[32];
 } Entity;
+
+
+LIST_ADD(BaseModel);
+LIST_ADD(Entity);
 
 
 typedef struct Renderer {
@@ -66,9 +70,15 @@ typedef struct Renderer {
 
     Entity entities[20];
     Entity debug_entities[100];
-
     Entity gui_entities[10];
     Entity font_entities[10];
+#if 0
+    List(Entity) *entities;
+    List(Entity) *debug_entities;
+
+    List(Entity) *gui_entities;
+    List(Entity) *font_entities;
+#endif
 
     Font *font;
     Light *light;
@@ -87,10 +97,6 @@ typedef struct Camera {
 void camera_move(Camera *camera, float dx, float dy, float dz);
 
 void init_render_handler(GraphicsContext *ctx, Renderer *rh);
-
-void increase_position(Entity *entity, float dx, float dy, float dz);
-
-void increase_rotation(Entity *entity, float dx, float dy, float dz);
 
 int graphics_init(GraphicsContext *ctx);
 

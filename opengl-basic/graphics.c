@@ -325,16 +325,10 @@ void render_entities(Renderer *rh) {
         log_if_err("There was an issue with attributes\n");
         
         Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
+            entity.position, entity.rotation, entity.scale
         );
         shader_load_matrix(
-            rh->shader,
-            "transformation_matrix",
-            &transformation_matrix
+            rh->shader, "transformation_matrix", &transformation_matrix
         );
 
         if ( (entity.fill & 1) == 0) {
@@ -386,16 +380,10 @@ void render_font_entities(Renderer *rh) {
         font_update_buffer(rh->font);
 
         Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
+            entity.position, entity.rotation, entity.scale
         );
         shader_load_matrix(
-            rh->gui_shader,
-            "transformation_matrix",
-            &transformation_matrix
+            rh->gui_shader, "transformation_matrix", &transformation_matrix
         );
         
         if ( (entity.fill & 1) == 0) {
@@ -438,17 +426,11 @@ void render_gui_entities(Renderer *rh) {
         glBindBuffer(GL_ARRAY_BUFFER, entity.model->vbo);
 
         Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
+            entity.position, entity.rotation, entity.scale
         );
 
         shader_load_matrix(
-            rh->gui_shader,
-            "transformation_matrix",
-            &transformation_matrix
+            rh->gui_shader, "transformation_matrix", &transformation_matrix
         );
         
         if ( (entity.fill & 1) == 0) {
@@ -528,20 +510,6 @@ void render(Renderer *rh, Camera *camera) {
 
 void cleanUp(Renderer *rh) {
     glDeleteProgram(rh->shader);
-}
-
-
-void increase_position(Entity *entity, float dx, float dy, float dz) {
-    entity->position->x += dx;
-    entity->position->y += dy;
-    entity->position->z += dz;
-}
-
-
-void increase_rotation(Entity *entity, float dx, float dy, float dz) {
-    entity->rotation_x += dx;
-    entity->rotation_y += dy;
-    entity->rotation_z += dz;
 }
 
 
@@ -650,3 +618,4 @@ void load_model_from_gltf(
     model->vertex_count = tmp.indices_count;
     intermediate_model_free(&tmp);
 }
+

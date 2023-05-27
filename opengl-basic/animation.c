@@ -633,11 +633,7 @@ void render_animation_entities(
         
 
         Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
+            entity.position, entity.rotation, entity.scale
         );
 
         shader_load_matrix(

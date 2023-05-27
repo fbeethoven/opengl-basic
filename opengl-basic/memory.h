@@ -30,7 +30,7 @@ void *_arr_push(ArrayList *arr, U64 n);
 #define arr_push(arr, type) (type *)_arr_push((arr), sizeof(type))
 
 #define LIST_PUSH(list, item) _arr_push( (ArrayList *)(list), sizeof((item))); \
-    (list)->data[(list)->counter - 1] = item
+    (list)->data[(list)->counter - 1] = (item)
 
 #define LIST_GET(list, n) (list)->data[(n)]
 #define LIST_GET_PTR(list, n) &(list)->data[(n)]
@@ -43,6 +43,10 @@ void arr_free(ArrayList *arr);
     for(int i__=(item=(list)->data[0],0);   \
     i__<(list)->counter;                    \
     item=(list)->data[++i__])
+
+
+LIST_ADD(int);
+LIST_ADD(float);
 
 
 ArrayList *_new_array_list(U64 n);
