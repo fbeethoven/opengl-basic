@@ -282,6 +282,11 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
         &rh->projection_matrix
     );
     shader_pop();
+
+    rh->entities = NEW_LIST(Entity);
+    rh->gui_entities = NEW_LIST(Entity);
+    rh->font_entities = NEW_LIST(Entity);
+    rh->debug_entities = NEW_LIST(Entity);
 }
 
 
@@ -299,9 +304,8 @@ void prepare(Renderer *rh) {
 
 void render_entities(Renderer *rh) {
     Vec3 light_color = rh->light->color;
-    for (int i=0; i<20; i++) {
-        Entity entity = rh->entities[i];
-
+    Entity entity;
+    FOR_ALL(entity, rh->entities) {
         if (entity.active == 0) {
             continue;
         }
@@ -346,7 +350,6 @@ void render_entities(Renderer *rh) {
         );
 
         if (!vec3_is_equal(entity.color, light_color)) {
-            printf("%d\n", i);
             log_if_err("Issue before restoring light\n");
             rh->light->color = light_color;
             shader_load_light(rh->shader, rh->light);
@@ -357,8 +360,8 @@ void render_entities(Renderer *rh) {
 
 
 void render_font_entities(Renderer *rh) {
-    for (int i=0; i<10; i++) {
-        Entity entity = rh->font_entities[i];
+    Entity entity;
+    FOR_ALL(entity, rh->font_entities) {
 
         if (entity.active == 0) {
             continue;
@@ -408,9 +411,8 @@ void render_font_entities(Renderer *rh) {
 
 
 void render_gui_entities(Renderer *rh) {
-    for (int i=0; i<10; i++) {
-        Entity entity = rh->gui_entities[i];
-
+    Entity entity;
+    FOR_ALL(entity, rh->gui_entities) {
         if (entity.active == 0) {
             continue;
         }

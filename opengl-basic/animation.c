@@ -588,7 +588,8 @@ void render_animation_entities(
 ) {
     Vec3 light_color = rh->light->color;
     for (int i=0; i<100; i++) {
-        Entity entity = rh->debug_entities[i];
+        // Entity entity = rh->debug_entities[i];
+        Entity entity = LIST_GET(rh->debug_entities, i);
 
         if (entity.active == 0) {
             continue;

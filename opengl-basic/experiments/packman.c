@@ -126,7 +126,7 @@ int game_run1() {
 
     Renderer renderer = {0};
     init_render_handler(&ctx, &renderer);
-    sync_entities(game_ctx, &renderer);
+    // sync_entities(game_ctx, &renderer);
 
     Camera camera = {0};
 
@@ -157,21 +157,6 @@ int game_run1() {
 }
 
 
-Entity *get_entity_selected(Renderer *renderer) {
-    return &renderer->debug_entities[entity_index];
-
-    if (entity_category_index == 0) {
-        return &renderer->entities[entity_index];
-    }
-    else if (entity_category_index == 1) {
-        return &renderer->gui_entities[entity_index];
-    }
-    else {
-        return &renderer->font_entities[entity_index];
-    }
-}
-
-
 void handle_debug_info(
     GraphicsContext *ctx, Renderer *renderer, Camera *camera,
     double second_per_frame
@@ -179,13 +164,6 @@ void handle_debug_info(
     char msg[500];
     sprintf(
         msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
-    );
-    font_buffer_push(renderer->font, msg);
-
-    sprintf(
-        msg, "%s Selected: %s",
-        entity_categories[entity_category_index],
-        get_entity_selected(renderer)->debug_name
     );
     font_buffer_push(renderer->font, msg);
 
@@ -299,7 +277,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     Entity *entity;
 
 
-    entity = get_entity_selected(renderer);
     // mouse picking
     // entity = &renderer->entities[10];
     // Vec3 position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
@@ -307,14 +284,14 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
 
 
-    if ( (time - game_ctx->start_time) > 5.0 && stage < 0) {
-        for (int i=1; i<10; i++) {
-            entity = &renderer->entities[i];
-            entity->active = 0;
-        }
-        random_experiment = 1;
-        stage = 0;
-    }
+    // if ( (time - game_ctx->start_time) > 5.0 && stage < 0) {
+    //     for (int i=1; i<10; i++) {
+    //         entity = &renderer->entities[i];
+    //         entity->active = 0;
+    //     }
+    //     random_experiment = 1;
+    //     stage = 0;
+    // }
     // if (entity->active != 0) {
     //     float freq = 1.0;
     //     float pulse = (float)time - (int)time;
@@ -335,8 +312,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     //     }
     // }
 
-    entity = get_entity_selected(renderer);
-
     if(
         glfwGetKey(ctx->window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
         glfwGetKey(ctx->window, GLFW_KEY_Q) == GLFW_PRESS
@@ -346,31 +321,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     if(glfwGetKey(ctx->window, GLFW_KEY_X) == GLFW_PRESS) {
         camera_reset(camera);
-    }
-
-    if (
-        glfwGetKey(ctx->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-        glfwGetKey(ctx->window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS
-    ) {
-        if (toggle_button_press(ctx, GLFW_KEY_N, &pulse_n)){
-            entity_category_index++;
-            entity_index = 0;
-            if (entity_category_index > 2) {
-                entity_category_index = 0;
-            }
-        }
-
-    }
-    else if (toggle_button_press(ctx, GLFW_KEY_N, &pulse_n)){
-        entity = get_entity_selected(renderer);
-        entity->color = newVec3(0.0, 0.0, 0.0);
-
-        entity_index++;
-        entity = get_entity_selected(renderer);
-        if (entity->active == 0) {
-            entity_index = 0;
-            entity = get_entity_selected(renderer);
-        }
     }
 
     if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
@@ -408,7 +358,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         float button_y_pos = 50.0;
         float button_step = 25.0;
 
-        entity = &renderer->debug_entities[99];
+        entity = &LIST_GET(renderer->entities, 1);
         char *button_text = entity->fill ? "Wiremesh: ON" : "Wiremesh: OFF";
         if (ui_button(
             ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text
@@ -441,10 +391,9 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         }
     }
     else {
-        entity = &renderer->gui_entities[0];
+        entity = &LIST_GET(renderer->gui_entities, 0);
         entity->active = 0;
     }
-    entity = get_entity_selected(renderer);
 
     // char msg[500];
     // int timer = 3 + (int)game_ctx->start_time - (int)time;

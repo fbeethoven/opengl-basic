@@ -29,8 +29,12 @@ typedef struct ArrayList {
 void *_arr_push(ArrayList *arr, U64 n);
 #define arr_push(arr, type) (type *)_arr_push((arr), sizeof(type))
 
-#define LIST_PUSH(list, item) _arr_push( (ArrayList *)(list), sizeof((item))); \
+#define LIST_PUSH(list, item) \
+    _arr_push( (ArrayList *)(list), sizeof((item))); \
     (list)->data[(list)->counter - 1] = (item)
+
+#define list_push(list, type) \
+    (type *)_arr_push( (ArrayList *)(list), sizeof(type))
 
 #define LIST_GET(list, n) (list)->data[(n)]
 #define LIST_GET_PTR(list, n) &(list)->data[(n)]

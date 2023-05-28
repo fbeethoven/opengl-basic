@@ -68,17 +68,18 @@ typedef struct Renderer {
 	int circle_shader;
 	int gui_shader;
 
+#if 0
     Entity entities[20];
     Entity debug_entities[100];
     Entity gui_entities[10];
     Entity font_entities[10];
-#if 0
+#endif
+
     List(Entity) *entities;
     List(Entity) *debug_entities;
 
     List(Entity) *gui_entities;
     List(Entity) *font_entities;
-#endif
 
     Font *font;
     Light *light;

@@ -83,28 +83,28 @@ void load_assets(
 
 
     Entity *entity;
-    entity = &renderer->font_entities[0];
+    entity = list_push(renderer->font_entities, Entity);
     strcpy(entity->debug_name, "Default Font");
     entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
     entity->model = (BaseModel *) &font->vao;
 
-    entity = &renderer->entities[0];
+    entity = list_push(renderer->entities, Entity);
     strcpy(entity->debug_name, "World Floor");
     entity->model = &game_ctx->models[ModelType_World];
     entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
 
-    entity = &renderer->entities[1];
+    entity = list_push(renderer->entities, Entity);
     strcpy(entity->debug_name, "Storm Trooper");
     entity->model = &game_ctx->models[ModelType_Trooper];
     entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
 
-    entity = &renderer->entities[2];
+    entity = list_push(renderer->entities, Entity);
     entity->model = &game_ctx->models[ModelType_Cube];
     entity->position = newVec3(1.0, 10.0, 1.0);
     entity->active = 1;
@@ -118,7 +118,7 @@ Entity* get_new_debug_entity(
 ) {
     Entity *entity;
     for (int i=0; i<100; i++) {
-        entity = &renderer->debug_entities[i];
+        entity = &LIST_GET(renderer->debug_entities, i);
         if (entity->active == 0) {
             sprintf(entity->debug_name, "Debug Entity %d", i); 
 
@@ -216,7 +216,8 @@ void sync_entities(GameContext *game_ctx, Renderer *renderer) {
     Entity *entity;
     RandomEntity *rand_entity;
     for (int i=0; i<20; i++) {
-        entity = &renderer->entities[i];
+        // entity = &renderer->entities[i];
+        entity = &LIST_GET(renderer->entities, i);
         rand_entity = &game_ctx->random_entities[i];
         rand_entity->entity = entity;
         rand_entity->active = &entity->active;
