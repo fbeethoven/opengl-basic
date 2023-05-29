@@ -12,8 +12,6 @@ int get_new_random(GameContext *game_ctx) {
     return 0;
 }
 
-void load_model_cube(GameContext *game_ctx) {
-}
 
 Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx) {
     float x_pos = 200.0*((float)rand() / RAND_MAX) - 100.0;
@@ -109,6 +107,10 @@ void load_assets(
     entity->position = newVec3(1.0, 10.0, 1.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
+
+
+
+
 
 }
 

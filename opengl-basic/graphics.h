@@ -67,6 +67,7 @@ typedef struct Renderer {
     int anim_shader;
 	int circle_shader;
 	int gui_shader;
+	int sky_shader;
 
 #if 0
     Entity entities[20];
@@ -83,6 +84,8 @@ typedef struct Renderer {
 
     Font *font;
     Light *light;
+
+    BaseModel skybox;
 
 } Renderer;
 

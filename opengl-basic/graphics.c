@@ -157,6 +157,85 @@ void load_texture_to_model(
     glBindVertexArray(0);
 }
 
+void cubemap_face(char *file_path, unsigned int face) {
+    Image *data = image_load(file_path);
+    glTexImage2D(
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGB,
+        data->width, data->height, 0, GL_RGB, GL_UNSIGNED_BYTE, data->data
+    );
+    image_free(data);
+}
+
+void init_sky_box(
+    Renderer *renderer,
+    char *xp, char *xn, char *yp, char *yn, char *zp, char *zn
+) {
+    float vertices[] = {
+        -10.0, 10.0, -10.0,
+        -10.0, -10.0,  -10.0,
+        10.0, -10.0, -10.0,
+        10.0, 10.0, -10.0,
+        -10.0, 10.0, 10.0,
+        -10.0, -10.0, 10.0,
+        10.0, -10.0, 10.0,
+        10.0, 10.0, 10.0,
+        10.0, 10.0, -10.0,
+        10.0, -10.0, -10.0,
+        10.0, -10.0, 10.0,
+        10.0, 10.0, 10.0,
+        -10.0, 10.0, -10.0,
+        -10.0, -10.0, -10.0,
+        -10.0, -10.0, 10.0,
+        -10.0, 10.0, 10.0,
+        -10.0, 10.0, 10.0,
+        -10.0, 10.0, -10.0,
+        10.0, 10.0, -10.0,
+        10.0, 10.0, 10.0,
+        -10.0, -10.0, 10.0,
+        -10.0, -10.0, -10.0,
+        10.0, -10.0, -10.0,
+        10.0, -10.0, 10.0
+    };
+
+    unsigned int indices[] = {
+        1,   4,  2, 
+        4,   3,  2, 
+        5,   8,  6, 
+        8,   7,  6, 
+        9,   12, 10,
+        12,  11, 10,
+        13,  16, 14,
+        16,  15, 14,
+        17,  20, 18,
+        20,  19, 18,
+        21,  24, 22,
+        24,  23, 22
+    };
+
+    load_data_to_model(&renderer->skybox, vertices, indices, 24 * 3, 12 * 3);
+    renderer->skybox.vertex_count = 12 * 3;
+    glBindVertexArray(renderer->skybox.vao);
+
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &renderer->skybox.texture_id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->skybox.texture_id);
+
+    cubemap_face(xp, 0);
+    cubemap_face(xn, 1);
+    cubemap_face(yp, 2);
+    cubemap_face(yn, 3);
+    cubemap_face(zp, 4);
+    cubemap_face(zn, 5);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); 
+
+}
+
+
 
 int graphics_init(GraphicsContext *ctx) {
     ctx->width = 800;
@@ -262,24 +341,26 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
         "shaders/gui_vertex.glsl", "shaders/gui_fragment.glsl"
     );
     log_if_err("There was an issue on renderer init\n");
+    rh->sky_shader = shader_get_program_general(
+        "shaders/skybox_vertex.glsl", "shaders/skybox_fragment.glsl"
+    );
+    log_if_err("There was an issue wit skybox shader\n");
 
     shader_push(rh->shader);
     shader_load_matrix(
-        rh->shader,
-        "projection_matrix",
-        &rh->projection_matrix
+        rh->shader, "projection_matrix", &rh->projection_matrix
     );
     shader_push(rh->anim_shader);
     shader_load_matrix(
-        rh->circle_shader,
-        "projection_matrix",
-        &rh->projection_matrix
+        rh->circle_shader, "projection_matrix", &rh->projection_matrix
     );
     shader_push(rh->circle_shader);
     shader_load_matrix(
-        rh->circle_shader,
-        "projection_matrix",
-        &rh->projection_matrix
+        rh->circle_shader, "projection_matrix", &rh->projection_matrix
+    );
+    shader_push(rh->sky_shader);
+    shader_load_matrix(
+        rh->sky_shader, "projection_matrix", &rh->projection_matrix
     );
     shader_pop();
 
@@ -287,6 +368,17 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     rh->gui_entities = NEW_LIST(Entity);
     rh->font_entities = NEW_LIST(Entity);
     rh->debug_entities = NEW_LIST(Entity);
+
+
+    init_sky_box(rh,
+        "assets/textures/wall.jpg", "assets/textures/wood-floor.jpg",
+        "assets/textures/wood-floor.jpg", "assets/textures/wood-floor.jpg",
+        "assets/textures/wood-floor.jpg", "assets/textures/wood-floor.jpg"
+
+        // "assets/textures/px.png", "assets/textures/nx.png",
+        // "assets/textures/py.png", "assets/textures/ny.png",
+        // "assets/textures/pz.png", "assets/textures/nz.png"
+    );
 }
 
 
@@ -458,14 +550,42 @@ void render_gui_entities(Renderer *rh) {
 void render(Renderer *rh, Camera *camera) {
     prepare(rh);
 
+
     Mat4 view_matrix = mat4_look_at(
         camera->position, 
         camera->centre,
         newVec3(0.0, 1.0, 0.0)
     );
+
+    glDepthMask(GL_FALSE);
+    printf("Sky shader: %u\n", rh->sky_shader);
+    printf("Skybox vao : %u\n", rh->skybox.vao);
+    printf("Skybox texture : %u\n", rh->skybox.texture_id);
+    printf("Skybox vertices : %u\n", rh->skybox.vertex_count);
+    shader_push(rh->sky_shader);
+
+
+    Mat4 skybox_mat = view_matrix;
+    skybox_mat.m03 = 0.0;
+    skybox_mat.m13 = 0.0;
+    skybox_mat.m23 = 0.0;
+
+    shader_load_matrix( rh->sky_shader, "view_matrix", &skybox_mat);
+
+
+
+
+
+    glBindVertexArray(rh->skybox.vao);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, rh->skybox.texture_id);
+    glDrawElements(GL_TRIANGLES, rh->skybox.vertex_count, GL_UNSIGNED_INT, 0);
+    glDepthMask(GL_TRUE);
+    log_if_err("Renderer found a problem with skybox shader\n");
+
     shader_push(rh->anim_shader);
     shader_load_matrix(
-        rh->circle_shader,
+        rh->anim_shader,
         "view_matrix",
         &view_matrix
     );
