@@ -171,53 +171,53 @@ void init_sky_box(
     char *xp, char *xn, char *yp, char *yn, char *zp, char *zn
 ) {
     float vertices[] = {
-        -10.0, 10.0, -10.0,
-        -10.0, -10.0,  -10.0,
-        10.0, -10.0, -10.0,
-        10.0, 10.0, -10.0,
-        -10.0, 10.0, 10.0,
-        -10.0, -10.0, 10.0,
-        10.0, -10.0, 10.0,
-        10.0, 10.0, 10.0,
-        10.0, 10.0, -10.0,
-        10.0, -10.0, -10.0,
-        10.0, -10.0, 10.0,
-        10.0, 10.0, 10.0,
-        -10.0, 10.0, -10.0,
-        -10.0, -10.0, -10.0,
-        -10.0, -10.0, 10.0,
-        -10.0, 10.0, 10.0,
-        -10.0, 10.0, 10.0,
-        -10.0, 10.0, -10.0,
-        10.0, 10.0, -10.0,
-        10.0, 10.0, 10.0,
-        -10.0, -10.0, 10.0,
-        -10.0, -10.0, -10.0,
-        10.0, -10.0, -10.0,
-        10.0, -10.0, 10.0
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
     };
 
-    unsigned int indices[] = {
-        1,   4,  2, 
-        4,   3,  2, 
-        5,   8,  6, 
-        8,   7,  6, 
-        9,   12, 10,
-        12,  11, 10,
-        13,  16, 14,
-        16,  15, 14,
-        17,  20, 18,
-        20,  19, 18,
-        21,  24, 22,
-        24,  23, 22
-    };
-
-    load_data_to_model(&renderer->skybox, vertices, indices, 24 * 3, 12 * 3);
-    renderer->skybox.vertex_count = 12 * 3;
+    glGenVertexArrays(1, &renderer->skybox.vao);
     glBindVertexArray(renderer->skybox.vao);
 
-    glActiveTexture(GL_TEXTURE0);
+    store_float_in_attributes(
+        &renderer->skybox.vbo, 0, 3, sizeof(vertices), vertices);
+    renderer->skybox.vertex_count = sizeof(vertices)/sizeof(vertices[0]);
+
     glGenTextures(1, &renderer->skybox.texture_id);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->skybox.texture_id);
 
     cubemap_face(xp, 0);
@@ -352,7 +352,7 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     );
     shader_push(rh->anim_shader);
     shader_load_matrix(
-        rh->circle_shader, "projection_matrix", &rh->projection_matrix
+        rh->anim_shader, "projection_matrix", &rh->projection_matrix
     );
     shader_push(rh->circle_shader);
     shader_load_matrix(
@@ -566,20 +566,20 @@ void render(Renderer *rh, Camera *camera) {
 
 
     Mat4 skybox_mat = view_matrix;
+    skybox_mat.m30 = 0.0;
+    skybox_mat.m31 = 0.0;
+    skybox_mat.m32 = 0.0;
     skybox_mat.m03 = 0.0;
     skybox_mat.m13 = 0.0;
     skybox_mat.m23 = 0.0;
 
-    shader_load_matrix( rh->sky_shader, "view_matrix", &skybox_mat);
-
-
-
-
+    shader_load_matrix(rh->sky_shader, "view_matrix", &skybox_mat);
 
     glBindVertexArray(rh->skybox.vao);
+    glEnableVertexAttribArray(0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, rh->skybox.texture_id);
-    glDrawElements(GL_TRIANGLES, rh->skybox.vertex_count, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, rh->skybox.vertex_count);
     glDepthMask(GL_TRUE);
     log_if_err("Renderer found a problem with skybox shader\n");
 
