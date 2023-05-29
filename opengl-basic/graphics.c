@@ -160,7 +160,7 @@ void load_texture_to_model(
 void cubemap_face(char *file_path, unsigned int face) {
     Image *data = image_load(file_path);
     glTexImage2D(
-        GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGB,
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA,
         data->width, data->height, 0, GL_RGB, GL_UNSIGNED_BYTE, data->data
     );
     image_free(data);
@@ -371,13 +371,9 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 
 
     init_sky_box(rh,
-        "assets/textures/wall.jpg", "assets/textures/wood-floor.jpg",
-        "assets/textures/wood-floor.jpg", "assets/textures/wood-floor.jpg",
-        "assets/textures/wood-floor.jpg", "assets/textures/wood-floor.jpg"
-
-        // "assets/textures/px.png", "assets/textures/nx.png",
-        // "assets/textures/py.png", "assets/textures/ny.png",
-        // "assets/textures/pz.png", "assets/textures/nz.png"
+        "assets/textures/right.jpg", "assets/textures/left.jpg",
+        "assets/textures/top.jpg", "assets/textures/bottom.jpg",
+        "assets/textures/front.jpg", "assets/textures/back.jpg"
     );
 }
 
