@@ -108,9 +108,13 @@ void load_assets(
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
 
+    entity = list_push(renderer->gui_entities, Entity);
+    entity->model = malloc(sizeof(BaseModel));
+    entity->position = newVec3(0.0, 0.0, 0.0);
+    entity->active = 1;
+    entity->scale = newVec3(1.0, 1.0, 1.0);
 
-
-
+    ui_color_picker(ctx, entity);
 
 }
 

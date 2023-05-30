@@ -430,3 +430,81 @@ int ui_button(
 
     return result;
 }
+
+
+
+void ui_color_picker(GraphicsContext *ctx, Entity *entity) {
+    Vec3 vertices[] = {
+        newVec3(-1.0, 1.0, 0.0),
+        newVec3(-1.0, 0.0, 0.0),
+        newVec3(0.0, 0.0, 0.0),
+        newVec3(0.0, 1.0, 0.0),
+
+        newVec3(-0.8, 0.8, 0.0),
+        newVec3(-0.8, 0.7, 0.0),
+        newVec3(-0.5, 0.7, 0.0),
+        newVec3(-0.5, 0.8, 0.0),
+
+        newVec3(-0.8, 0.6, 0.0),
+        newVec3(-0.8, 0.5, 0.0),
+        newVec3(-0.5, 0.5, 0.0),
+        newVec3(-0.5, 0.6, 0.0)
+    };
+
+    Vec2 uvs[] = {
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0),
+        newVec2(0.0, 0.0)
+    };
+
+    unsigned int indices[] = {
+        0, 1, 2,
+        2, 0, 3,
+        4, 5, 6,
+        6, 4, 7,
+        8, 9, 10,
+        10, 8, 11
+    };
+
+    Vec4 color[] = {
+        newVec4(0.3, 0.3, 0.3, 1.0),
+        newVec4(0.3, 0.3, 0.3, 1.0),
+        newVec4(0.3, 0.3, 0.3, 1.0),
+        newVec4(0.3, 0.3, 0.3, 1.0),
+
+        newVec4(0.0, 0.0, 0.0, 1.0),
+        newVec4(0.0, 0.0, 0.0, 0.0),
+        newVec4(0.0, 0.0, 0.0, 0.0),
+        newVec4(0.0, 0.0, 0.0, 1.0),
+
+        newVec4(1.0, 1.0, 1.0, 1.0),
+        newVec4(1.0, 1.0, 1.0, 0.0),
+        newVec4(1.0, 1.0, 1.0, 0.0),
+        newVec4(1.0, 1.0, 1.0, 1.0)
+    };
+
+
+    load_data_to_model(entity->model, (float *)vertices, indices,
+        sizeof(vertices), sizeof(indices)
+    );
+    entity->model->vertex_count = sizeof(indices)/sizeof(indices[0]);
+
+    load_empty_texture_to_model(entity->model, (float *)uvs, sizeof(uvs));
+    glBindVertexArray(entity->model->vao);
+    store_float_in_attributes(
+        &entity->model->color, 2, 4, sizeof(color), (float *) color
+    );
+    log_if_err("Issue loading quad color\n");
+
+}

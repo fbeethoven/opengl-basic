@@ -12,8 +12,6 @@
 #include "../audio.h"
 
 
-
-
 float player_rotation;
 int random_experiment;
 int pulse_r;
@@ -91,6 +89,7 @@ int game_run1() {
     //      [ ] normalize normal vectors
     //      [ ] handle EOF
     //  [X] Fix file_handler for big endian
+
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
@@ -391,8 +390,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         }
     }
     else {
-        entity = &LIST_GET(renderer->gui_entities, 0);
-        entity->active = 0;
+        // entity = &LIST_GET(renderer->gui_entities, 0);
+        // entity->active = 0;
     }
 
     // char msg[500];

@@ -56,6 +56,7 @@ Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance);
 int ui_button(
     GraphicsContext *ctx, Renderer *renderer, Vec2 position, char *text
 );
+void ui_color_picker(GraphicsContext *ctx, Entity *entity);
 
 
 #endif  // HELPERS_H
