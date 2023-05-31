@@ -56,6 +56,9 @@ Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance);
 int ui_button(
     GraphicsContext *ctx, Renderer *renderer, Vec2 position, char *text
 );
+Vec3 mouse_to_world(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
+int ray_to_aabb(Vec3 origin, Vec3 dir, Vec3 box_min, Vec3 box_max);
+int ray_to_sphere(Vec3 origin, Vec3 dir, Vec3 center, float radius);
 void ui_color_picker(GraphicsContext *ctx, Entity *entity);
 
 

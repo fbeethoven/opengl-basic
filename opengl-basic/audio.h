@@ -3,10 +3,9 @@
 
 #include "miniaudio.h"
 
-ma_engine audio_engine;
-int play_audio;
-double last_play;
 
+extern int play_audio;
+extern double last_play;
 
 void sound_init();
 void play_sound();

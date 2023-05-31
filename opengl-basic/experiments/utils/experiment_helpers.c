@@ -96,26 +96,20 @@ void load_assets(
     entity->scale = newVec3(1.0, 1.0, 1.0);
 
     entity = list_push(renderer->entities, Entity);
-    strcpy(entity->debug_name, "Storm Trooper");
-    entity->model = &game_ctx->models[ModelType_Trooper];
+    strcpy(entity->debug_name, "Mouse marker");
+    entity->model = &game_ctx->models[ModelType_sphere];
     entity->position = newVec3(0.0, 0.0, 0.0);
     entity->active = 1;
     entity->scale = newVec3(1.0, 1.0, 1.0);
+    float col = 0.8;
+    entity->color = newVec3(0.0, col, 0.0);
 
-    entity = list_push(renderer->entities, Entity);
-    entity->model = &game_ctx->models[ModelType_Cube];
-    entity->position = newVec3(1.0, 10.0, 1.0);
-    entity->active = 1;
-    entity->scale = newVec3(1.0, 1.0, 1.0);
-
-    entity = list_push(renderer->gui_entities, Entity);
-    entity->model = malloc(sizeof(BaseModel));
-    entity->position = newVec3(0.0, 0.0, 0.0);
-    entity->active = 1;
-    entity->scale = newVec3(1.0, 1.0, 1.0);
-
-    ui_color_picker(ctx, entity);
-
+    // entity = list_push(renderer->gui_entities, Entity);
+    // entity->model = malloc(sizeof(BaseModel));
+    // entity->position = newVec3(0.0, 0.0, 0.0);
+    // entity->active = 1;
+    // entity->scale = newVec3(1.0, 1.0, 1.0);
+    // ui_color_picker(ctx, entity);
 }
 
 

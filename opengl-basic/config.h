@@ -2,6 +2,9 @@
 #define CONFIG_H
 
 
+#define BOX_COLLITION 1  // if 0 then SPHERE_COLLITION 
+
+
 // Renderer
 #define RENDERER_FOV 1.19
 #define RENDERER_NEAR_PLANE 0.1

@@ -2,7 +2,10 @@
 
 
 #define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
+#include <miniaudio.h>
+
+
+ma_engine audio_engine;
 
 
 void sound_init() {

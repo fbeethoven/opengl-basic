@@ -72,6 +72,9 @@ typedef struct Mat4 {
 } Mat4;
 
 
+#define MIN(a, b) (a) < (b) ? (a) : (b)
+#define MAX(a, b) (a) > (b) ? (a) : (b)
+
 Vec2 newVec2(float x, float y);
 Vec3 newVec3(float x, float y, float z);
 Vec3 vec3_add(Vec3 *a, Vec3 *b);

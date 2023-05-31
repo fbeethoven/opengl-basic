@@ -10,6 +10,8 @@
 #include "../memory.h"
 
 #include "../audio.h"
+int play_audio;
+double last_play;
 
 
 float player_rotation;
@@ -18,26 +20,14 @@ int pulse_r;
 int stage;
 
 
-typedef struct TestNode TestNode;
+// Collision Test
+int mouse_press;
+int selection;
+int selection_press;
 
-struct TestNode {
-    int data;
-};
-
-LIST_ADD(TestNode);
-
-
-int clean_up();
-int game_run1();
 
 
 int game_run() {
-
-    sound_init();
-    return game_run1();
-}
-
-int clean_up() {
     // TODO(CLEAN UP):
     // [X] Lists with types
     // [X] Clean warnings
@@ -47,10 +37,34 @@ int clean_up() {
     //      [X] move animation params to animation module
     //          (including debug options)
     // [X] Fix Entity Struct
+    //      [ ] Entities will have a list of components:
+    //          - Transform component (it will be a tree)
+    //          - Mesh component (static vs dynamic)
+    //          - Mesh collider (aabb vs spherical vs octo-tree)
+    //              - Can we calculate the octo-tree on loading the mesh?
+    //          - Physic Component (for movement)
+    //          - Can we make the camera a component? We could look through
+    //              the eyes of any entity.
     // [ ] Fix Render Struct
-    //      [ ] Use list for entities first.
+    //      [X] Use list for entities first.
     //          In the future use a layer stack with callbacks
-    // [ ] Add Layers
+    //      [ ] Use list for models. Maybe hashmap?
+    //      [ ] Have renderer to render a scene.
+    // [ ] Clean up memory at the end of the program.
+    // [ ] Add Layers and scenes.
+    //      Each Scene will have:
+    //          - a hierarchy of entities.
+    //          - a stack of layers.
+    //      Each layer will have:
+    //          - a list of components.
+    //          - a callback on_render_layer(Renderer, Layer).
+    //      The main loop will call render(*renderer, *scene) and this
+    //      function will be:
+    //          scene->on_render_begin(renderer);
+    //          FOR_ALL_PTR(layer, scene->layers) {
+    //              layer->on_render_layer(renderer, layer);
+    //          }
+    //          scene->on_render_end(renderer);
     // [ ] Improve Font rendereing
     // [ ] Improve UI (double buffering vs full ImGui)
     // [ ] Event System (Maybe we just want a toggle?)
@@ -60,28 +74,19 @@ int clean_up() {
     // TODO(Weekend):
     // [X] Add sound (not really part of clean up but I 
 
-
-    printf("Everything is working\n");
-    return 0;
-
-}
-
-
-int game_run1() {
-    // TODO:
+    // TODO(OLD):
     //  [X] add color to textures (gamma correction)
     //  [X] gui buttons
     //  [ ] gui sliders
-    //  [ ] collision:
-    //      [ ] AABB
-    //      [ ] SAT
+    //  [X] collision:
+    //      [X] AABB
     //      [X] Spherical
     //  [X] add gravity
     //  [ ] rotate entity towards target point
     //  [X] camera movement using mouse
     //  [ ] quad sprite facing the camera
     //  [X] mouse picker
-    //      [ ] Fix issue with camera rotations
+    //      [X] Fix issue with camera rotations
     //  [X] debug random segfault: maybe in floor textures?
     //      - confirm it is in floor
     //  [X] sphere visualizer
@@ -104,6 +109,12 @@ int game_run1() {
     pulse_e = 0;
     pulse_p = 0;
     pulse_r = 0;
+    
+    // Collision Test
+    mouse_press = 0;
+    selection = 1;
+    selection_press = 0;
+
     stage = -1;
     distance_from_player = 5.0;
     random_experiment = 0;
@@ -275,13 +286,43 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     Entity *entity;
 
-
     // mouse picking
-    // entity = &renderer->entities[10];
-    // Vec3 position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
-    // *entity->position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
+    entity = LIST_GET_PTR(renderer->entities, 1);
+    entity->model = &game_ctx->models[selection];
+    entity->position = mouse_to_plane(
+        ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
+    );
 
+    Vec3 mouse_dir = mouse_to_world(ctx, renderer, camera);
+#if BOX_COLLITION
+    Vec3 box_min, box_max;
+#endif
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i);
 
+#if BOX_COLLITION
+        box_min = newVec3(
+            entity->position.x - 0.5,
+            entity->position.y - 0.5,
+            entity->position.z - 0.5
+        );
+        box_max = newVec3(
+            entity->position.x + 0.5,
+            entity->position.y + 0.5,
+            entity->position.z + 0.5
+        );
+        if (ray_to_aabb(camera->position, mouse_dir, box_min, box_max)) {
+#else 
+        if (
+            ray_to_sphere(camera->position, mouse_dir, entity->position, 1.0)
+        ) {
+#endif
+            entity->color = newVec3(1.0, 0.0, 0.0);
+        }
+        else {
+            entity->color = newVec3(0.0, 0.0, 0.0);
+        }
+    }
 
     // if ( (time - game_ctx->start_time) > 5.0 && stage < 0) {
     //     for (int i=1; i<10; i++) {
@@ -389,10 +430,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             }
         }
     }
-    else {
-        // entity = &LIST_GET(renderer->gui_entities, 0);
-        // entity->active = 0;
-    }
 
     // char msg[500];
     // int timer = 3 + (int)game_ctx->start_time - (int)time;
@@ -465,5 +502,34 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     //     handle_debug_info(ctx, renderer, camera, second_per_frame);
     // }
     
+    if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        if (mouse_press == 0) {
+            mouse_press = 1;
+            entity = list_push(renderer->entities, Entity);
+            entity->model = &game_ctx->models[selection];
+            float scale = 1.0;
+            entity->scale = newVec3(scale, scale, scale);
+            entity->active = 1;
+            entity->position =  mouse_to_plane(
+                ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
+            );
+
+        }
+    }
+    else if (mouse_press == 1) {
+        mouse_press = 0;
+    }
+
+    if(glfwGetKey(ctx->window, GLFW_KEY_N) == GLFW_PRESS) {
+        if (selection_press == 0) {
+            selection_press = 1;
+            selection += 1;
+            if (selection >= ModelType_Count) {
+                selection = 1;
+            }
+        }
+    } else {
+        selection_press = 0;
+    }
 }
 

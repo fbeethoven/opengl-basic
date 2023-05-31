@@ -357,10 +357,61 @@ Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance) {
     return vec3_add(&origin, &normalize_dir);
 }
 
-Vec3 mouse_to_plane(
-    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
-    Vec3 normal, float distance
-) {
+int ray_to_sphere(Vec3 origin, Vec3 dir, Vec3 center, float radius) {
+    Vec3 dist_vec = newVec3(
+        origin.x - center.x, origin.y - center.y, origin.z - center.z
+    ); 
+    float b = vec3_dot(&dist_vec, &dir); 
+    float c = vec3_dot(&dist_vec, &dist_vec) - (radius*radius); 
+
+    if (c > 0.0f && b > 0.0f) {
+        return 0;
+    }
+
+    float discr = b*b - c; 
+    if (discr < 0.0f) {
+        return 0; 
+    }
+    // distance to sphere ==>  t = -b - sqrt(discr); 
+    // intersection poitn ==>  origin + t * dir; 
+    return 1;
+}
+
+int ray_to_aabb(Vec3 origin, Vec3 dir, Vec3 box_min, Vec3 box_max) {
+    Vec3 dir_inv = newVec3(
+        dir.x == 0.0 ? 100.0: (1.0/dir.x),
+        dir.y == 0.0 ? 100.0: (1.0/dir.y),
+        dir.z == 0.0 ? 100.0: (1.0/dir.z)
+    );
+    Vec3 t_min = newVec3(
+        (box_min.x - origin.x) * dir_inv.x,
+        (box_min.y - origin.y) * dir_inv.y,
+        (box_min.z - origin.z) * dir_inv.z
+     );
+    Vec3 t_max = newVec3(
+        (box_max.x - origin.x) * dir_inv.x,
+        (box_max.y - origin.y) * dir_inv.y,
+        (box_max.z - origin.z) * dir_inv.z
+     );
+    Vec3 t1 = newVec3(
+        MIN(t_min.x, t_max.x), MIN(t_min.y, t_max.y), MIN(t_min.z, t_max.z)
+    );
+    Vec3 t2 = newVec3(
+        MAX(t_min.x, t_max.x), MAX(t_min.y, t_max.y), MAX(t_min.z, t_max.z)
+    );
+    float t_near = MAX(MAX(t1.x, t1.y), t1.z);
+    float t_far = MIN(MIN(t2.x, t2.y), t2.z);
+    
+    if (t_far < 0 || (t_near > t_far)) {
+        // distance is t_far
+        return 0;
+    }
+    // distance is t_near 
+    return 1;
+}
+
+
+Vec3 mouse_to_world(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     float x = 2 * (float)ctx->mouse_position[0]/ctx->width - 1.0;
     float y = 1.0 - 2 * (float)ctx->mouse_position[1]/ctx->height;
 
@@ -368,19 +419,28 @@ Vec3 mouse_to_plane(
 
     Mat4 projection_inverse = mat4_inverse(&renderer->projection_matrix);
 
+
     Mat4 view_matrix = mat4_look_at(
         camera->position, 
         camera->centre,
         newVec3(0.0, 1.0, 0.0)
     );
-    view_matrix = mat4_inverse(&view_matrix);
 
     rel_pos = vec4_multiply(&projection_inverse, &rel_pos);
     rel_pos.z = -1.0;
     rel_pos.w = 0.0;
     rel_pos = vec4_multiply(&view_matrix, &rel_pos);
 
-    Vec3 dir = newVec3(rel_pos.x, rel_pos.y, rel_pos.z);
+    Vec3 result = newVec3(rel_pos.x, rel_pos.y, rel_pos.z);
+    vec3_normalize(&result);
+    return  result;
+}
+
+Vec3 mouse_to_plane(
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
+    Vec3 normal, float distance
+) {
+    Vec3 dir = mouse_to_world(ctx, renderer, camera);
     return ray_to_plane(camera->position, dir, normal, distance);
 }
 
@@ -430,7 +490,6 @@ int ui_button(
 
     return result;
 }
-
 
 
 void ui_color_picker(GraphicsContext *ctx, Entity *entity) {

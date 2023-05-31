@@ -82,8 +82,8 @@ Quat quat_mult(Quat a, Quat b) {
 
 Quat quat_from_euler(float pitch, float yaw, float roll) {
     Quat rot_x = quat_rotation(newVec3(1.0, 0.0, 0.0), pitch);
-    Quat rot_y = quat_rotation(newVec3(1.0, 0.0, 0.0), yaw);
-    Quat rot_z = quat_rotation(newVec3(1.0, 0.0, 0.0), roll);
+    Quat rot_y = quat_rotation(newVec3(0.0, 1.0, 0.0), yaw);
+    Quat rot_z = quat_rotation(newVec3(0.0, 0.0, 1.0), roll);
 
     Quat result = quat_mult(rot_x, rot_y);
     return quat_mult(result, rot_z);
