@@ -63,7 +63,7 @@ void font_mesh_free(Mesh *font_mesh) {
 
 
 void font_init(Font *font, char *font_file_path, float width, float height) {
-    font->size = 25;
+    font->size = 22;
     font->atlasWidth = 1024;
     font->atlasHeight = 1024;
     font->oversampleX = 2;
@@ -86,13 +86,12 @@ void font_init(Font *font, char *font_file_path, float width, float height) {
     
 
     char *fontData = read_file(font_file_path);
-    // U8 atlasData[font->atlasWidth * font->atlasHeight];
     U8* atlasData = (U8*)malloc(font->atlasWidth * font->atlasHeight);
 
     stbtt_pack_context context;
     if (!stbtt_PackBegin(
-        &context, atlasData, font->atlasWidth, font->atlasHeight, 0, 1, 0)
-    ) {
+        &context, atlasData, font->atlasWidth, font->atlasHeight, 0, 1, 0
+    )) {
         printf("Failed to initialize font");
         exit(1);
     }
@@ -127,53 +126,25 @@ void font_init(Font *font, char *font_file_path, float width, float height) {
     glBindVertexArray(font->vao);
     glGenBuffers(1, &font->ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font->ibo);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        FontCapacity,
-        0,
-        GL_DYNAMIC_DRAW
-    );
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, FontCapacity, 0, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &font->vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, font->vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        FontCapacity,
-        0,
-        GL_DYNAMIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, FontCapacity, 0, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-
     glGenBuffers(1, &font->uv);
 	glBindBuffer(GL_ARRAY_BUFFER, font->uv);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        FontCapacity,
-        0,
-        GL_DYNAMIC_DRAW
-    );
-    glVertexAttribPointer(
-        1, 2, GL_FLOAT,
-        GL_FALSE, 2 * sizeof(float), 0
-    );
+    glBufferData(GL_ARRAY_BUFFER, FontCapacity, 0, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     glGenBuffers(1, &font->color_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, font->color_buffer);
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        FontCapacity,
-        0,
-        GL_DYNAMIC_DRAW
-    );
-    glVertexAttribPointer(
-        2, 3, GL_FLOAT,
-        GL_FALSE, 3 * sizeof(float), 0
-    );
+    glBufferData(GL_ARRAY_BUFFER, FontCapacity, 0, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 
     font->vertex_count = font->font_mesh->indices_len;
     font->texture_id = font->texture;
@@ -197,34 +168,26 @@ void font_buffer_reset(Font *font, float width, float height) {
 
 void font_update_buffer(Font *font) {
     glBufferSubData(
-        GL_ARRAY_BUFFER,
-        0,
-        font->font_mesh->vertices_len * 3 * sizeof(float),
+        GL_ARRAY_BUFFER, 0, font->font_mesh->vertices_len * 3 * sizeof(float),
         (float *)font->font_mesh->vertices
     );
     glBindBuffer(GL_ARRAY_BUFFER, font->uv);
     glBufferSubData(
-        GL_ARRAY_BUFFER,
-        0,
-        font->font_mesh->uvs_len * 2 * sizeof(float),
+        GL_ARRAY_BUFFER, 0, font->font_mesh->uvs_len * 2 * sizeof(float),
         (float *)font->font_mesh->uvs
     );
     glBindBuffer(GL_ARRAY_BUFFER, font->color_buffer);
     glBufferSubData(
-        GL_ARRAY_BUFFER,
-        0,
-        font->font_mesh->color_len * 3 * sizeof(float),
+        GL_ARRAY_BUFFER, 0, font->font_mesh->color_len * 3 * sizeof(float),
         (float *)font->font_mesh->color
     );
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font->ibo);
     glBufferSubData(
-        GL_ELEMENT_ARRAY_BUFFER,
-        0,
-        font->font_mesh->indices_len * 2 * sizeof(float),
+        GL_ELEMENT_ARRAY_BUFFER, 0,
+        font->font_mesh->indices_len * sizeof(float),
         (unsigned int *)font->font_mesh->indices
     );
     log_if_err("Issue with subdata\n");
-
 }
 
 

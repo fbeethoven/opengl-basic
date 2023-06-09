@@ -2,10 +2,7 @@
 #define CONFIG_H
 
 
-//  Animation test
-#define DO_ANIMATION 0
-#define ANIMATION_PLAY 0
-#define SHOW_SKELETON 0
+#define BOX_COLLITION 1  // if 0 then SPHERE_COLLITION 
 
 
 // Renderer

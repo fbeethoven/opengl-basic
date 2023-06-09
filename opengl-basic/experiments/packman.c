@@ -1,12 +1,17 @@
 #define GLAD_GL_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
 
+
 #include "packman.h"
-#include "../animation.h"
 #include "../mesh.h"
 #include "../font.h"
 #include "../utils/file_handler.h"
 #include "../utils/helpers.h"
+#include "../memory.h"
+
+#include "../audio.h"
+int play_audio;
+double last_play;
 
 
 float player_rotation;
@@ -15,35 +20,73 @@ int pulse_r;
 int stage;
 
 
-int animation_test;
-int do_animation_toggle;
-int show_skeleton;
-int show_skeleton_toggle;
-int anim_play;
-int anim_play_toggle;
+// Collision Test
+int mouse_press;
+int selection;
+int selection_press;
+
 
 
 int game_run() {
-    animation_test = 0;
-    do_animation_toggle = 0;
-    show_skeleton = SHOW_SKELETON;
-    show_skeleton_toggle = 0;
-    anim_play = ANIMATION_PLAY;
-    anim_play_toggle = 0;
-    // TODO:
+    // TODO(CLEAN UP):
+    // [X] Lists with types
+    // [X] Clean warnings
+    // [ ] Remove experiment helper
+    //      [ ] add utils/random module
+    //      [ ] move entity helpers and load assets to graphics module
+    //      [X] move animation params to animation module
+    //          (including debug options)
+    // [X] Fix Entity Struct
+    //      [ ] Entities will have a list of components:
+    //          - Transform component (it will be a tree)
+    //          - Mesh component (static vs dynamic)
+    //          - Mesh collider (aabb vs spherical vs octo-tree)
+    //              - Can we calculate the octo-tree on loading the mesh?
+    //          - Physic Component (for movement)
+    //          - Can we make the camera a component? We could look through
+    //              the eyes of any entity.
+    // [ ] Fix Render Struct
+    //      [X] Use list for entities first.
+    //          In the future use a layer stack with callbacks
+    //      [ ] Use list for models. Maybe hashmap?
+    //      [ ] Have renderer to render a scene.
+    // [ ] Clean up memory at the end of the program.
+    // [ ] Add Layers and scenes.
+    //      Each Scene will have:
+    //          - a hierarchy of entities.
+    //          - a stack of layers.
+    //      Each layer will have:
+    //          - a list of components.
+    //          - a callback on_render_layer(Renderer, Layer).
+    //      The main loop will call render(*renderer, *scene) and this
+    //      function will be:
+    //          scene->on_render_begin(renderer);
+    //          FOR_ALL_PTR(layer, scene->layers) {
+    //              layer->on_render_layer(renderer, layer);
+    //          }
+    //          scene->on_render_end(renderer);
+    // [ ] Improve Font rendereing
+    // [ ] Improve UI (double buffering vs full ImGui)
+    // [ ] Event System (Maybe we just want a toggle?)
+    // [ ] Remove all debug printing
+
+
+    // TODO(Weekend):
+    // [X] Add sound (not really part of clean up but I 
+
+    // TODO(OLD):
     //  [X] add color to textures (gamma correction)
     //  [X] gui buttons
     //  [ ] gui sliders
-    //  [ ] collision:
-    //      [ ] AABB
-    //      [ ] SAT
+    //  [X] collision:
+    //      [X] AABB
     //      [X] Spherical
     //  [X] add gravity
     //  [ ] rotate entity towards target point
     //  [X] camera movement using mouse
     //  [ ] quad sprite facing the camera
     //  [X] mouse picker
-    //      [ ] Fix issue with camera rotations
+    //      [X] Fix issue with camera rotations
     //  [X] debug random segfault: maybe in floor textures?
     //      - confirm it is in floor
     //  [X] sphere visualizer
@@ -51,6 +94,7 @@ int game_run() {
     //      [ ] normalize normal vectors
     //      [ ] handle EOF
     //  [X] Fix file_handler for big endian
+
 
     GameContext g_ctx = {0};
     game_ctx = &g_ctx;
@@ -65,28 +109,27 @@ int game_run() {
     pulse_e = 0;
     pulse_p = 0;
     pulse_r = 0;
+    
+    // Collision Test
+    mouse_press = 0;
+    selection = 1;
+    selection_press = 0;
+
     stage = -1;
     distance_from_player = 5.0;
     random_experiment = 0;
 
-    // entity_index = 10;
     entity_index = 0;
-    entity_category_index = 0;
-    entity_categories[0] = "Entity";
-    entity_categories[1] = "GUI Entity";
-    entity_categories[2] = "Font Entity";
-
 
     GraphicsContext ctx;
     if(graphics_init(&ctx) != 0) {
         return -1;
     }
-    glfwSetInputMode(ctx.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    sound_init();
 
     Renderer renderer = {0};
     init_render_handler(&ctx, &renderer);
-    sync_entities(game_ctx, &renderer);
 
     Camera camera = {0};
 
@@ -103,13 +146,6 @@ int game_run() {
 
     load_assets(&ctx, &renderer, game_ctx, &font, &camera);
 
-
-    ArrayList *joints = renderer.animation_controller->joints;
-    Entity *entity_skeleton;
-    for(int i=0; i<joints->counter; i++) {
-        entity_skeleton = &renderer.debug_entities[i];
-        entity_skeleton->active = SHOW_SKELETON;
-    }
     while (!glfwWindowShouldClose(ctx.window)) {
         handle_input(&ctx, &renderer, &camera);
 
@@ -124,21 +160,6 @@ int game_run() {
 }
 
 
-Entity *get_entity_selected(Renderer *renderer) {
-    return &renderer->debug_entities[entity_index];
-
-    if (entity_category_index == 0) {
-        return &renderer->entities[entity_index];
-    }
-    else if (entity_category_index == 1) {
-        return &renderer->gui_entities[entity_index];
-    }
-    else {
-        return &renderer->font_entities[entity_index];
-    }
-}
-
-
 void handle_debug_info(
     GraphicsContext *ctx, Renderer *renderer, Camera *camera,
     double second_per_frame
@@ -146,13 +167,6 @@ void handle_debug_info(
     char msg[500];
     sprintf(
         msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
-    );
-    font_buffer_push(renderer->font, msg);
-
-    sprintf(
-        msg, "%s Selected: %s",
-        entity_categories[entity_category_index],
-        get_entity_selected(renderer)->debug_name
     );
     font_buffer_push(renderer->font, msg);
 
@@ -190,7 +204,7 @@ void camera_focus_movement(
     camera_params.player_rotation = player_rotation;
     camera_params.player_is_grounded = player_is_grounded;
 
-    free_camera_movement(ctx, &camera_params);
+    free_rts_camera_movement(ctx, &camera_params);
     player_rotation = camera_params.player_rotation;
     player_is_grounded = camera_params.player_is_grounded;
 
@@ -218,7 +232,9 @@ void player_focus_movement(
     camera_movement(ctx, &camera_params);
     distance_from_player = camera_params.distance_from_player;
     // camera_follow_player(player, &camera_params);
-    camera_follow_player(player->position, player->rotation_y, &camera_params);
+    camera_follow_player(
+        &player->position, player->rotation.y, &camera_params
+    );
 }
 
 
@@ -256,147 +272,50 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     update_graphic_state(ctx, renderer);
 
     double time = glfwGetTime();
-    double second_per_frame = time - ctx->previous_time;
-    ctx->previous_time = time;
+    double second_per_frame = time - ctx->current_time;
+    ctx->current_time = time;
     game_ctx->current_time = time;
 
 
     Entity *entity;
 
+    // mouse picking
+    entity = LIST_GET_PTR(renderer->entities, 1);
+    entity->model = &game_ctx->models[selection];
+    entity->position = mouse_to_plane(
+        ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
+    );
 
-#if 0  // Animation Experiment
-    if (time >= 5.0 && animation_test == 0) {
-        Vec3 translation = newVec3(0.0, 1.0, 0.0);
-        Vec4 rotation = newVec4(sin(1.57), 0.0, 0.0, cos(1.57));
-        Vec3 scale = newVec3(1.0, 1.0, 1.0);
-
-        Mat4 C = Mat4I();
-        C = mat4_translate(&translation, &C);
-        Quat q = quat_new(rotation.x, rotation.y, rotation.z, rotation.w);
-        q = quat_normalize(q);
-        Mat4 R = quat_to_mat4(q);
-        C = mat4_multiply(&C, &R);
-        mat4_scale(&scale, &C);
-        C = mat4_transpose(&C);
-
-        // C = Mat4I();
-
-        animation_test = 1;
-        ArrayList *joints = renderer->animation_controller->joints;
-        for(int i=0; i<joints->counter; i++) {
-            entity = &renderer->debug_entities[i];
-            Vec4 result = newVec4(
-                entity->position->x, entity->position->y, entity->position->z, 1.0
-            );
-            result = vec4_multiply(&C, &result);
-            entity->position->x = result.x;
-            entity->position->y = result.y;
-            entity->position->z = result.z;
-        }
-    }
+    Vec3 mouse_dir = mouse_to_world(ctx, renderer, camera);
+#if BOX_COLLITION
+    Vec3 box_min, box_max;
 #endif
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i);
 
-#if 1  // Animation Experiment
-    
-    float time_warp = 1.0;
-
-    AnimationController *anim = renderer->animation_controller;
-    ArrayList *joints = renderer->animation_controller->joints;
-    for(int i=0; i<joints->counter; i++) {
-        Vec4 origin = newVec4(0.0, 0.0, 0.0, 1.0);
-        Joint joint = arr_get(joints, Joint, i);
-        Mat4 C = joint.inverse_bind_matrix;
-        C = mat4_inverse(&C);
-        C = mat4_transpose(&C);
-
-        Vec4 result = vec4_multiply(&C, &origin);
-        entity = &renderer->debug_entities[i];
-        if (!entity->active) {
-            break;
-        }
-        entity->position->x = result.x;
-        entity->position->y = result.y;
-        entity->position->z = result.z;
-    }
-
-
-    if (anim_play) {
-        if ((anim->current_time + time_warp * second_per_frame) < 3.833) {
-            animation_update(anim, time_warp * second_per_frame);
+#if BOX_COLLITION
+        box_min = newVec3(
+            entity->position.x - 0.5,
+            entity->position.y - 0.5,
+            entity->position.z - 0.5
+        );
+        box_max = newVec3(
+            entity->position.x + 0.5,
+            entity->position.y + 0.5,
+            entity->position.z + 0.5
+        );
+        if (ray_to_aabb(camera->position, mouse_dir, box_min, box_max)) {
+#else 
+        if (
+            ray_to_sphere(camera->position, mouse_dir, entity->position, 1.0)
+        ) {
+#endif
+            entity->color = newVec3(1.0, 0.0, 0.0);
         }
         else {
-            anim->current_time = 0.0;
-            animation_update(anim, 0.0);
+            entity->color = newVec3(0.0, 0.0, 0.0);
         }
-    } else {
-            animation_update(anim, 0.0);
     }
-
-    for(int i=0; i<joints->counter; i++) {
-        entity = &renderer->debug_entities[i];
-        if (!entity->active) {
-            break;
-        }
-        Joint joint = arr_get(joints, Joint, i);
-        Mat4 D = joint.local_transform;
-
-        // D = mat4_inverse(&D);
-        D = mat4_transpose(&D);
-        Vec4 result = newVec4(
-            entity->position->x, entity->position->y, entity->position->z, 1.0
-        );
-        result = vec4_multiply(&D, &result);
-        entity->position->x = result.x;
-        entity->position->y = result.y;
-        entity->position->z = result.z;
-    }
-
-#endif  // Animation Experiment
-
-
-
-
-
-
-
-
-    entity = get_entity_selected(renderer);
-    // mouse picking
-    // entity = &renderer->entities[10];
-    // Vec3 position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
-    // *entity->position = mouse_to_plane( ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
-
-
-
-    if ( (time - game_ctx->start_time) > 5.0 && stage < 0) {
-        for (int i=1; i<10; i++) {
-            entity = &renderer->entities[i];
-            entity->active = 0;
-        }
-        random_experiment = 1;
-        stage = 0;
-    }
-    // if (entity->active != 0) {
-    //     float freq = 1.0;
-    //     float pulse = (float)time - (int)time;
-    //     pulse = sin(3.1415 * pulse * freq);
-    //     pulse *= pulse;
-
-    //     entity->color = vec3_lerp(
-    //         newVec3(1.0, 0.0, 0.0), newVec3(1.0, 1.0, 0.0), pulse
-    //     );
-    // }
-
-
-    // if (random_experiment) {
-    //     update_entities(game_ctx, camera);
-    //     if (time - game_ctx->prev_rand_time > 3.0) {
-    //         game_ctx->prev_rand_time = time;
-    //         add_random_entity(ctx, game_ctx, camera);
-    //     }
-    // }
-
-    entity = get_entity_selected(renderer);
 
     if(
         glfwGetKey(ctx->window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
@@ -409,39 +328,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         camera_reset(camera);
     }
 
-    if (
-        glfwGetKey(ctx->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-        glfwGetKey(ctx->window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS
-    ) {
-        if (toggle_button_press(ctx, GLFW_KEY_N, &pulse_n)){
-            entity_category_index++;
-            entity_index = 0;
-            if (entity_category_index > 2) {
-                entity_category_index = 0;
-            }
-        }
-
-    }
-    else if (toggle_button_press(ctx, GLFW_KEY_N, &pulse_n)){
-        entity = get_entity_selected(renderer);
-        entity->color = newVec3(0.0, 0.0, 0.0);
-
-        entity_index++;
-        entity = get_entity_selected(renderer);
-        if (entity->active == 0) {
-            entity_index = 0;
-            entity = get_entity_selected(renderer);
-        }
-    }
-
     if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
         show_debug_info = 1 - show_debug_info;
-        if (show_debug_info) {
-            glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-        else {
-            glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
     }
     if (toggle_button_press(ctx, GLFW_KEY_R, &pulse_r)){
         game_ctx->start_time = time;
@@ -450,27 +338,22 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         player_is_grounded = 0;
         camera->pitch = 2.2;
         camera->yaw = 1.57;
-        // random_experiment = 1 - random_experiment;
     }
 
-    if (!show_debug_info) {
-        camera_focus_movement(
-            ctx, camera, second_per_frame, distance_from_player
-        );
-    }
+    camera_focus_movement(ctx, camera, second_per_frame, distance_from_player);
+
     if (camera->position.y <= -20.0) {
         game_ctx->game_over = 1;
     }
 
 
     font_buffer_reset(renderer->font, (float)ctx->width, (float)ctx->height);
-    char msg[500];
     if (show_debug_info) {
         float button_x_pos = 50.0;
         float button_y_pos = 50.0;
         float button_step = 25.0;
 
-        entity = &renderer->debug_entities[99];
+        entity = &LIST_GET(renderer->entities, 1);
         char *button_text = entity->fill ? "Wiremesh: ON" : "Wiremesh: OFF";
         if (ui_button(
             ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text
@@ -486,138 +369,52 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             }
         }
 
-        button_text = (
-            renderer->do_animation ? 
-            "Animation Shader: ON" : "Animation Shader: OFF"
-        );
-        button_y_pos += button_step;
+        button_y_pos += 2*button_step;
+        button_text = play_audio ? "Sound Test: On" : "Sound Test: Off";
         if (ui_button(
             ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
         ) {
-            if (do_animation_toggle == 0) {
-                do_animation_toggle = 1;
+            if (play_audio == 0) {
+                last_play = time;
+                play_sound();
             }
         }
         else {
-            if (do_animation_toggle == 1) {
-                renderer->do_animation = 1 - renderer->do_animation;
-                do_animation_toggle = 0;
-            }
-        }
-        button_y_pos += button_step;
-        button_text = show_skeleton ? "Skeleton: ON" : "Skeleton: OFF";
-        if (ui_button(
-            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
-        ) {
-            if (show_skeleton_toggle == 0) {
-                show_skeleton_toggle = 1;
-            }
-        }
-        else {
-            if (show_skeleton_toggle == 1) {
-                show_skeleton_toggle = 0;
-                show_skeleton = 1 - show_skeleton;
-
-                int total_joints = (
-                    renderer->animation_controller->joints->counter
-                );
-
-                for(int i=0; i<total_joints; i++) {
-                    entity = &renderer->debug_entities[i];
-                    entity->active = show_skeleton;
-                }
-            }
-        }
-        button_y_pos += button_step;
-        button_text = anim_play ? "Animation: Play" : "Animation: Pause";
-        if (ui_button(
-            ctx, renderer, newVec2(button_x_pos, button_y_pos), button_text)
-        ) {
-            if (anim_play_toggle == 0) {
-                anim_play_toggle = 1;
-            }
-        }
-        else {
-            if (anim_play_toggle == 1) {
-                anim_play_toggle = 0;
-                anim_play = 1 - anim_play;
+            if (time - last_play >= 1.0) {
+                play_audio = 0;
             }
         }
     }
-    else {
-        entity = &renderer->gui_entities[0];
-        entity->active = 0;
-    }
-    entity = get_entity_selected(renderer);
 
-    // int timer = 3 + (int)game_ctx->start_time - (int)time;
-    // if (timer > 0) {
-    //     entity->scale = 5.0;
-    //     *entity->position = newVec3(5.0, -4.5, 0.0);
-    //     sprintf(msg, "%d", timer);
-    //     font_buffer_push(renderer->font, msg);
-    //     for(int i=1; i<10; i++) {
-    //         entity = &renderer->entities[i];
-    //         if (entity->active) {
-    //             entity->active = 0;
-    //             entity->color = newVec3(0.0, 0.0, 0.0);
-    //         }
-    //     }
-    // }
-    // else if (timer >= -1) {
-    //     entity->scale = 5.0;
-    //     *entity->position = newVec3(4.95, -4.5, 0.0);
-    //     font_buffer_push_color(
-    //         renderer->font, "GO!", newVec3(1.0, 1.0, 0.0)
-    //     );
-    // }
-    // else if (game_ctx->game_over) {
-    //     entity->scale = 5.0;
-    //     *entity->position = newVec3(4.5, -4.5, 0.0);
-    //     font_buffer_push_color(
-    //         renderer->font, "GAME OVER", newVec3(1.0, 0.0, 0.0)
-    //     );
-    //     font_buffer_push_color(
-    //         renderer->font, game_ctx->msg, newVec3(1.0, 0.0, 0.0)
-    //     );
-    //     font_buffer_push_color(
-    //         renderer->font, "R to Restart", newVec3(1.0, 1.0, 0.0)
-    //     );
-    //     font_buffer_push_color(
-    //         renderer->font, game_ctx->msg, newVec3(1.0, 0.0, 0.0)
-    //     );
-    //     random_experiment = 0;
-    //     stage = -1;
-    //     if (game_ctx->max_points < game_ctx->points) {
-    //         game_ctx->max_points = game_ctx->points;
-    //     }
-    //     game_ctx->points = 0;
-    //     for(int i=1; i<10; i++) {
-    //         entity = &renderer->entities[i];
-    //         if (entity->active) {
-    //             entity->color = newVec3(1.0, 0.0, 0.0);
-    //         }
-    //     }
-    // }
-    // else {
-    //     *entity->position = newVec3(0.0, 0.0, 0.0);
-    //     entity->scale = 1.0;
-
-    //     sprintf(msg, "TIME: %.3f", time - game_ctx->start_time);
-    //     font_buffer_push(renderer->font, msg);
-    //     sprintf(
-    //         msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
-    //     );
-    //     font_buffer_push(renderer->font, msg);
-    //     sprintf(msg, "POINTS: %d", game_ctx->points);
-    //     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-    //     sprintf(msg, "MAX POINTS: %d", game_ctx->max_points);
-    //     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
-    // }
-
-
-    // if (show_debug_info) {
-    //     handle_debug_info(ctx, renderer, camera, second_per_frame);
-    // }
     
+    if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        if (mouse_press == 0) {
+            mouse_press = 1;
+            entity = list_push(renderer->entities, Entity);
+            entity->model = &game_ctx->models[selection];
+            float scale = 1.0;
+            entity->scale = newVec3(scale, scale, scale);
+            entity->active = 1;
+            entity->position =  mouse_to_plane(
+                ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
+            );
+
+        }
+    }
+    else if (mouse_press == 1) {
+        mouse_press = 0;
+    }
+
+    if(glfwGetKey(ctx->window, GLFW_KEY_N) == GLFW_PRESS) {
+        if (selection_press == 0) {
+            selection_press = 1;
+            selection += 1;
+            if (selection >= ModelType_Count) {
+                selection = 1;
+            }
+        }
+    } else {
+        selection_press = 0;
+    }
 }
+

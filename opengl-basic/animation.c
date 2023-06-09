@@ -1,4 +1,6 @@
 #include "animation.h"
+#include "utils/file_handler.h"
+#include "graphics.h"
 
 
 Mat4 get_matrix(Tokenizer *tokenizer) {
@@ -308,46 +310,6 @@ void joint_add_children(
 
 }
 
-static void dump_joint_info(ArrayList *joints) {
-    printf("We have %ld joints\n", joints->counter);
-    for (int i=0; i<joints->counter; i++) {
-        Joint joint = arr_get(joints, Joint, i);
-        KeyFrame translation = joint.animation.joint_translation;
-        KeyFrame rotation = joint.animation.joint_rotation;
-        KeyFrame scale = joint.animation.joint_scale;
-
-        if (!translation.time_stamp) {
-            printf("Joint %d has no translation\n", i);
-        }
-        else {
-            printf(
-                "We have (%ld, %ld) steps in translation\n",
-                translation.time_stamp->counter,
-                translation.value->counter
-            );
-        }
-        if (!rotation.time_stamp) {
-            printf("Joint %d has no rotation\n", i);
-        }
-        else {
-            printf(
-                "We have (%ld, %ld) steps in rotation\n",
-                rotation.time_stamp->counter,
-                rotation.value->counter
-            );
-        }
-        if (!scale.time_stamp) {
-            printf("Joint %d has no scale\n", i);
-        }
-        else {
-            printf(
-                "We have (%ld, %ld) steps in scale\n",
-                scale.time_stamp->counter,
-                scale.value->counter
-            );
-        }
-    }
-}
 
 ArrayList *get_anim_bones() {
     char *data = read_file("assets/models/trooper.anim");
@@ -355,8 +317,6 @@ ArrayList *get_anim_bones() {
 
     Tokenizer tokenizer = {0};
     tokenizer.data = data;
-
-    int index = 0;
 
 
     for (
@@ -379,7 +339,6 @@ ArrayList *get_anim_bones() {
     
     tokenizer_reset(&tokenizer);
     int i = 0;
-    Joint *parent;
 
     for (
         Token token = token_next(&tokenizer);
@@ -607,3 +566,100 @@ void animation_update(AnimationController *anim_control, float dt) {
     );
 }
 
+
+void load_skeleton(AnimatedModel *anim_model) {
+    glBindVertexArray(anim_model->vao);
+    store_int_in_attributes(&anim_model->jbo, 3, 4,
+        anim_model->joints->counter * sizeof(int),
+        (int *)anim_model->joints->data
+    );
+    log_if_err("Issue loading joints\n");
+    glBindVertexArray(anim_model->vao);
+    store_float_in_attributes(&anim_model->wbo, 4, 4,
+        anim_model->weights->counter * sizeof(float),
+        (float *)anim_model->weights->data
+    );
+    log_if_err("Issue loading weights\n");
+}
+
+
+void render_animation_entities(
+    Renderer *rh, AnimationController *animation_controller
+) {
+    Vec3 light_color = rh->light->color;
+    for (int i=0; i<100; i++) {
+        // Entity entity = rh->debug_entities[i];
+        Entity entity = LIST_GET(rh->debug_entities, i);
+
+        if (entity.active == 0) {
+            continue;
+        }
+        int shader;
+        shader = rh->anim_shader;
+        shader_push(shader);
+
+        ArrayList *joints = animation_controller->joints;
+        ArrayList *tmp = new_array_list(Mat4);
+        for (int m=0; m<joints->counter; m++) {
+            Joint joint = arr_get(joints, Joint, m);
+            *arr_push(tmp, Mat4) = joint.local_transform;
+        }
+        int uniform_location = glGetUniformLocation(
+            shader, "joint_transform");
+        glUniformMatrix4fv(
+            uniform_location, tmp->counter, GL_FALSE, (float *)tmp->data
+        );
+        arr_free(tmp);
+        log_if_err("Animation Joint Transpose\n");
+        if (
+            !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
+            !vec3_is_equal(entity.color, light_color)
+        ) {
+            log_if_err(
+                "Entity Renderer found an issue before loading light\n"
+            );
+            rh->light->color = entity.color;
+            shader_load_light(shader, rh->light);
+            log_if_err("Entity Renderer found problem loading lights");
+        }
+
+        glBindVertexArray(entity.model->vao);
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(3);
+        glEnableVertexAttribArray(4);
+        log_if_err("There was an issue with attributes\n");
+        
+
+        Mat4 transformation_matrix = create_transformation_matrix(
+            entity.position, entity.rotation, entity.scale
+        );
+
+        shader_load_matrix(
+            shader, "transformation_matrix", &transformation_matrix
+        );
+
+        if ( (entity.fill & 1) == 0) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
+        glDrawElements(
+            GL_TRIANGLES, entity.model->vertex_count,
+            GL_UNSIGNED_INT, 0
+        );
+
+        if (!vec3_is_equal(entity.color, light_color)) {
+            log_if_err("Issue before loading light\n");
+            rh->light->color = light_color;
+            shader_load_light(shader, rh->light);
+            log_if_err("There was a problem loading lights");
+        }
+	}
+}

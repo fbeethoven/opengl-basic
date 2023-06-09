@@ -157,6 +157,85 @@ void load_texture_to_model(
     glBindVertexArray(0);
 }
 
+void cubemap_face(char *file_path, unsigned int face) {
+    Image *data = image_load(file_path);
+    glTexImage2D(
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA,
+        data->width, data->height, 0, GL_RGB, GL_UNSIGNED_BYTE, data->data
+    );
+    image_free(data);
+}
+
+void init_sky_box(
+    Renderer *renderer,
+    char *xp, char *xn, char *yp, char *yn, char *zp, char *zn
+) {
+    float vertices[] = {
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+    };
+
+    glGenVertexArrays(1, &renderer->skybox.vao);
+    glBindVertexArray(renderer->skybox.vao);
+
+    store_float_in_attributes(
+        &renderer->skybox.vbo, 0, 3, sizeof(vertices), vertices);
+    renderer->skybox.vertex_count = sizeof(vertices)/sizeof(vertices[0]);
+
+    glGenTextures(1, &renderer->skybox.texture_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, renderer->skybox.texture_id);
+
+    cubemap_face(xp, 0);
+    cubemap_face(xn, 1);
+    cubemap_face(yp, 2);
+    cubemap_face(yn, 3);
+    cubemap_face(zp, 4);
+    cubemap_face(zn, 5);
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); 
+
+}
+
+
 
 int graphics_init(GraphicsContext *ctx) {
     ctx->width = 800;
@@ -249,8 +328,6 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
 	rh->GREEN = RENDERER_GREEN;
 	rh->BLUE = RENDERER_BLUE;
 
-    rh->do_animation = DO_ANIMATION;
-
     rh->projection_matrix = create_projection_matrix(ctx, rh);
 
     rh->shader = shader_get_program();
@@ -264,26 +341,40 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
         "shaders/gui_vertex.glsl", "shaders/gui_fragment.glsl"
     );
     log_if_err("There was an issue on renderer init\n");
+    rh->sky_shader = shader_get_program_general(
+        "shaders/skybox_vertex.glsl", "shaders/skybox_fragment.glsl"
+    );
+    log_if_err("There was an issue wit skybox shader\n");
 
     shader_push(rh->shader);
     shader_load_matrix(
-        rh->shader,
-        "projection_matrix",
-        &rh->projection_matrix
+        rh->shader, "projection_matrix", &rh->projection_matrix
     );
     shader_push(rh->anim_shader);
     shader_load_matrix(
-        rh->circle_shader,
-        "projection_matrix",
-        &rh->projection_matrix
+        rh->anim_shader, "projection_matrix", &rh->projection_matrix
     );
     shader_push(rh->circle_shader);
     shader_load_matrix(
-        rh->circle_shader,
-        "projection_matrix",
-        &rh->projection_matrix
+        rh->circle_shader, "projection_matrix", &rh->projection_matrix
+    );
+    shader_push(rh->sky_shader);
+    shader_load_matrix(
+        rh->sky_shader, "projection_matrix", &rh->projection_matrix
     );
     shader_pop();
+
+    rh->entities = NEW_LIST(Entity);
+    rh->gui_entities = NEW_LIST(Entity);
+    rh->font_entities = NEW_LIST(Entity);
+    rh->debug_entities = NEW_LIST(Entity);
+
+
+    init_sky_box(rh,
+        "assets/textures/right.jpg", "assets/textures/left.jpg",
+        "assets/textures/top.jpg", "assets/textures/bottom.jpg",
+        "assets/textures/front.jpg", "assets/textures/back.jpg"
+    );
 }
 
 
@@ -301,9 +392,8 @@ void prepare(Renderer *rh) {
 
 void render_entities(Renderer *rh) {
     Vec3 light_color = rh->light->color;
-    for (int i=0; i<20; i++) {
-        Entity entity = rh->entities[i];
-
+    Entity entity;
+    FOR_ALL(entity, rh->entities) {
         if (entity.active == 0) {
             continue;
         }
@@ -327,16 +417,10 @@ void render_entities(Renderer *rh) {
         log_if_err("There was an issue with attributes\n");
         
         Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
+            entity.position, entity.rotation, entity.scale
         );
         shader_load_matrix(
-            rh->shader,
-            "transformation_matrix",
-            &transformation_matrix
+            rh->shader, "transformation_matrix", &transformation_matrix
         );
 
         if ( (entity.fill & 1) == 0) {
@@ -354,150 +438,18 @@ void render_entities(Renderer *rh) {
         );
 
         if (!vec3_is_equal(entity.color, light_color)) {
-            log_if_err("Issue before loading light\n");
+            log_if_err("Issue before restoring light\n");
             rh->light->color = light_color;
             shader_load_light(rh->shader, rh->light);
-            log_if_err("There was a problem loading lights");
+            log_if_err("There was a problem restoring lights");
         }
 	}
-
-    for (int i=0; i<100; i++) {
-        Entity entity = rh->debug_entities[i];
-
-        if (entity.active == 0) {
-            continue;
-        }
-        int shader;
-        if (i == 99 && rh->do_animation) {
-            shader = rh->anim_shader;
-            shader_push(shader);
-
-            ArrayList *joints = rh->animation_controller->joints;
-            ArrayList *tmp = new_array_list(Mat4);
-            for (int m=0; m<joints->counter; m++) {
-                Joint joint = arr_get(joints, Joint, m);
-                *arr_push(tmp, Mat4) = joint.local_transform;
-            }
-            int uniform_location = glGetUniformLocation(
-                shader, "joint_transform");
-            glUniformMatrix4fv(
-                uniform_location, tmp->counter, GL_FALSE, (float *)tmp->data
-            );
-            arr_free(tmp);
-            log_if_err("Animation Joint Transpose\n");
-        }
-        else {
-            shader = rh->shader;
-        }
-        if (
-            !vec3_is_equal(entity.color, newVec3(0.0, 0.0, 0.0)) &&
-            !vec3_is_equal(entity.color, light_color)
-        ) {
-            log_if_err(
-                "Entity Renderer found an issue before loading light\n"
-            );
-            rh->light->color = entity.color;
-            shader_load_light(shader, rh->light);
-            log_if_err("Entity Renderer found problem loading lights");
-        }
-
-        glBindVertexArray(entity.model->vao);
-
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-        glEnableVertexAttribArray(3);
-        glEnableVertexAttribArray(4);
-        log_if_err("There was an issue with attributes\n");
-        
-
-        Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
-        );
-
-        shader_load_matrix(
-            shader, "transformation_matrix", &transformation_matrix
-        );
-
-        if ( (entity.fill & 1) == 0) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-        else {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-        glDrawElements(
-            GL_TRIANGLES, entity.model->vertex_count,
-            GL_UNSIGNED_INT, 0
-        );
-
-        if (!vec3_is_equal(entity.color, light_color)) {
-            log_if_err("Issue before loading light\n");
-            rh->light->color = light_color;
-            shader_load_light(shader, rh->light);
-            log_if_err("There was a problem loading lights");
-        }
-	}
-
-    // shader_push(rh->circle_shader);
-    // for (int i=10; i<20; i++) {
-    //     Entity entity = rh->entities[i];
-
-    //     if (entity.active == 0) {
-    //         continue;
-    //     }
-    //     glBindVertexArray(entity.model->vao);
-
-    //     glEnableVertexAttribArray(0);
-    //     glEnableVertexAttribArray(1);
-    //     glEnableVertexAttribArray(2);
-    //     printf("ENTITY: %s\n", entity.debug_name);
-    //     log_if_err("There was an issue with attributes\n");
-    //     
-    //     Mat4 transformation_matrix = create_transformation_matrix(
-    //         entity.position,
-    //         entity.rotation_x,
-    //         entity.rotation_y,
-    //         entity.rotation_z,
-    //         &entity.scale
-    //     );
-    //     shader_load_matrix(
-    //         rh->circle_shader,
-    //         "transformation_matrix",
-    //         &transformation_matrix
-    //     );
-    //     shader_load_vec3(
-    //         rh->circle_shader,
-    //         "color",
-    //         &entity.color
-    //     );
-
-    //     if ( (entity.fill & 1) == 0) {
-    //         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //     }
-    //     else {
-    //         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //     }
-
-    //     glActiveTexture(GL_TEXTURE0);
-    //     glBindTexture(GL_TEXTURE_2D, entity.model->texture_id);
-    //     glDrawElements(
-    //         GL_TRIANGLES, entity.model->vertex_count,
-    //         GL_UNSIGNED_INT, 0
-    //     );
-	// }
 }
 
 
 void render_font_entities(Renderer *rh) {
-    for (int i=0; i<10; i++) {
-        Entity entity = rh->font_entities[i];
+    Entity entity;
+    FOR_ALL(entity, rh->font_entities) {
 
         if (entity.active == 0) {
             continue;
@@ -519,16 +471,10 @@ void render_font_entities(Renderer *rh) {
         font_update_buffer(rh->font);
 
         Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
+            entity.position, entity.rotation, entity.scale
         );
         shader_load_matrix(
-            rh->gui_shader,
-            "transformation_matrix",
-            &transformation_matrix
+            rh->gui_shader, "transformation_matrix", &transformation_matrix
         );
         
         if ( (entity.fill & 1) == 0) {
@@ -553,9 +499,8 @@ void render_font_entities(Renderer *rh) {
 
 
 void render_gui_entities(Renderer *rh) {
-    for (int i=0; i<10; i++) {
-        Entity entity = rh->gui_entities[i];
-
+    Entity entity;
+    FOR_ALL(entity, rh->gui_entities) {
         if (entity.active == 0) {
             continue;
         }
@@ -571,17 +516,11 @@ void render_gui_entities(Renderer *rh) {
         glBindBuffer(GL_ARRAY_BUFFER, entity.model->vbo);
 
         Mat4 transformation_matrix = create_transformation_matrix(
-            entity.position,
-            entity.rotation_x,
-            entity.rotation_y,
-            entity.rotation_z,
-            &entity.scale
+            entity.position, entity.rotation, entity.scale
         );
 
         shader_load_matrix(
-            rh->gui_shader,
-            "transformation_matrix",
-            &transformation_matrix
+            rh->gui_shader, "transformation_matrix", &transformation_matrix
         );
         
         if ( (entity.fill & 1) == 0) {
@@ -607,14 +546,42 @@ void render_gui_entities(Renderer *rh) {
 void render(Renderer *rh, Camera *camera) {
     prepare(rh);
 
+
     Mat4 view_matrix = mat4_look_at(
         camera->position, 
         camera->centre,
         newVec3(0.0, 1.0, 0.0)
     );
+
+    glDepthMask(GL_FALSE);
+    printf("Sky shader: %u\n", rh->sky_shader);
+    printf("Skybox vao : %u\n", rh->skybox.vao);
+    printf("Skybox texture : %u\n", rh->skybox.texture_id);
+    printf("Skybox vertices : %u\n", rh->skybox.vertex_count);
+    shader_push(rh->sky_shader);
+
+
+    Mat4 skybox_mat = view_matrix;
+    skybox_mat.m30 = 0.0;
+    skybox_mat.m31 = 0.0;
+    skybox_mat.m32 = 0.0;
+    skybox_mat.m03 = 0.0;
+    skybox_mat.m13 = 0.0;
+    skybox_mat.m23 = 0.0;
+
+    shader_load_matrix(rh->sky_shader, "view_matrix", &skybox_mat);
+
+    glBindVertexArray(rh->skybox.vao);
+    glEnableVertexAttribArray(0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, rh->skybox.texture_id);
+    glDrawArrays(GL_TRIANGLES, 0, rh->skybox.vertex_count);
+    glDepthMask(GL_TRUE);
+    log_if_err("Renderer found a problem with skybox shader\n");
+
     shader_push(rh->anim_shader);
     shader_load_matrix(
-        rh->circle_shader,
+        rh->anim_shader,
         "view_matrix",
         &view_matrix
     );
@@ -664,17 +631,109 @@ void cleanUp(Renderer *rh) {
 }
 
 
-void increase_position(Entity *entity, float dx, float dy, float dz) {
-    entity->position->x += dx;
-    entity->position->y += dy;
-    entity->position->z += dz;
+void init_floor_model(BaseModel *world_model) {
+    Mesh *mesh = (Mesh *)malloc(sizeof(Mesh));
+    int mesh_size = 128 * 128;
+
+    mesh->vertices = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
+    mesh->uvs = (Vec2 *)malloc(mesh_size * sizeof(Vec2));
+    mesh->normal = (Vec3 *)malloc(mesh_size * sizeof(Vec3));
+    mesh->indices = (unsigned int*)malloc(mesh_size * sizeof(unsigned int));
+    mesh_init(mesh);
+
+    load_data_to_model(
+        world_model, (float *) mesh->vertices, mesh->indices,
+        3*sizeof(float)*mesh->vertices_len,
+        sizeof(unsigned int)*mesh->indices_len
+    );
+    load_texture_to_model(
+        world_model,
+        // "assets/textures/marble-floor.jpg",
+        "assets/textures/wall.jpg",
+        // "assets/textures/wood-floor.jpg",
+        (float *)mesh->uvs, 
+        2 * sizeof(float) * mesh->uvs_len
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(world_model->vao);
+    store_float_in_attributes(
+        &world_model->normal,
+        2,
+        3,
+        3 * mesh->vertices_len * sizeof(float),
+        (float *) mesh->normal
+    );
+    log_if_err("Issue after loading normals\n");
+
+    world_model->vertex_count = mesh->indices_len;
+
+    free(mesh->vertices);
+    free(mesh->uvs);
+    free(mesh->normal);
+    free(mesh->indices);
+    free(mesh);
 }
 
 
-void increase_rotation(Entity *entity, float dx, float dy, float dz) {
-    entity->rotation_x += dx;
-    entity->rotation_y += dy;
-    entity->rotation_z += dz;
+void init_font(GraphicsContext *ctx, Renderer *renderer, Font *font) {
+    log_if_err("Issue before Font initiation\n");
+    font_init(
+        font, "assets/fonts/VictorMono-Regular.ttf",
+        (float)ctx->width, (float)ctx->height
+    );
+    renderer->font = font;
+    log_if_err("Issue with Font initiation\n");
 }
 
+
+void load_model_from_obj(
+    BaseModel *model, char *obj_file, char *texture_file
+) {
+    IntermediateModel tmp = {0};
+    parse_obj_file(obj_file, &tmp);
+    load_data_to_model(
+        model, tmp.vertices, tmp.indices,
+        tmp.vertices_count* sizeof(float),
+        tmp.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        model, texture_file, tmp.uvs, tmp.uvs_count * sizeof(float)
+    );
+    glBindVertexArray(model->vao);
+    store_float_in_attributes(
+        &model->normal, 2, 3, tmp.normals_count * sizeof(float), tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
+}
+
+void load_model_from_gltf(
+    BaseModel *model, char *gltf_file, char *bin_file, char *texture_file
+) {
+    char *data = read_file(gltf_file);
+    GltfData gltf = parse_gltf_data(data);
+    char *binary = read_file(bin_file);
+
+    IntermediateModel tmp = load_data_from_gltf(&gltf, binary);
+    free(data);
+    free(binary);
+    
+    load_data_to_model(
+        model, tmp.vertices, tmp.indices,
+        tmp.vertices_count * sizeof(float),
+        tmp.indices_count * sizeof(unsigned int)
+    );
+    load_texture_to_model(
+        model, texture_file, tmp.uvs, tmp.uvs_count * sizeof(float)
+    );
+    log_if_err("Issue before loading normals\n");
+    glBindVertexArray(model->vao);
+    store_float_in_attributes(
+        &model->normal, 2, 3, tmp.normals_count * sizeof(float), tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
+}
 

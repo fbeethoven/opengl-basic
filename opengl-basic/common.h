@@ -72,6 +72,9 @@ typedef struct Mat4 {
 } Mat4;
 
 
+#define MIN(a, b) (a) < (b) ? (a) : (b)
+#define MAX(a, b) (a) > (b) ? (a) : (b)
+
 Vec2 newVec2(float x, float y);
 Vec3 newVec3(float x, float y, float z);
 Vec3 vec3_add(Vec3 *a, Vec3 *b);
@@ -120,11 +123,7 @@ Mat4 mat4_rotate_y(float angle, Mat4 *A);
 Mat4 mat4_rotate_z(float angle, Mat4 *A);
 
 Mat4 create_view_matrix(Vec3 *position, float pitch, float yaw);
-Mat4 create_transformation_matrix(
-    Vec3 *translation,
-    float rx, float ry, float rz,
-    Vec3 *scale
-);
+Mat4 create_transformation_matrix(Vec3 translation, Vec3 rotation, Vec3 scale);
 
 Mat4 create_transformation_matrix_2d(
     float x, float y, float scale_x, float scale_y

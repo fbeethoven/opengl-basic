@@ -82,8 +82,8 @@ Quat quat_mult(Quat a, Quat b) {
 
 Quat quat_from_euler(float pitch, float yaw, float roll) {
     Quat rot_x = quat_rotation(newVec3(1.0, 0.0, 0.0), pitch);
-    Quat rot_y = quat_rotation(newVec3(1.0, 0.0, 0.0), yaw);
-    Quat rot_z = quat_rotation(newVec3(1.0, 0.0, 0.0), roll);
+    Quat rot_y = quat_rotation(newVec3(0.0, 1.0, 0.0), yaw);
+    Quat rot_z = quat_rotation(newVec3(0.0, 0.0, 1.0), roll);
 
     Quat result = quat_mult(rot_x, rot_y);
     return quat_mult(result, rot_z);
@@ -409,19 +409,17 @@ Mat4 mat4_translate(Vec3 *vec, Mat4 *A) {
 
 
 Mat4 create_transformation_matrix(
-    Vec3 *translation,
-    float rx, float ry, float rz,
-    Vec3 *scale
+    Vec3 translation, Vec3 rotation, Vec3 scale
 ) {
     Mat4 C = Mat4I();
 
-    C = mat4_translate(translation, &C);
+    C = mat4_translate(&translation, &C);
 
-    C = mat4_rotate_x(rx, &C);
-    C = mat4_rotate_y(ry, &C);
-    C = mat4_rotate_z(rz, &C);
+    C = mat4_rotate_x(rotation.x, &C);
+    C = mat4_rotate_y(rotation.y, &C);
+    C = mat4_rotate_z(rotation.z, &C);
 
-    mat4_scale(scale, &C);
+    mat4_scale(&scale, &C);
     return C;
 }
 

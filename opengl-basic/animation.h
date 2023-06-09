@@ -3,7 +3,8 @@
 
 
 #include "common.h"
-#include "utils/file_handler.h"
+#include "memory.h"
+#include "graphics.h"
 
 
 typedef struct Transform {
@@ -66,5 +67,10 @@ typedef struct AnimatedModel {
 ArrayList *get_anim_bones();
 void animation_update(AnimationController *anim_control, float dt);
 AnimatedModel *get_animated_model();
+void load_skeleton(AnimatedModel *anim_model);
+void render_animation_entities(
+    Renderer *rh, AnimationController *animation_controller
+);
+
 
 #endif  // ANIMATION_H

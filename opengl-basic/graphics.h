@@ -2,7 +2,6 @@
 #define GRAPHICS_H
 
 #include "common.h"
-#include "animation.h"
 #include "mesh.h"
 #include "font.h"
 #include "shader.h"
@@ -12,7 +11,9 @@
 typedef struct GraphicsContext {
     int width;
     int height;
-    double previous_time;
+    double current_time;
+    double dtime;
+    double game_time;
     double mouse_position[2];
     double dmouse[2];
     GLFWwindow* window;
@@ -37,16 +38,18 @@ typedef struct BaseModel {
 
 typedef struct Entity {
     BaseModel *model;
-    Vec3 *position;
+    Vec3 position;
     Vec3 color;
-    float rotation_x;
-    float rotation_y;
-    float rotation_z;
+    Vec3 rotation;
     Vec3 scale;
     int active;
     int fill;
-    char debug_name[50];
+    char debug_name[32];
 } Entity;
+
+
+LIST_ADD(BaseModel);
+LIST_ADD(Entity);
 
 
 typedef struct Renderer {
@@ -64,18 +67,25 @@ typedef struct Renderer {
     int anim_shader;
 	int circle_shader;
 	int gui_shader;
+	int sky_shader;
 
+#if 0
     Entity entities[20];
     Entity debug_entities[100];
-
     Entity gui_entities[10];
     Entity font_entities[10];
+#endif
+
+    List(Entity) *entities;
+    List(Entity) *debug_entities;
+
+    List(Entity) *gui_entities;
+    List(Entity) *font_entities;
 
     Font *font;
     Light *light;
 
-    int do_animation;
-    AnimationController *animation_controller;
+    BaseModel skybox;
 
 } Renderer;
 
@@ -92,10 +102,6 @@ void camera_move(Camera *camera, float dx, float dy, float dz);
 
 void init_render_handler(GraphicsContext *ctx, Renderer *rh);
 
-void increase_position(Entity *entity, float dx, float dy, float dz);
-
-void increase_rotation(Entity *entity, float dx, float dy, float dz);
-
 int graphics_init(GraphicsContext *ctx);
 
 void load_texture_to_model(
@@ -109,40 +115,33 @@ void load_empty_texture_to_model(
 
 
 void load_data_to_model(
-    BaseModel *model,
-    float *vertices,  unsigned int *indices,
+    BaseModel *model, float *vertices,  unsigned int *indices,
     int vertices_size, int indices_size
 );
 
 void render(Renderer *rh, Camera *camera);
 
 void store_float_in_attributes(
-    unsigned int *buffer_id,
-    int attribute_index,
-    int coordinate_size,
-    int buffer_size,
-    float *data
+    unsigned int *buffer_id, int attribute_index, int coordinate_size,
+    int buffer_size, float *data
 );
 
 void store_int_in_attributes(
-    unsigned int *buffer_id,
-    int attribute_index,
-    int coordinate_size,
-    int buffer_size,
-    int *data
+    unsigned int *buffer_id, int attribute_index, int coordinate_size,
+    int buffer_size, int *data
 );
 
 void bind_indices_buffer(
-    unsigned int *buffer_id,
-    int buffer_size,
-    unsigned int *data
+    unsigned int *buffer_id, int buffer_size, unsigned int *data
 );
 void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh);
 
-// Joint *new_joint(Entity *entity);
-// void joint_update(Joint *parent, Joint *joint);
-// void joint_update_all(Joint *root);
-// void joint_update_children(Joint *root);
-// Joint *joint_push(Joint *joint, Entity *entity);
+void init_floor_model(BaseModel *world_model);
+void init_font(GraphicsContext *ctx, Renderer *renderer, Font *font);
+void load_model_from_obj(BaseModel *model, char *obj_file, char *texture_file);
+void load_model_from_gltf(
+    BaseModel *model, char *gltf_file, char *bin_file, char *texture_file
+);
+
 
 #endif  // GRAPHICS_H
