@@ -51,6 +51,8 @@ void arr_free(ArrayList *arr);
 
 LIST_ADD(int);
 LIST_ADD(float);
+LIST_ADD(Vec2);
+LIST_ADD(Vec3);
 
 
 ArrayList *_new_array_list(U64 n);

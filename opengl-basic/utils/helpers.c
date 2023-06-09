@@ -103,9 +103,10 @@ void gui_quad_free(Entity *entity) {
 }
 
 
-void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
-    float player_is_grounded = params->player_is_grounded;
-    printf("We are using player_is_grounded: %f\n", player_is_grounded);
+void free_fps_camera_movement(
+    GraphicsContext *ctx, CameraMovementParams *params
+) {
+    // float player_is_grounded = params->player_is_grounded;
     float speed = params->camera_speed * params->dt * 50;
     float player_momentum = params->player_rotation;
 
@@ -191,6 +192,69 @@ void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params) {
             player_momentum = 0.0;
     }
     params->player_rotation = player_momentum;
+}
+
+void free_rts_camera_movement(
+    GraphicsContext *ctx, CameraMovementParams *params
+) {
+    float speed = params->camera_speed * params->dt * 50;
+    
+    Camera *camera = params->camera;
+    Vec3 foward = newVec3(
+        camera->centre.x - camera->position.x,
+        camera->centre.y - camera->position.y,
+        camera->centre.z - camera->position.z
+    );
+    vec3_normalize(&foward);
+    Vec3 right = vec3_cross(foward, newVec3(0.0, 1.0, 0.0));
+    vec3_normalize(&right);
+
+    if (glfwGetKey(ctx->window, GLFW_KEY_A) == GLFW_PRESS) {
+        camera->position.x -= speed * right.x;
+        camera->position.z -= speed * right.z;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_D) == GLFW_PRESS) {
+        camera->position.x += speed * right.x;
+        camera->position.z += speed * right.z;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_W) == GLFW_PRESS) {
+        camera->position.x += speed * foward.x;
+        camera->position.z += speed * foward.z;
+    }
+    if (glfwGetKey(ctx->window, GLFW_KEY_S) == GLFW_PRESS) {
+        camera->position.x -= speed * foward.x;
+        camera->position.z -= speed * foward.z;
+    }
+
+    if (shift_is_pressed(ctx)){
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera->position.y -= speed;
+        }
+    }
+    else {
+        if (glfwGetKey(ctx->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera->position.y += speed;
+        }
+    }
+
+    if (control_is_pressed(ctx)) {
+        glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        camera->yaw += 0.0005 * (float)ctx->dmouse[0];
+        camera->pitch += 0.0005 * (float)ctx->dmouse[1];
+        ctx->dmouse[0] = 0.0;
+        ctx->dmouse[1] = 0.0;
+    }
+    else {
+        glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    camera->centre.x = (
+        camera->position.x + sin(camera->pitch) * cos(camera->yaw)
+    );
+    camera->centre.y = camera->position.y + cos(camera->pitch);
+    camera->centre.z = (
+        camera->position.z + sin(camera->pitch) * sin(camera->yaw)
+    );
 }
 
 
@@ -567,3 +631,134 @@ void ui_color_picker(GraphicsContext *ctx, Entity *entity) {
     log_if_err("Issue loading quad color\n");
 
 }
+
+
+
+
+// ui-test
+// void attach_mesh_component(Entity *entity) {
+//     if (!entity->components) {
+//         entity->components = new_array_list(MeshComponent);
+//     }
+// 
+//     MeshComponent *mesh = arr_push(entity->components, MeshComponent);
+//     mesh->vertices = NEW_LIST(Vec3);
+//     mesh->uvs = NEW_LIST(Vec2);
+//     mesh->color = NEW_LIST(Vec3);
+//     mesh->indices = NEW_LIST(int);
+// 
+//     BaseModel *model = entity->model;
+// 
+//     log_if_err("[MeshComponent] Issue before initialization");
+//     glGenVertexArrays(1, &model->vao);
+//     glBindVertexArray(model->vao);
+// 
+//     glGenBuffers(1, &model->ibo);
+//     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+//     U32 ibo_size = 6 * MeshCapacity * sizeof(U32);
+//     glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibo_size, 0, GL_DYNAMIC_DRAW);
+// 
+//     glGenBuffers(1, &model->vbo);
+// 	glBindBuffer(GL_ARRAY_BUFFER, model->vbo);
+//     U32 vbo_size = 3 * 4 * MeshCapacity * sizeof(float);
+//     glBufferData(GL_ARRAY_BUFFER, vbo_size, 0, GL_DYNAMIC_DRAW);
+//     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), 0);
+//     log_if_err("[MeshComponent] Issue during initialization");
+// 
+//     glGenBuffers(1, &model->uv);
+// 	glBindBuffer(GL_ARRAY_BUFFER, model->uv);
+//     U32 uv_size = 2 * 4 * MeshCapacity * sizeof(float);
+//     glBufferData(GL_ARRAY_BUFFER, uv_size, 0, GL_DYNAMIC_DRAW);
+//     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+// 
+//     glGenBuffers(1, &model->color);
+// 	glBindBuffer(GL_ARRAY_BUFFER, model->color);
+//     U32 color_size = 4 * 4 * MeshCapacity * sizeof(float);
+//     glBufferData(GL_ARRAY_BUFFER, color_size, 0, GL_DYNAMIC_DRAW);
+//     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+//     log_if_err("[MeshComponent] Issue during initialization");
+// }
+
+// void mesh_component_update(Entity *entity) {
+//     BaseModel *model = entity->model;
+//     MeshComponent *mesh = arr_get_ptr(entity->components, MeshComponent, 0);  
+// 
+//     U32 vbo_size = mesh->vertices->counter * 3 * sizeof(float);
+//     glBufferSubData(
+//         GL_ARRAY_BUFFER, 0, vbo_size, (float *)mesh->vertices->data
+//     );
+//     glBindBuffer(GL_ARRAY_BUFFER, model->uv);
+//     U32 uv_size = mesh->uvs->counter * 2 * sizeof(float);
+//     glBufferSubData(GL_ARRAY_BUFFER, 0, uv_size, (float *)mesh->uvs->data);
+//     glBindBuffer(GL_ARRAY_BUFFER, model->color);
+//     U32 color_size = mesh->color->counter * 4 * sizeof(float);
+//     glBufferSubData(
+//         GL_ARRAY_BUFFER, 0, color_size, (float *)mesh->color->data
+//     );
+//     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+//     U32 ibo_size = mesh->indices->counter * 2 * sizeof(unsigned int)
+//     glBufferSubData(
+//         GL_ELEMENT_ARRAY_BUFFER, 0, ibo_size, (U32 *)mesh->indices->data
+//     );
+//     log_if_err("Issue with subdata\n");
+// }
+
+
+// Vec2 mesh_quad_push(MeshComponent *mesh, Vec2 position, Vec4 color) {
+//     Vec2 size = {0};
+//     Mesh *mesh = font->font_mesh;
+//     float offsetX = position.x;
+//     float offsetY = position.y;
+//     int counter = mesh->vertices_len;
+//     int indices_counter = mesh->indices_len;
+//     char c;
+//     for (int i=0; i<strlen(msg); i++) {
+//         c = msg[i];
+//         GlyphInfo glyph_info = getGlyphInfo(font, c, offsetX, offsetY);
+//         offsetX = glyph_info.offsetX;
+//         offsetY = glyph_info.offsetY;
+// 
+//         mesh->vertices[counter] = glyph_info.positions[0];
+//         mesh->vertices[counter + 1] = glyph_info.positions[1];
+//         mesh->vertices[counter + 2] = glyph_info.positions[2];
+//         mesh->vertices[counter + 3] = glyph_info.positions[3];
+// 
+//         mesh->uvs[counter] = glyph_info.uvs[0];
+//         mesh->uvs[counter + 1] = glyph_info.uvs[1];
+//         mesh->uvs[counter + 2] = glyph_info.uvs[2];
+//         mesh->uvs[counter + 3] = glyph_info.uvs[3];
+// 
+//         mesh->color[counter] = color;
+//         mesh->color[counter + 1] = color;
+//         mesh->color[counter + 2] = color;
+//         mesh->color[counter + 3] = color;
+// 
+//         mesh->indices[indices_counter] = counter;
+//         mesh->indices[indices_counter + 1] = counter + 1;
+//         mesh->indices[indices_counter + 2] = counter + 2;
+//         mesh->indices[indices_counter + 3] = counter;
+//         mesh->indices[indices_counter + 4] = counter + 2;
+//         mesh->indices[indices_counter + 5] = counter + 3;
+// 
+//         counter += 4;
+//         indices_counter += 6;
+// 
+//         if (glyph_info.positions[2].y > size.y) {
+//             size.y = glyph_info.positions[2].y;
+//         }
+//         size.x = glyph_info.positions[2].x;
+//     }
+// 
+//     mesh->vertices_len = counter;
+//     mesh->uvs_len = counter;
+//     mesh->color_len = counter;
+//     mesh->indices_len = indices_counter;
+// 
+// 
+//     return newVec2(
+//         (0.5 + 0.5*size.x) * font->width - position.x,
+//         position.y - (0.5 - 0.5*size.y) * font->height
+//     );
+// }
+
+

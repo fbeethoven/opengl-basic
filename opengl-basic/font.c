@@ -184,7 +184,7 @@ void font_update_buffer(Font *font) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font->ibo);
     glBufferSubData(
         GL_ELEMENT_ARRAY_BUFFER, 0,
-        font->font_mesh->indices_len * 2 * sizeof(float),
+        font->font_mesh->indices_len * sizeof(float),
         (unsigned int *)font->font_mesh->indices
     );
     log_if_err("Issue with subdata\n");

@@ -40,7 +40,12 @@ void camera_follow_player(
 int toggle_button_press(
     GraphicsContext *ctx, unsigned int key, int *is_press_bool
 );
-void free_camera_movement(GraphicsContext *ctx, CameraMovementParams *params);
+void free_fps_camera_movement(
+    GraphicsContext *ctx, CameraMovementParams *params
+);
+void free_rts_camera_movement(
+    GraphicsContext *ctx, CameraMovementParams *params
+);
 void draw_quad_in_pixels(
     GraphicsContext *ctx, Mesh *mesh, Vec2 center, Vec3 color, Vec2 side
 );
@@ -60,6 +65,26 @@ Vec3 mouse_to_world(GraphicsContext *ctx, Renderer *renderer, Camera *camera);
 int ray_to_aabb(Vec3 origin, Vec3 dir, Vec3 box_min, Vec3 box_max);
 int ray_to_sphere(Vec3 origin, Vec3 dir, Vec3 center, float radius);
 void ui_color_picker(GraphicsContext *ctx, Entity *entity);
+
+
+
+
+
+
+// ui test
+// #define MeshCapacity 10000
+// 
+// 
+// typedef struct MeshComponent {
+//     List(Vec3) *vertices;
+//     List(Vec2) *uvs;
+//     List(Vec3) *normal;
+//     List(Vec3) *color;
+//     List(int) *indices;
+// } MeshComponent;
+// 
+// void attach_mesh_component(Entity *entity);
+
 
 
 #endif  // HELPERS_H
