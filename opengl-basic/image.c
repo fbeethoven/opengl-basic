@@ -18,7 +18,7 @@ Image *image_load(const char *image_path) {
     );
     if (img->channels != 3) {
         printf(
-            "File %s returned %d channels. Expected 4\n",
+            "File %s returned %d channels. Expected 3\n",
             image_path, img->channels
         );
         exit(1);

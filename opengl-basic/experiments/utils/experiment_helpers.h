@@ -4,6 +4,7 @@
 
 #include "../../common.h"
 #include "../../graphics.h"
+#include "../../utils/helpers.h"
 #include <time.h>
 
 
@@ -11,7 +12,6 @@
 
 enum ModelType {
     ModelType_World,
-    ModelType_SimpleSphere,
     ModelType_Spoon,
     ModelType_Teacup,
     ModelType_Teapot,
@@ -20,6 +20,7 @@ enum ModelType {
     ModelType_Dragon,
     ModelType_Blendercube,
     ModelType_sphere,
+    ModelType_Trooper,
     ModelType_Count
 };
 
@@ -56,7 +57,9 @@ void rand_init(GameContext *game_ctx);
 int get_new_random(GameContext *game_ctx);
 Vec2 get_random_position(GraphicsContext *ctx, GameContext *game_ctx);
 void load_assets(
-    GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font
+    GraphicsContext *ctx, Renderer *renderer, GameContext *game_ctx, Font *font,
+    Camera *camera
+
 );
 RandomEntity* add_random_entity(
     GraphicsContext *ctx, GameContext *game_ctx, Camera *camera
@@ -64,6 +67,9 @@ RandomEntity* add_random_entity(
 void sync_entities(GameContext *game_ctx, Renderer *renderer);
 void update_entities(GameContext *game_ctx, Camera *camera);
 void new_circle_entity(GameContext *game_ctx);
+Entity* get_new_debug_entity(
+    GameContext *game_ctx, Renderer *renderer, Vec3 pos
+);
 
 
 #endif  // EXPERIMENT_HELPERS_H

@@ -4,6 +4,7 @@
 
 #include "../common.h"
 #include "utils/experiment_helpers.h"
+
 float speed;
 int pulse_n;
 int pulse_p;

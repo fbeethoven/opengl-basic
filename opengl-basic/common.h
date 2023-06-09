@@ -41,6 +41,13 @@ typedef struct Vec4 {
     float w;
 } Vec4;
 
+typedef struct Quat {
+    float x;
+    float y;
+    float z;
+    float w;
+} Quat;
+
 
 typedef struct Mat4 {
     float m00;
@@ -65,6 +72,9 @@ typedef struct Mat4 {
 } Mat4;
 
 
+#define MIN(a, b) (a) < (b) ? (a) : (b)
+#define MAX(a, b) (a) > (b) ? (a) : (b)
+
 Vec2 newVec2(float x, float y);
 Vec3 newVec3(float x, float y, float z);
 Vec3 vec3_add(Vec3 *a, Vec3 *b);
@@ -81,14 +91,27 @@ Vec2 vec2_lerp(Vec2 a, Vec2 b, float t);
 Vec3 vec3_lerp(Vec3 a, Vec3 b, float t);
 
 Vec4 newVec4(float x, float y, float z, float w);
+Vec4 vec4_lerp(Vec4 a, Vec4 b, float t);
+Vec4 vec4_normalize(Vec4 vec);
 
+Quat quat_new(float x, float y, float z, float w);
+Quat quat_rotation(Vec3 dir, float angle);
+Quat quat_add(Quat a, Quat b);
+Quat quat_mult(Quat a, Quat b);
+float quat_dot(Quat a, Quat b);
+Quat quat_normalize(Quat a);
+Quat quat_conjugate(Quat a);
+Quat quat_inv(Quat a);
+Quat quat_from_euler(float pitch, float yaw, float roll);
+Vec3 vec3_rotate_quat(Vec3 v, Quat rot);
+Mat4 quat_to_mat4(Quat q);
 
 Mat4 mat4_diag(float x, float y, float z, float w);
 Mat4 Mat4I();
 
 Mat4 mat4_copy(Mat4 *A);
 Mat4 mat4_add(Mat4 *A, Mat4 *B);
-Mat4 mat4_mult(Mat4 *A, Mat4 *B);
+Mat4 mat4_multiply(Mat4 *A, Mat4 *B);
 void mat4_scale(Vec3 *vec, Mat4 *source);
 Mat4 mat4_translate(Vec3 *vec, Mat4 *A);
 Mat4 mat4_transpose(Mat4 *A);
@@ -100,10 +123,7 @@ Mat4 mat4_rotate_y(float angle, Mat4 *A);
 Mat4 mat4_rotate_z(float angle, Mat4 *A);
 
 Mat4 create_view_matrix(Vec3 *position, float pitch, float yaw);
-Mat4 create_transformation_matrix(
-    Vec3 *translation,
-    float rx, float ry, float rz, float scale_factor
-);
+Mat4 create_transformation_matrix(Vec3 translation, Vec3 rotation, Vec3 scale);
 
 Mat4 create_transformation_matrix_2d(
     float x, float y, float scale_x, float scale_y
