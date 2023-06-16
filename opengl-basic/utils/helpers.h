@@ -72,19 +72,49 @@ void ui_color_picker(GraphicsContext *ctx, Entity *entity);
 
 
 // ui test
-// #define MeshCapacity 10000
-// 
-// 
-// typedef struct MeshComponent {
-//     List(Vec3) *vertices;
-//     List(Vec2) *uvs;
-//     List(Vec3) *normal;
-//     List(Vec3) *color;
-//     List(int) *indices;
-// } MeshComponent;
-// 
-// void attach_mesh_component(Entity *entity);
+#define MeshCapacity 10
 
+typedef struct UIWidget UIWidget;
+struct UIWidget {
+    // tree links
+    UIWidget *first;
+    UIWidget *last;
+    UIWidget *next;
+    UIWidget *prev;
+    UIWidget *parent;
+
+    // hash links
+    UIWidget *hash_next;
+    UIWidget *hash_prev;
+
+    // key+generation info
+    char key[32];
+    U64 last_frame_touched_index;
+
+    char string[32];
+
+    Vec4 rect;
+    Vec2 child_position;
+
+    // persistent data
+    float hot_t;
+    float active_t;
+
+    Entity *entity;
+};
+
+typedef struct UIManager {
+    UIWidget *root_widget;
+    UIWidget *current_parent_widget;
+    UIWidget *current_child_widget;
+    List(Entity) *gui_entities;
+    UIWidget *free_widget;
+    Vec2 screen;
+} UIManager;
+
+UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer);
+void ui_reset(GraphicsContext *ctx, UIManager *ui_manager);
+void ui_test_button(UIManager *ui_manager);
 
 
 #endif  // HELPERS_H

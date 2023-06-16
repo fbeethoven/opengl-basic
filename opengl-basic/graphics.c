@@ -607,7 +607,6 @@ void render(Renderer *rh, Camera *camera) {
 
     render_entities(rh);
 
-    glDisableVertexAttribArray(2);
     glDisable(GL_DEPTH_TEST);
 
     shader_push(rh->gui_shader);

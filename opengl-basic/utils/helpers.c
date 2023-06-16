@@ -634,131 +634,235 @@ void ui_color_picker(GraphicsContext *ctx, Entity *entity) {
 
 
 
+UIWidget *ui_get_widget(UIManager *ui_manager) {
+    UIWidget *result;
+    if (ui_manager->free_widget) {
+        result = ui_manager->free_widget;
+        ui_manager->free_widget = result->next;
+        memset(result, 0, sizeof(UIWidget));
+    }
+    else {
+        result = calloc(1, sizeof(UIWidget));
+    }
+    return result;
+}
 
-// ui-test
-// void attach_mesh_component(Entity *entity) {
-//     if (!entity->components) {
-//         entity->components = new_array_list(MeshComponent);
-//     }
+UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer) {
+    UIManager *ui_manager = calloc(1, sizeof(UIManager));
+    ui_manager->screen = newVec2((float)ctx->width, (float)ctx->height);
+    UIWidget *root = ui_get_widget(ui_manager);
+    root->rect = newVec4(0.0, 0.0, (float)ctx->width, (float)ctx->height);
+    root->child_position = newVec2(0.0, 0.0);
+    ui_manager->root_widget = root;
+    ui_manager->current_parent_widget = root;
+    ui_manager->gui_entities = renderer->gui_entities;
+    return ui_manager;
+}
+
+void ui_reset(GraphicsContext *ctx, UIManager *ui_manager) {
+    Entity *entity;
+    for (int i=0; i<ui_manager->gui_entities->counter; i++) {
+        entity = LIST_GET_PTR(ui_manager->gui_entities, i);
+        entity->active = 0;
+    }
+    if (((float)ctx->width != ui_manager->screen.x) ||
+        ((float)ctx->height != ui_manager->screen.y)
+    ) {
+        ui_manager->screen = newVec2((float)ctx->width, (float)ctx->height);
+        ui_manager->root_widget->rect = newVec4(
+            0.0, 0.0, (float)ctx->width, (float)ctx->height);
+    }
+    ui_manager->current_parent_widget = ui_manager->root_widget;
+    ui_manager->root_widget->child_position = newVec2(0.0, 0.0);
+    ui_manager->current_child_widget = 0;
+}
+
+
+Entity *ui_get_new_entity(UIManager *ui_manager) {
+    BaseModel *model = malloc(sizeof(BaseModel));
+
+    log_if_err("[MeshComponent] Issue before initialization");
+    glGenVertexArrays(1, &model->vao);
+    glBindVertexArray(model->vao);
+
+    glGenBuffers(1, &model->ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+    U32 ibo_size = 6 * MeshCapacity * sizeof(U32);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibo_size, 0, GL_DYNAMIC_DRAW);
+
+    glGenBuffers(1, &model->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, model->vbo);
+    U32 vbo_size = 3 * 4 * MeshCapacity * sizeof(float);
+    glBufferData(GL_ARRAY_BUFFER, vbo_size, 0, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), 0);
+    log_if_err("[MeshComponent] Issue during initialization");
+
+    glGenBuffers(1, &model->uv);
+    glBindBuffer(GL_ARRAY_BUFFER, model->uv);
+    U32 uv_size = 2 * 4 * MeshCapacity * sizeof(float);
+    glBufferData(GL_ARRAY_BUFFER, uv_size, 0, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+
+    glGenBuffers(1, &model->color);
+    glBindBuffer(GL_ARRAY_BUFFER, model->color);
+    U32 color_size = 4 * 4 * MeshCapacity * sizeof(float);
+    glBufferData(GL_ARRAY_BUFFER, color_size, 0, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    log_if_err("[MeshComponent] Issue during initialization");
+
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &model->texture_id);
+    glBindTexture(GL_TEXTURE_2D, model->texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(
+        GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    unsigned int texture = 0xffffffff;
+
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, &texture
+    );
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+
+    Entity *entity = list_push(ui_manager->gui_entities, Entity);
+    entity->model = model;
+    entity->scale = newVec3(1.0, 1.0, 1.0);
+    return entity;
+}
+
+Entity *ui_get_entity(UIManager *ui_manager) {
+    Entity *entity;
+    int found = 0;
+    for (int i=0; i<ui_manager->gui_entities->counter; i++) {
+        entity = LIST_GET_PTR(ui_manager->gui_entities, i);
+        if (!entity->active) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        entity = ui_get_new_entity(ui_manager);
+    }
+    entity->active = 1;
+    entity->model->vertex_count = 0;
+    return entity;
+}
+
+
+void ui_entity_update(Entity *entity, Vec4 position, Vec4 entity_color) {
+    BaseModel *model = entity->model;
+    float vertices[] = {
+        position.x             , position.y             , 0.0,
+        position.x             , position.y + position.w, 0.0,
+        position.x + position.z, position.y + position.w, 0.0,
+        position.x + position.z, position.y             , 0.0
+    };
+
+    float uvs[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    float color[] = {
+        entity_color.x, entity_color.y, entity_color.z, entity_color.w,
+        entity_color.x, entity_color.y, entity_color.z, entity_color.w,
+        entity_color.x, entity_color.y, entity_color.z, entity_color.w,
+        entity_color.x, entity_color.y, entity_color.z, entity_color.w
+    };
+
+    unsigned int indices[] = {0, 1, 2, 2, 0, 3};
+    model->vertex_count = 6;
+
+
+    glBindVertexArray(model->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, model->vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+    glBindBuffer(GL_ARRAY_BUFFER, model->uv);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(uvs), uvs);
+
+    glBindBuffer(GL_ARRAY_BUFFER, model->color);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color), color);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
+    log_if_err("Issue with subdata\n");
+
+}
+
+
+UIWidget *ui_push_child(
+    UIManager *ui_manager, float x_pos, float y_pos, int visible
+) {
+    UIWidget *parent = ui_manager->current_parent_widget;
+    UIWidget *result;
+    if (!ui_manager->current_child_widget && parent->first){
+        result = parent->first;
+        ui_manager->current_child_widget = result;
+    }
+    else if (
+        ui_manager->current_child_widget &&
+        ui_manager->current_child_widget->next
+    ) {
+        result = ui_manager->current_child_widget->next; 
+        ui_manager->current_child_widget = result;
+    }
+    else {
+        result = ui_get_widget(ui_manager);
+        result->parent = parent;
+        if (!ui_manager->current_child_widget) {
+            parent->first = result;
+        }
+        else {
+            ui_manager->current_child_widget->next = result;
+        }
+        ui_manager->current_child_widget = result;
+    }
+
+    float x_size = parent->rect.z * x_pos;
+    float y_size = parent->rect.w * y_pos;
+    result->rect = newVec4(
+        parent->child_position.x, parent->child_position.y, x_size, y_size);
+    result->child_position = newVec2(
+        parent->child_position.x, parent->child_position.y);
+    
+    parent->child_position.x += x_size;
+    parent->child_position.y += y_size;
+
+    if (visible) {
+        Entity *entity = ui_get_entity(ui_manager);
+        float pos_x = 2*(result->rect.x / ui_manager->screen.x) - 1;
+        float pos_y = 1 - 2*(result->rect.y / ui_manager->screen.y);
+        float pos_z = result->rect.z / ui_manager->screen.x;
+        float pos_w = -result->rect.w / ui_manager->screen.y;
+        Vec4 position = newVec4(pos_x, pos_y, pos_z, pos_w);
+
+        printf("position %f %f %f %f\n",
+            position.x, position.y, position.z, position.w);
+        Vec4 color = newVec4(1.0, 0.0, 0.0, 1.0);
+        ui_entity_update(entity, position, color);
+        result->entity = entity;
+    }
+
+    return result;
+}
+
+// UIWidget *ui_push_parent(
+//     UIManager *ui_manager, float x_pos, float y_pos, int visible
+// ) {
 // 
-//     MeshComponent *mesh = arr_push(entity->components, MeshComponent);
-//     mesh->vertices = NEW_LIST(Vec3);
-//     mesh->uvs = NEW_LIST(Vec2);
-//     mesh->color = NEW_LIST(Vec3);
-//     mesh->indices = NEW_LIST(int);
+// }
 // 
-//     BaseModel *model = entity->model;
+// UIWidget *ui_pop_parent(
+//     UIManager *ui_manager, float x_pos, float y_pos, char *id_name
+// ) {
 // 
-//     log_if_err("[MeshComponent] Issue before initialization");
-//     glGenVertexArrays(1, &model->vao);
-//     glBindVertexArray(model->vao);
-// 
-//     glGenBuffers(1, &model->ibo);
-//     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
-//     U32 ibo_size = 6 * MeshCapacity * sizeof(U32);
-//     glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibo_size, 0, GL_DYNAMIC_DRAW);
-// 
-//     glGenBuffers(1, &model->vbo);
-// 	glBindBuffer(GL_ARRAY_BUFFER, model->vbo);
-//     U32 vbo_size = 3 * 4 * MeshCapacity * sizeof(float);
-//     glBufferData(GL_ARRAY_BUFFER, vbo_size, 0, GL_DYNAMIC_DRAW);
-//     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), 0);
-//     log_if_err("[MeshComponent] Issue during initialization");
-// 
-//     glGenBuffers(1, &model->uv);
-// 	glBindBuffer(GL_ARRAY_BUFFER, model->uv);
-//     U32 uv_size = 2 * 4 * MeshCapacity * sizeof(float);
-//     glBufferData(GL_ARRAY_BUFFER, uv_size, 0, GL_DYNAMIC_DRAW);
-//     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
-// 
-//     glGenBuffers(1, &model->color);
-// 	glBindBuffer(GL_ARRAY_BUFFER, model->color);
-//     U32 color_size = 4 * 4 * MeshCapacity * sizeof(float);
-//     glBufferData(GL_ARRAY_BUFFER, color_size, 0, GL_DYNAMIC_DRAW);
-//     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-//     log_if_err("[MeshComponent] Issue during initialization");
 // }
 
-// void mesh_component_update(Entity *entity) {
-//     BaseModel *model = entity->model;
-//     MeshComponent *mesh = arr_get_ptr(entity->components, MeshComponent, 0);  
-// 
-//     U32 vbo_size = mesh->vertices->counter * 3 * sizeof(float);
-//     glBufferSubData(
-//         GL_ARRAY_BUFFER, 0, vbo_size, (float *)mesh->vertices->data
-//     );
-//     glBindBuffer(GL_ARRAY_BUFFER, model->uv);
-//     U32 uv_size = mesh->uvs->counter * 2 * sizeof(float);
-//     glBufferSubData(GL_ARRAY_BUFFER, 0, uv_size, (float *)mesh->uvs->data);
-//     glBindBuffer(GL_ARRAY_BUFFER, model->color);
-//     U32 color_size = mesh->color->counter * 4 * sizeof(float);
-//     glBufferSubData(
-//         GL_ARRAY_BUFFER, 0, color_size, (float *)mesh->color->data
-//     );
-//     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model->ibo);
-//     U32 ibo_size = mesh->indices->counter * 2 * sizeof(unsigned int)
-//     glBufferSubData(
-//         GL_ELEMENT_ARRAY_BUFFER, 0, ibo_size, (U32 *)mesh->indices->data
-//     );
-//     log_if_err("Issue with subdata\n");
-// }
 
-
-// Vec2 mesh_quad_push(MeshComponent *mesh, Vec2 position, Vec4 color) {
-//     Vec2 size = {0};
-//     Mesh *mesh = font->font_mesh;
-//     float offsetX = position.x;
-//     float offsetY = position.y;
-//     int counter = mesh->vertices_len;
-//     int indices_counter = mesh->indices_len;
-//     char c;
-//     for (int i=0; i<strlen(msg); i++) {
-//         c = msg[i];
-//         GlyphInfo glyph_info = getGlyphInfo(font, c, offsetX, offsetY);
-//         offsetX = glyph_info.offsetX;
-//         offsetY = glyph_info.offsetY;
-// 
-//         mesh->vertices[counter] = glyph_info.positions[0];
-//         mesh->vertices[counter + 1] = glyph_info.positions[1];
-//         mesh->vertices[counter + 2] = glyph_info.positions[2];
-//         mesh->vertices[counter + 3] = glyph_info.positions[3];
-// 
-//         mesh->uvs[counter] = glyph_info.uvs[0];
-//         mesh->uvs[counter + 1] = glyph_info.uvs[1];
-//         mesh->uvs[counter + 2] = glyph_info.uvs[2];
-//         mesh->uvs[counter + 3] = glyph_info.uvs[3];
-// 
-//         mesh->color[counter] = color;
-//         mesh->color[counter + 1] = color;
-//         mesh->color[counter + 2] = color;
-//         mesh->color[counter + 3] = color;
-// 
-//         mesh->indices[indices_counter] = counter;
-//         mesh->indices[indices_counter + 1] = counter + 1;
-//         mesh->indices[indices_counter + 2] = counter + 2;
-//         mesh->indices[indices_counter + 3] = counter;
-//         mesh->indices[indices_counter + 4] = counter + 2;
-//         mesh->indices[indices_counter + 5] = counter + 3;
-// 
-//         counter += 4;
-//         indices_counter += 6;
-// 
-//         if (glyph_info.positions[2].y > size.y) {
-//             size.y = glyph_info.positions[2].y;
-//         }
-//         size.x = glyph_info.positions[2].x;
-//     }
-// 
-//     mesh->vertices_len = counter;
-//     mesh->uvs_len = counter;
-//     mesh->color_len = counter;
-//     mesh->indices_len = indices_counter;
-// 
-// 
-//     return newVec2(
-//         (0.5 + 0.5*size.x) * font->width - position.x,
-//         position.y - (0.5 - 0.5*size.y) * font->height
-//     );
-// }
-
+void ui_test_button(UIManager *ui_manager) {
+    UIWidget *first = ui_push_child(ui_manager, 0.5, 1.0, 1);
+}
 

@@ -26,6 +26,9 @@ int selection;
 int selection_press;
 
 
+UIManager *ui_manager;
+
+
 
 int game_run() {
     // TODO(CLEAN UP):
@@ -130,6 +133,8 @@ int game_run() {
 
     Renderer renderer = {0};
     init_render_handler(&ctx, &renderer);
+
+    ui_manager = ui_init(&ctx, &renderer);
 
     Camera camera = {0};
 
@@ -416,5 +421,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     } else {
         selection_press = 0;
     }
+
+    ui_reset(ctx, ui_manager);
+    ui_test_button(ui_manager);
 }
 
