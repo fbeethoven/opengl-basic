@@ -926,12 +926,71 @@ UIWidget *ui_push_child_null(UIManager *manager, float width, float height) {
         newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0));
 }
 
-// int ui_button(UIManager *ui_manager, float width, float height) {
-//     int result = 0;
-//     UIWidget *container = ui_push_child_null(ui_manager, width, height);
-// 
-//     return result;
-// }
+typedef struct UIButtonColor {
+    Vec4 color_a;
+    Vec4 color_b;
+    Vec4 color_c;
+    Vec4 color_d;
+} UIButtonColor;
+
+UIButtonColor ui_button_get_colors(UIWidget *button, int pulse) {
+    UIButtonColor result = {0};
+    float top_color = 0.4;
+    float button_color = 0.3;
+
+    if (pulse) {
+        top_color = 0.3;
+        button_color = 0.4;
+    }
+    else if (button->hot_t > 0.0) {
+        top_color = 0.45;
+        button_color = 0.35;
+    }
+
+    result.color_a = newVec4(top_color, top_color, top_color, 1.0);
+    result.color_b = newVec4(button_color, button_color, button_color, 1.0);
+    result.color_c = newVec4(button_color, button_color, button_color, 1.0);
+    result.color_d = newVec4(top_color, top_color, top_color, 1.0);
+
+    return result;
+}
+
+int ui_button_widget(UIManager *ui_manager, float width, float height) {
+    int result = 0;
+    UIWidget *container = ui_push_child_null(ui_manager, width, height);
+    ui_push_parent(ui_manager, container);
+    float mouse[2] = {
+        (float) ui_manager->ctx->mouse_position[0],
+        (float) ui_manager->ctx->mouse_position[0]
+    };
+    if (
+        (container->rect.x <= mouse[0]) &&
+        (mouse[0] <= container->rect.x + container->rect.z) &&
+        (container->rect.y <= mouse[1]) &&
+        (mouse[1] <= container->rect.y + container->rect.w)
+    ) {
+        container->hot_t = 1.0;
+    }
+    else {
+        container->hot_t = 0.0;
+    }
+    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
+        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+    ) {
+        container->active_t = 1.0;
+    }
+    else {
+        if ((container->hot_t > 0.0) && (container->active_t > 0.0)){
+            result = 1;
+        }
+        container->active_t = 0.0;
+    }
+    UIButtonColor color = ui_button_get_colors(container, result);
+    ui_push_child_(ui_manager, width, height,
+        0, 0, 1, color.color_a, color.color_b, color.color_c, color.color_d);
+    ui_pop_parent(ui_manager);
+    return result;
+}
 
 
 void ui_test_button(UIManager *ui_manager) {
@@ -957,9 +1016,13 @@ void ui_test_button(UIManager *ui_manager) {
         newVec4(0.6, 0.6, 0.6, 1.0)
     );
     ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
-    ui_push_child_v(ui_manager, 0.8, 0.2, 1, 
-        newVec4(0.6, 0.6, 0.6, 1.0)
-    );
+    // ui_push_child_v(ui_manager, 0.8, 0.2, 1, 
+    //     newVec4(0.6, 0.6, 0.6, 1.0)
+    // );
+    if (ui_button_widget(ui_manager, 0.8, 0.2)) {
+        printf("YOU PRESSED THE BUTTON!!\n");
+        exit(0);
+    }
 
 
     printf("We have %lu gui entities\n", ui_manager->gui_entities->counter);
