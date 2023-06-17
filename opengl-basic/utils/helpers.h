@@ -104,6 +104,12 @@ struct UIWidget {
 };
 
 
+enum UIFlags {
+    UIFlags_Visible = 1,
+    UIFlags_Square = 1<<2,
+};
+
+
 typedef struct UIManager {
     UIWidget *root_widget;
     UIWidget *current_parent_widget;

@@ -797,7 +797,7 @@ void ui_entity_update(
 
 UIWidget *ui_push_child_(
     UIManager *ui_manager, float width, float height, int add_x, int add_y,
-    int visible, Vec4 color_a, Vec4 color_b, Vec4 color_c, Vec4 color_d
+    int flags, Vec4 color_a, Vec4 color_b, Vec4 color_c, Vec4 color_d
 ) {
     UIWidget *parent = ui_manager->current_parent_widget;
     UIWidget *result;
@@ -825,7 +825,7 @@ UIWidget *ui_push_child_(
     }
 
     float x_size = parent->rect.z * width;
-    float y_size = parent->rect.w * height;
+    float y_size = (flags & UIFlags_Square) ? x_size : parent->rect.w * height;
     result->rect = newVec4(
         parent->child_position.x, parent->child_position.y, x_size, y_size);
     result->child_position = newVec2(
@@ -838,7 +838,7 @@ UIWidget *ui_push_child_(
         parent->child_position.y += y_size;
     }
 
-    if (visible) {
+    if (flags & UIFlags_Visible) {
         Entity *entity = ui_get_entity(ui_manager);
         float screen_x = ui_manager->ctx->width;
         float screen_y = ui_manager->ctx->height;
@@ -1004,11 +1004,76 @@ int ui_button_h(UIManager *ui_manager, float width, float height) {
     return result;
 }
 
+int ui_toggle_widget(
+    UIManager *ui_manager, float width, float height, int value
+) {
+    int result = value;
+    float shade = 0.3;
+    Vec4 color = newVec4(shade, shade, shade, 1.0);
+    UIWidget *container = ui_push_child_(
+        ui_manager, width, height, 0, 0, UIFlags_Visible|UIFlags_Square,
+        color, color, color, color
+    );
+    ui_push_parent(ui_manager, container);
+    float mouse[2] = {
+        (float) ui_manager->ctx->mouse_position[0],
+        (float) ui_manager->ctx->mouse_position[1]
+    };
+    if (
+        (container->rect.x <= mouse[0]) &&
+        (mouse[0] <= container->rect.x + container->rect.z) &&
+        (container->rect.y <= mouse[1]) &&
+        (mouse[1] <= container->rect.y + container->rect.w)
+    ) {
+        container->hot_t = 1.0;
+    }
+    else {
+        container->hot_t = 0.0;
+    }
+    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
+        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+    ) {
+        container->active_t = 1.0;
+    }
+    else {
+        if ((container->hot_t > 0.0) && (container->active_t > 0.0)){
+            result = 1 - result;
+        }
+        container->active_t = 0.0;
+    }
+    if (result > 0) {
+        float padding = 0.08;
+        float val = 1.0 - 2*padding;
+        float fill = 0.5;
+        Vec4 col = newVec4(fill, fill, fill, 1.0);
+        ui_padding(ui_manager, newVec2(padding, padding), 1);
+        ui_push_child_(ui_manager, val, val, 0, 0, 1, col, col, col, col);
+    }
+    ui_pop_parent(ui_manager);
+    return result;
+}
+
+int ui_toggle_v(UIManager *ui_manager, float width, float height, int value) {
+    int result = ui_toggle_widget(ui_manager, width, height, value);
+    ui_padding(ui_manager, newVec2(0.0, height), 1);
+    return result;
+}
+
+int ui_toggle_h(UIManager *ui_manager, float width, float height, int value) {
+    int result = ui_toggle_widget(ui_manager, width, height, value);
+    ui_padding(ui_manager, newVec2(width, 0.0), 1);
+    return result;
+}
+
 void ui_test_button(UIManager *ui_manager) {
+    static int toggle;
     UIWidget *first = ui_push_child_h(
         ui_manager, 0.5, 1.0, 1, newVec4(0.3, 0.3, 0.3, 0.5));
     ui_push_parent(ui_manager, first);
         ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
+        ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
+        ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
+        toggle = ui_toggle_v(ui_manager, 0.1, 0.1, toggle);
         ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
     ui_pop_parent(ui_manager);
     ui_padding(ui_manager, newVec2(0.1, 0.0), 1);
