@@ -11,6 +11,7 @@
 typedef struct GraphicsContext {
     int width;
     int height;
+    int resolution_has_changed;
     double current_time;
     double dtime;
     double game_time;

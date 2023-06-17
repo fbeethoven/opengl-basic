@@ -258,10 +258,15 @@ void update_graphic_state(GraphicsContext *ctx, Renderer *renderer) {
         prev_width != ctx->width || prev_height != ctx->height ||
         renderer->FOV != FOV
     ) {
+        ctx->resolution_has_changed = 1;
+    }
+    else {
+        ctx->resolution_has_changed = 0;
+    }
+    if (ctx->resolution_has_changed || renderer->FOV != FOV) {
         renderer->FOV = FOV;
         reload_projection_matrix(ctx, renderer);
     }
-    reload_projection_matrix(ctx, renderer);
 
     double prev_x = ctx->mouse_position[0];
     double prev_y = ctx->mouse_position[1];
@@ -422,7 +427,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         selection_press = 0;
     }
 
-    ui_reset(ctx, ui_manager);
+    ui_reset(ui_manager);
     ui_test_button(ui_manager);
 }
 

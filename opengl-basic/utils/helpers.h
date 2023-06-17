@@ -103,17 +103,18 @@ struct UIWidget {
     Entity *entity;
 };
 
+
 typedef struct UIManager {
     UIWidget *root_widget;
     UIWidget *current_parent_widget;
     UIWidget *current_child_widget;
     List(Entity) *gui_entities;
     UIWidget *free_widget;
-    Vec2 screen;
+    GraphicsContext *ctx;
 } UIManager;
 
 UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer);
-void ui_reset(GraphicsContext *ctx, UIManager *ui_manager);
+void ui_reset(UIManager *ui_manager);
 void ui_test_button(UIManager *ui_manager);
 
 

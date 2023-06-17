@@ -649,7 +649,7 @@ UIWidget *ui_get_widget(UIManager *ui_manager) {
 
 UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer) {
     UIManager *ui_manager = calloc(1, sizeof(UIManager));
-    ui_manager->screen = newVec2((float)ctx->width, (float)ctx->height);
+    ui_manager->ctx = ctx;
     UIWidget *root = ui_get_widget(ui_manager);
     root->rect = newVec4(0.0, 0.0, (float)ctx->width, (float)ctx->height);
     root->child_position = newVec2(0.0, 0.0);
@@ -659,18 +659,18 @@ UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer) {
     return ui_manager;
 }
 
-void ui_reset(GraphicsContext *ctx, UIManager *ui_manager) {
+void ui_reset(UIManager *ui_manager) {
     Entity *entity;
     for (int i=0; i<ui_manager->gui_entities->counter; i++) {
         entity = LIST_GET_PTR(ui_manager->gui_entities, i);
         entity->active = 0;
     }
-    if (((float)ctx->width != ui_manager->screen.x) ||
-        ((float)ctx->height != ui_manager->screen.y)
-    ) {
-        ui_manager->screen = newVec2((float)ctx->width, (float)ctx->height);
+    if (ui_manager->ctx->resolution_has_changed) {
         ui_manager->root_widget->rect = newVec4(
-            0.0, 0.0, (float)ctx->width, (float)ctx->height);
+            0.0, 0.0,
+            (float)ui_manager->ctx->width,
+            (float)ui_manager->ctx->height
+        );
     }
     ui_manager->current_parent_widget = ui_manager->root_widget;
     ui_manager->root_widget->child_position = newVec2(0.0, 0.0);
@@ -754,7 +754,10 @@ Entity *ui_get_entity(UIManager *ui_manager) {
 }
 
 
-void ui_entity_update(Entity *entity, Vec4 position, Vec4 entity_color) {
+void ui_entity_update(
+    Entity *entity, Vec4 position, Vec4 entity_color_a, Vec4 entity_color_b, 
+    Vec4 entity_color_c, Vec4 entity_color_d
+) {
     BaseModel *model = entity->model;
     float vertices[] = {
         position.x             , position.y             , 0.0,
@@ -766,10 +769,10 @@ void ui_entity_update(Entity *entity, Vec4 position, Vec4 entity_color) {
     float uvs[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     float color[] = {
-        entity_color.x, entity_color.y, entity_color.z, entity_color.w,
-        entity_color.x, entity_color.y, entity_color.z, entity_color.w,
-        entity_color.x, entity_color.y, entity_color.z, entity_color.w,
-        entity_color.x, entity_color.y, entity_color.z, entity_color.w
+        entity_color_a.x, entity_color_a.y, entity_color_a.z, entity_color_a.w,
+        entity_color_b.x, entity_color_b.y, entity_color_b.z, entity_color_b.w,
+        entity_color_c.x, entity_color_c.y, entity_color_c.z, entity_color_c.w,
+        entity_color_d.x, entity_color_d.y, entity_color_d.z, entity_color_d.w
     };
 
     unsigned int indices[] = {0, 1, 2, 2, 0, 3};
@@ -792,9 +795,9 @@ void ui_entity_update(Entity *entity, Vec4 position, Vec4 entity_color) {
 
 }
 
-
-UIWidget *ui_push_child(
-    UIManager *ui_manager, float x_pos, float y_pos, int visible
+UIWidget *ui_push_child_(
+    UIManager *ui_manager, float width, float height, int add_x, int add_y,
+    int visible, Vec4 color_a, Vec4 color_b, Vec4 color_c, Vec4 color_d
 ) {
     UIWidget *parent = ui_manager->current_parent_widget;
     UIWidget *result;
@@ -821,48 +824,144 @@ UIWidget *ui_push_child(
         ui_manager->current_child_widget = result;
     }
 
-    float x_size = parent->rect.z * x_pos;
-    float y_size = parent->rect.w * y_pos;
+    float x_size = parent->rect.z * width;
+    float y_size = parent->rect.w * height;
     result->rect = newVec4(
         parent->child_position.x, parent->child_position.y, x_size, y_size);
     result->child_position = newVec2(
         parent->child_position.x, parent->child_position.y);
     
-    parent->child_position.x += x_size;
-    parent->child_position.y += y_size;
+    if (add_x) {
+        parent->child_position.x += x_size;
+    }
+    if (add_y) {
+        parent->child_position.y += y_size;
+    }
 
     if (visible) {
         Entity *entity = ui_get_entity(ui_manager);
-        float pos_x = 2*(result->rect.x / ui_manager->screen.x) - 1;
-        float pos_y = 1 - 2*(result->rect.y / ui_manager->screen.y);
-        float pos_z = result->rect.z / ui_manager->screen.x;
-        float pos_w = -result->rect.w / ui_manager->screen.y;
+        float screen_x = ui_manager->ctx->width;
+        float screen_y = ui_manager->ctx->height;
+        float pos_x = 2*(result->rect.x / screen_x) - 1;
+        float pos_y = 1 - 2*(result->rect.y / screen_y);
+        float pos_z = 2*result->rect.z / screen_x;
+        float pos_w = -2*result->rect.w / screen_y;
         Vec4 position = newVec4(pos_x, pos_y, pos_z, pos_w);
 
         printf("position %f %f %f %f\n",
             position.x, position.y, position.z, position.w);
-        Vec4 color = newVec4(1.0, 0.0, 0.0, 1.0);
-        ui_entity_update(entity, position, color);
+        ui_entity_update(entity, position, color_a, color_b, color_c, color_d);
         result->entity = entity;
     }
 
     return result;
 }
 
-// UIWidget *ui_push_parent(
-//     UIManager *ui_manager, float x_pos, float y_pos, int visible
-// ) {
+UIWidget *ui_push_child_v(
+    UIManager *ui_manager, float width, float height, int visible, Vec4 color
+) {
+    return ui_push_child_(
+        ui_manager, width, height, 0, 1, visible, color, color, color, color);
+}
+
+UIWidget *ui_push_child_h(
+    UIManager *ui_manager, float width, float height, int visible, Vec4 color
+) {
+    return ui_push_child_(
+        ui_manager, width, height, 1, 0, visible, color, color, color, color);
+}
+
+
+void ui_padding(UIManager *ui_manager, Vec2 value, int relative) {
+    Vec2 d_value = value;
+    UIWidget *parent = ui_manager->current_parent_widget;
+    if (relative) {
+        d_value.x *= parent->rect.z;
+        d_value.y *= parent->rect.w;
+    }
+    if (
+        (d_value.x >= parent->rect.x + parent->rect.z) ||
+        (d_value.y >= parent->rect.y + parent->rect.w)
+    ) {
+        printf("[WARNING] UI child is out of screen\n");
+    }
+    parent->child_position = newVec2(
+        parent->child_position.x + d_value.x,
+        parent->child_position.y + d_value.y
+    );
+}
+
+void ui_set_child_position(UIManager *ui_manager, Vec2 value, int relative) {
+    Vec2 d_value = value;
+    UIWidget *parent = ui_manager->current_parent_widget;
+    if (relative) {
+        d_value.x *= parent->rect.z;
+        d_value.y *= parent->rect.w;
+    }
+    if (
+        (d_value.x >= parent->rect.x + parent->rect.z) ||
+        (d_value.y >= parent->rect.y + parent->rect.w)
+    ) {
+        printf("[WARNING] UI child is out of screen\n");
+    }
+    parent->child_position = d_value;
+}
+
+void ui_push_parent(UIManager *ui_manager, UIWidget *widget) {
+    ui_manager->current_parent_widget = widget;
+    ui_manager->current_child_widget = 0;
+}
+
+UIWidget *ui_pop_parent(UIManager *ui_manager) {
+    UIWidget *result = ui_manager->current_parent_widget;
+    if (result->parent) {
+        ui_manager->current_parent_widget = result->parent;
+    }
+    return result;
+}
+
+UIWidget *ui_push_child_null(UIManager *manager, float width, float height) {
+    return ui_push_child_(manager, width, height, 0, 0, 0,
+        newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0),
+        newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0));
+}
+
+// int ui_button(UIManager *ui_manager, float width, float height) {
+//     int result = 0;
+//     UIWidget *container = ui_push_child_null(ui_manager, width, height);
 // 
-// }
-// 
-// UIWidget *ui_pop_parent(
-//     UIManager *ui_manager, float x_pos, float y_pos, char *id_name
-// ) {
-// 
+//     return result;
 // }
 
 
 void ui_test_button(UIManager *ui_manager) {
-    UIWidget *first = ui_push_child(ui_manager, 0.5, 1.0, 1);
+    UIWidget *first = ui_push_child_h(
+        ui_manager, 0.5, 1.0, 1, newVec4(0.3, 0.3, 0.3, 0.5));
+    printf("FIRST: %f %f %f %f\n",
+        first->rect.x, first->rect.y, first->rect.z, first->rect.w
+    );
+    ui_push_parent(ui_manager, first);
+        ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
+        ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
+    ui_pop_parent(ui_manager);
+    ui_padding(ui_manager, newVec2(0.1, 0.0), 1);
+    ui_push_child_h(ui_manager, 0.25, 0.25, 1, newVec4(1.0, 1.0, 0.0, 1.0));
+
+    ui_set_child_position(ui_manager, newVec2(0.51, 0.51), 1);
+    UIWidget *second = ui_push_child_v(ui_manager, 0.5, 0.5, 1, 
+        newVec4(0.4, 0.4, 0.4, 1.0)
+    );
+    ui_push_parent(ui_manager, second);
+    ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
+    ui_push_child_v(ui_manager, 0.8, 0.2, 1, 
+        newVec4(0.6, 0.6, 0.6, 1.0)
+    );
+    ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
+    ui_push_child_v(ui_manager, 0.8, 0.2, 1, 
+        newVec4(0.6, 0.6, 0.6, 1.0)
+    );
+
+
+    printf("We have %lu gui entities\n", ui_manager->gui_entities->counter);
 }
 
