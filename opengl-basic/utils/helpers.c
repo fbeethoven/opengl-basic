@@ -938,7 +938,7 @@ UIButtonColor ui_button_get_colors(UIWidget *button, int pulse) {
     float top_color = 0.4;
     float button_color = 0.3;
 
-    if (pulse) {
+    if (button->active_t) {
         top_color = 0.3;
         button_color = 0.4;
     }
@@ -961,7 +961,7 @@ int ui_button_widget(UIManager *ui_manager, float width, float height) {
     ui_push_parent(ui_manager, container);
     float mouse[2] = {
         (float) ui_manager->ctx->mouse_position[0],
-        (float) ui_manager->ctx->mouse_position[0]
+        (float) ui_manager->ctx->mouse_position[1]
     };
     if (
         (container->rect.x <= mouse[0]) &&
@@ -986,19 +986,27 @@ int ui_button_widget(UIManager *ui_manager, float width, float height) {
         container->active_t = 0.0;
     }
     UIButtonColor color = ui_button_get_colors(container, result);
-    ui_push_child_(ui_manager, width, height,
+    ui_push_child_(ui_manager, 1.0, 1.0,
         0, 0, 1, color.color_a, color.color_b, color.color_c, color.color_d);
     ui_pop_parent(ui_manager);
     return result;
 }
 
+int ui_button_v(UIManager *ui_manager, float width, float height) {
+    int result = ui_button_widget(ui_manager, width, height);
+    ui_padding(ui_manager, newVec2(0.0, height), 1);
+    return result;
+}
+
+int ui_button_h(UIManager *ui_manager, float width, float height) {
+    int result = ui_button_widget(ui_manager, width, height);
+    ui_padding(ui_manager, newVec2(width, 0.0), 1);
+    return result;
+}
 
 void ui_test_button(UIManager *ui_manager) {
     UIWidget *first = ui_push_child_h(
         ui_manager, 0.5, 1.0, 1, newVec4(0.3, 0.3, 0.3, 0.5));
-    printf("FIRST: %f %f %f %f\n",
-        first->rect.x, first->rect.y, first->rect.z, first->rect.w
-    );
     ui_push_parent(ui_manager, first);
         ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
         ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
@@ -1016,12 +1024,10 @@ void ui_test_button(UIManager *ui_manager) {
         newVec4(0.6, 0.6, 0.6, 1.0)
     );
     ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
-    // ui_push_child_v(ui_manager, 0.8, 0.2, 1, 
-    //     newVec4(0.6, 0.6, 0.6, 1.0)
-    // );
-    if (ui_button_widget(ui_manager, 0.8, 0.2)) {
-        printf("YOU PRESSED THE BUTTON!!\n");
-        exit(0);
+    if (ui_button_v(ui_manager, 0.8, 0.2)) {
+        ui_push_child_v(ui_manager, 0.8, 0.2, 1, 
+            newVec4(0.6, 0.6, 0.6, 1.0)
+        );
     }
 
 
