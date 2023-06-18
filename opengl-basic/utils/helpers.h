@@ -99,6 +99,7 @@ struct UIWidget {
     // persistent data
     float hot_t;
     float active_t;
+    int hit;
 
     Entity *entity;
 };

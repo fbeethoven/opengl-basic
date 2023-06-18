@@ -539,7 +539,6 @@ int ui_button(
     }
     _font_buffer_push(renderer->font, text, position, font_color);
 
-    printf("Using Button Color: %f\n", button_color.x);
     // Entity *entity = &renderer->gui_entities[0];
     // gui_quad_in_pos(
     //     ctx,  entity, newVec2(x_min, y_min), button_position, button_color
@@ -848,8 +847,6 @@ UIWidget *ui_push_child_(
         float pos_w = -2*result->rect.w / screen_y;
         Vec4 position = newVec4(pos_x, pos_y, pos_z, pos_w);
 
-        printf("position %f %f %f %f\n",
-            position.x, position.y, position.z, position.w);
         ui_entity_update(entity, position, color_a, color_b, color_c, color_d);
         result->entity = entity;
     }
@@ -876,6 +873,8 @@ UIWidget *ui_push_child_(
             result->active_t = 1.0;
         }
         else {
+            int hit = (result->hot_t > 0.0 && result->active_t > 0.0) ? 1: 0;
+            result->hit = hit;
             result->active_t = 0.0;
         }
     }
@@ -947,7 +946,7 @@ UIWidget *ui_pop_parent(UIManager *ui_manager) {
 }
 
 UIWidget *ui_push_child_null(UIManager *manager, float width, float height) {
-    return ui_push_child_(manager, width, height, 0, 0, 0,
+    return ui_push_child_(manager, width, height, 0, 0, UIFlags_Clickable,
         newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0),
         newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0));
 }
@@ -985,31 +984,8 @@ int ui_button_widget(UIManager *ui_manager, float width, float height) {
     int result = 0;
     UIWidget *container = ui_push_child_null(ui_manager, width, height);
     ui_push_parent(ui_manager, container);
-    float mouse[2] = {
-        (float) ui_manager->ctx->mouse_position[0],
-        (float) ui_manager->ctx->mouse_position[1]
-    };
-    if (
-        (container->rect.x <= mouse[0]) &&
-        (mouse[0] <= container->rect.x + container->rect.z) &&
-        (container->rect.y <= mouse[1]) &&
-        (mouse[1] <= container->rect.y + container->rect.w)
-    ) {
-        container->hot_t = 1.0;
-    }
-    else {
-        container->hot_t = 0.0;
-    }
-    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
-        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
-    ) {
-        container->active_t = 1.0;
-    }
-    else {
-        if ((container->hot_t > 0.0) && (container->active_t > 0.0)){
-            result = 1;
-        }
-        container->active_t = 0.0;
+    if (container->hit){
+        result = 1;
     }
     UIButtonColor color = ui_button_get_colors(container, result);
     ui_push_child_(ui_manager, 1.0, 1.0,
@@ -1037,35 +1013,13 @@ int ui_toggle_widget(
     float shade = 0.2;
     Vec4 color = newVec4(shade, shade, shade, 1.0);
     UIWidget *container = ui_push_child_(
-        ui_manager, width, height, 0, 0, UIFlags_Visible|UIFlags_Square,
+        ui_manager, width, height, 0, 0,
+        UIFlags_Visible|UIFlags_Square|UIFlags_Clickable,
         color, color, color, color
     );
     ui_push_parent(ui_manager, container);
-    float mouse[2] = {
-        (float) ui_manager->ctx->mouse_position[0],
-        (float) ui_manager->ctx->mouse_position[1]
-    };
-    if (
-        (container->rect.x <= mouse[0]) &&
-        (mouse[0] <= container->rect.x + container->rect.z) &&
-        (container->rect.y <= mouse[1]) &&
-        (mouse[1] <= container->rect.y + container->rect.w)
-    ) {
-        container->hot_t = 1.0;
-    }
-    else {
-        container->hot_t = 0.0;
-    }
-    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
-        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
-    ) {
-        container->active_t = 1.0;
-    }
-    else {
-        if ((container->hot_t > 0.0) && (container->active_t > 0.0)){
-            result = 1 - result;
-        }
-        container->active_t = 0.0;
+    if (container->hit){
+        result = 1 - result;
     }
     if (result > 0) {
         float padding = 0.08;
@@ -1098,32 +1052,15 @@ float ui_slider_h(
     float shade = 0.2;
     Vec4 color = newVec4(shade, shade, shade, 1.0);
     UIWidget *container = ui_push_child_(
-        ui_manager, width, height, 0, 0, 1, color, color, color, color);
+        ui_manager, width, height, 0, 0, UIFlags_Visible|UIFlags_Clickable,
+        color, color, color, color);
     ui_push_parent(ui_manager, container);
     float mouse[2] = {
         (float) ui_manager->ctx->mouse_position[0],
         (float) ui_manager->ctx->mouse_position[1]
     };
-    if (
-        (container->rect.x <= mouse[0]) &&
-        (mouse[0] <= container->rect.x + container->rect.z) &&
-        (container->rect.y <= mouse[1]) &&
-        (mouse[1] <= container->rect.y + container->rect.w)
-    ) {
-        container->hot_t = 1.0;
-    }
-    else {
-        container->hot_t = 0.0;
-    }
-
-    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
-        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
-    ) {
-        container->active_t = 1.0;
+    if (container->active_t > 0.0) {
         result = (mouse[0] - container->rect.x) / container->rect.z;
-    }
-    else {
-        container->active_t = 0.0;
     }
 
     float padding_x = 0.02;
@@ -1154,34 +1091,16 @@ float ui_slider_v(
     float shade = 0.2;
     Vec4 color = newVec4(shade, shade, shade, 1.0);
     UIWidget *container = ui_push_child_(
-        ui_manager, width, height, 0, 0, 1, color, color, color, color);
+        ui_manager, width, height, 0, 0, UIFlags_Visible|UIFlags_Clickable,
+        color, color, color, color);
     ui_push_parent(ui_manager, container);
     float mouse[2] = {
         (float) ui_manager->ctx->mouse_position[0],
         (float) ui_manager->ctx->mouse_position[1]
     };
-    if (
-        (container->rect.x <= mouse[0]) &&
-        (mouse[0] <= container->rect.x + container->rect.z) &&
-        (container->rect.y <= mouse[1]) &&
-        (mouse[1] <= container->rect.y + container->rect.w)
-    ) {
-        container->hot_t = 1.0;
-    }
-    else {
-        container->hot_t = 0.0;
-    }
-
-    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
-        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
-    ) {
-        container->active_t = 1.0;
+    if (container->active_t > 0.0) {
         result = (mouse[1] - container->rect.y) / container->rect.w;
     }
-    else {
-        container->active_t = 0.0;
-    }
-
     float padding_x = 0.08;
     float padding_y = 0.02;
     float val_x = 1.0 - 2*padding_x;
@@ -1206,20 +1125,35 @@ float ui_slider_v(
 void ui_test_button(UIManager *ui_manager) {
     static int toggle;
     static float slider;
-    static float v_slider;
+    static float slider_r;
+    static float slider_g;
+    static float slider_b;
     UIWidget *first = ui_push_child_h(
         ui_manager, 0.5, 1.0, 1, newVec4(0.3, 0.3, 0.3, 0.5));
     ui_push_parent(ui_manager, first);
-        ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
-        ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
-        ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
-        toggle = ui_toggle_v(ui_manager, 0.1, 0.1, toggle);
-        slider = ui_slider_h(ui_manager, 0.8, 0.1, slider);
-        ui_padding(ui_manager, newVec2(0.0, 0.12), 1);
-        v_slider = ui_slider_v(ui_manager, 0.08, 0.2, v_slider);
+
+    ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
+    ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
+    ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
+    toggle = ui_toggle_v(ui_manager, 0.1, 0.1, toggle);
+    slider = ui_slider_h(ui_manager, 0.8, 0.1, slider);
+    ui_padding(ui_manager, newVec2(0.0, 0.12), 1);
+
+    UIWidget *third = ui_push_child_v(
+        ui_manager, 1.0, 1.0, 0, newVec4(1.0, 1.0, 1.0, 1.0));
+    ui_push_parent(ui_manager, third);
+    
+    slider_r = ui_slider_v(ui_manager, 0.08, 0.2, slider_r);
+    ui_padding(ui_manager, newVec2(0.12, 0.0), 1);
+    slider_g = ui_slider_v(ui_manager, 0.08, 0.2, slider_g);
+    ui_padding(ui_manager, newVec2(0.12, 0.0), 1);
+    slider_b = ui_slider_v(ui_manager, 0.08, 0.2, slider_b);
+    ui_pop_parent(ui_manager);
+
     ui_pop_parent(ui_manager);
     ui_padding(ui_manager, newVec2(0.1, 0.0), 1);
-    ui_push_child_h(ui_manager, 0.25, 0.25, 1, newVec4(1.0, 1.0, 0.0, 1.0));
+    ui_push_child_h(ui_manager, 0.25, 0.25, 1,
+        newVec4(slider_r, slider_g, slider_b, 1.0));
 
     ui_set_child_position(ui_manager, newVec2(0.51, 0.51), 1);
     UIWidget *second = ui_push_child_v(ui_manager, 0.5, 0.5, 1, 
@@ -1236,7 +1170,6 @@ void ui_test_button(UIManager *ui_manager) {
             newVec4(0.6, 0.6, 0.6, 1.0)
         );
     }
-
 
     printf("We have %lu gui entities\n", ui_manager->gui_entities->counter);
 }
