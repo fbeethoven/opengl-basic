@@ -512,7 +512,6 @@ Vec3 mouse_to_plane(
 int ui_button(
     GraphicsContext *ctx, Renderer *renderer, Vec2 position, char *text
 ) {
-    Vec3 button_color = newVec3(0.55, 0.55, 0.40);
     Vec3 font_color = newVec3(0.88, 0.88, 0.88);
     Vec2 padding = newVec2(10.0, 5.0);
 
@@ -533,7 +532,6 @@ int ui_button(
         (y_min <= ctx->mouse_position[1]) &&
         (y_max >= ctx->mouse_position[1])
     ) {
-        button_color = newVec3(0.66, 0.66, 0.6);
         font_color = newVec3(0.88, 0.88, 0.5);
         is_hot = 1;
     }
@@ -1122,7 +1120,107 @@ float ui_slider_v(
     return result;
 }
 
-void ui_test_button(UIManager *ui_manager) {
+
+void scene_write_entity(char *buffer, int *cursor, Entity *entity) {
+    *cursor += sprintf(buffer + *cursor, "Entity {\n");
+
+    *cursor += sprintf(buffer + *cursor, "model %d\n", entity->model_name);
+    *cursor += sprintf(
+        buffer + *cursor, "position %f %f %f\n",
+        entity->position.x, entity->position.y, entity->position.z
+    );
+
+    *cursor += sprintf(
+        buffer + *cursor, "color %f %f %f\n",
+        entity->color.x, entity->color.y, entity->color.z
+    );
+
+    *cursor += sprintf(
+        buffer + *cursor, "rotation %f %f %f\n",
+        entity->rotation.x, entity->rotation.y, entity->rotation.z
+    );
+    *cursor += sprintf(
+        buffer + *cursor, "scale %f %f %f\n",
+        entity->scale.x, entity->scale.y, entity->scale.z
+    );
+    *cursor += sprintf(buffer + *cursor, "wiremesh %d\n", entity->fill);
+
+    *cursor += sprintf(buffer + *cursor, "}\n");
+}
+char *TypeNames2[] = {
+    "Token_Unknown",
+    "Token_StrLiteral",
+    "Token_Declaration",
+    "Token_Colon",
+    "Token_Coma",
+    "Token_Int",
+    "Token_Float",
+    "Token_Bool",
+    "Token_OpenCurl",
+    "Token_CloseCurl",
+    "Token_OpenBra",
+    "Token_CloseBra",
+    "Token_EOF"
+};
+
+void scene_load(Renderer *renderer) {
+    char *data = read_file("tmp_save.scene");
+
+    Tokenizer tokenizer = {0};
+    tokenizer.data = data;
+
+    for (
+        Token token = token_next(&tokenizer);
+        tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
+        token = token_next(&tokenizer)
+    ) {
+        printf("Token (%s, %s)\n", TypeNames2[token.kind], token.info);
+    }
+
+    // entity = list_push(renderer->entities, Entity);
+    // entity->model = &game_ctx->models[selection];
+    // entity->model_name = selection;
+    // float scale = 1.0;
+    // entity->scale = newVec3(scale, scale, scale);
+    // entity->active = 1;
+    // entity->position =  mouse_to_plane(
+    //     ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
+    // );
+    free(data);
+}
+
+void scene_save(Renderer *renderer) {
+    Entity *entity;
+
+    char *save_buffer = malloc(10000 * sizeof(char));
+    int cursor = 0;
+
+    for(int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i);
+        scene_write_entity(save_buffer, &cursor, entity);
+    }
+
+    FILE *file = fopen("tmp_save.scene", "wb");
+    fprintf(file, "%s", save_buffer);
+    fclose(file);
+}
+
+void ui_test_button(UIManager *ui_manager, Renderer *renderer) {
+    printf("NUMBER OF ENTITIES: %lu\n", renderer->entities->counter);
+
+    ui_padding(ui_manager, newVec2(0.05, 0.05), 1);
+    if (ui_button_v(ui_manager, 0.15, 0.05)) {
+        scene_save(renderer);
+    }
+
+    ui_padding(ui_manager, newVec2(0.0, 0.01), 1);
+    if (ui_button_v(ui_manager, 0.15, 0.05)) {
+        scene_load(renderer);
+        exit(0);
+    }
+}
+
+void ui_test_button_1(UIManager *ui_manager) {
     static int toggle;
     static float slider;
     static float slider_r;

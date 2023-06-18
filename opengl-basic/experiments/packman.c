@@ -32,6 +32,28 @@ UIManager *ui_manager;
 
 int game_run() {
     // TODO(CLEAN UP):
+    // [ ] Improve Font rendereing
+    // [ ] Input System
+    // [ ] GUI Editor for entities
+    //
+    // -----------------------------
+    // [ ] Implement New Experiment
+    // -----------------------------
+    //
+    // [ ] Add Layers and scenes.
+    //      Each Scene will have:
+    //          - a hierarchy of entities.
+    //          - a stack of layers.
+    //      Each layer will have:
+    //          - a list of components.
+    //          - a callback on_render_layer(Renderer, Layer).
+    //      The main loop will call render(*renderer, *scene) and this
+    //      function will be:
+    //          scene->on_render_begin(renderer);
+    //          FOR_ALL_PTR(layer, scene->layers) {
+    //              layer->on_render_layer(renderer, layer);
+    //          }
+    //          scene->on_render_end(renderer);
     // [X] Lists with types
     // [X] Clean warnings
     // [ ] Remove experiment helper
@@ -54,22 +76,7 @@ int game_run() {
     //      [ ] Use list for models. Maybe hashmap?
     //      [ ] Have renderer to render a scene.
     // [ ] Clean up memory at the end of the program.
-    // [ ] Add Layers and scenes.
-    //      Each Scene will have:
-    //          - a hierarchy of entities.
-    //          - a stack of layers.
-    //      Each layer will have:
-    //          - a list of components.
-    //          - a callback on_render_layer(Renderer, Layer).
-    //      The main loop will call render(*renderer, *scene) and this
-    //      function will be:
-    //          scene->on_render_begin(renderer);
-    //          FOR_ALL_PTR(layer, scene->layers) {
-    //              layer->on_render_layer(renderer, layer);
-    //          }
-    //          scene->on_render_end(renderer);
-    // [ ] Improve Font rendereing
-    // [ ] Improve UI (double buffering vs full ImGui)
+    // [X] Improve UI
     // [ ] Event System (Maybe we just want a toggle?)
     // [ ] Remove all debug printing
 
@@ -402,6 +409,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             mouse_press = 1;
             entity = list_push(renderer->entities, Entity);
             entity->model = &game_ctx->models[selection];
+            entity->model_name = selection;
             float scale = 1.0;
             entity->scale = newVec3(scale, scale, scale);
             entity->active = 1;
@@ -428,6 +436,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     ui_reset(ui_manager);
-    ui_test_button(ui_manager);
+    ui_test_button(ui_manager, renderer);
+
 }
 

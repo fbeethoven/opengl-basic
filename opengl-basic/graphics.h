@@ -45,6 +45,7 @@ typedef struct Entity {
     Vec3 scale;
     int active;
     int fill;
+    int model_name;
     char debug_name[32];
 } Entity;
 
