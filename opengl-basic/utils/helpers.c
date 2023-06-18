@@ -854,6 +854,32 @@ UIWidget *ui_push_child_(
         result->entity = entity;
     }
 
+    if (flags & UIFlags_Clickable) {
+        float mouse[2] = {
+            (float) ui_manager->ctx->mouse_position[0],
+            (float) ui_manager->ctx->mouse_position[1]
+        };
+        if (
+            (result->rect.x <= mouse[0]) &&
+            (mouse[0] <= result->rect.x + result->rect.z) &&
+            (result->rect.y <= mouse[1]) &&
+            (mouse[1] <= result->rect.y + result->rect.w)
+        ) {
+            result->hot_t = 1.0;
+        }
+        else {
+            result->hot_t = 0.0;
+        }
+        if ((result->hot_t > 0.0) && (glfwGetMouseButton(
+            ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+        ) {
+            result->active_t = 1.0;
+        }
+        else {
+            result->active_t = 0.0;
+        }
+    }
+
     return result;
 }
 
@@ -1008,7 +1034,7 @@ int ui_toggle_widget(
     UIManager *ui_manager, float width, float height, int value
 ) {
     int result = value;
-    float shade = 0.3;
+    float shade = 0.2;
     Vec4 color = newVec4(shade, shade, shade, 1.0);
     UIWidget *container = ui_push_child_(
         ui_manager, width, height, 0, 0, UIFlags_Visible|UIFlags_Square,
@@ -1065,8 +1091,122 @@ int ui_toggle_h(UIManager *ui_manager, float width, float height, int value) {
     return result;
 }
 
+float ui_slider_h(
+    UIManager *ui_manager, float width, float height, float value
+) {
+    float result = value;
+    float shade = 0.2;
+    Vec4 color = newVec4(shade, shade, shade, 1.0);
+    UIWidget *container = ui_push_child_(
+        ui_manager, width, height, 0, 0, 1, color, color, color, color);
+    ui_push_parent(ui_manager, container);
+    float mouse[2] = {
+        (float) ui_manager->ctx->mouse_position[0],
+        (float) ui_manager->ctx->mouse_position[1]
+    };
+    if (
+        (container->rect.x <= mouse[0]) &&
+        (mouse[0] <= container->rect.x + container->rect.z) &&
+        (container->rect.y <= mouse[1]) &&
+        (mouse[1] <= container->rect.y + container->rect.w)
+    ) {
+        container->hot_t = 1.0;
+    }
+    else {
+        container->hot_t = 0.0;
+    }
+
+    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
+        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+    ) {
+        container->active_t = 1.0;
+        result = (mouse[0] - container->rect.x) / container->rect.z;
+    }
+    else {
+        container->active_t = 0.0;
+    }
+
+    float padding_x = 0.02;
+    float padding_y = 0.08;
+    float val_x = result - padding_x;
+    float val_y = 1.0 - 2*padding_y;
+
+    if (val_x < 0.0) {
+        val_x = 0.0;
+        result = 0.0;
+    }
+    if (val_x >= (1.0 - 2*padding_x)) {
+        result = 1.0;
+        val_x = 1.0 - 2*padding_x;
+    }
+    float fill = 0.5;
+    Vec4 col = newVec4(fill, fill, fill, 1.0);
+    ui_padding(ui_manager, newVec2(padding_x, padding_y), 1);
+    ui_push_child_(ui_manager, val_x, val_y, 0, 0, 1, col, col, col, col);
+    ui_pop_parent(ui_manager);
+    return result;
+}
+
+float ui_slider_v(
+    UIManager *ui_manager, float width, float height, float value
+) {
+    float result = value;
+    float shade = 0.2;
+    Vec4 color = newVec4(shade, shade, shade, 1.0);
+    UIWidget *container = ui_push_child_(
+        ui_manager, width, height, 0, 0, 1, color, color, color, color);
+    ui_push_parent(ui_manager, container);
+    float mouse[2] = {
+        (float) ui_manager->ctx->mouse_position[0],
+        (float) ui_manager->ctx->mouse_position[1]
+    };
+    if (
+        (container->rect.x <= mouse[0]) &&
+        (mouse[0] <= container->rect.x + container->rect.z) &&
+        (container->rect.y <= mouse[1]) &&
+        (mouse[1] <= container->rect.y + container->rect.w)
+    ) {
+        container->hot_t = 1.0;
+    }
+    else {
+        container->hot_t = 0.0;
+    }
+
+    if ((container->hot_t > 0.0) && (glfwGetMouseButton(
+        ui_manager->ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+    ) {
+        container->active_t = 1.0;
+        result = (mouse[1] - container->rect.y) / container->rect.w;
+    }
+    else {
+        container->active_t = 0.0;
+    }
+
+    float padding_x = 0.08;
+    float padding_y = 0.02;
+    float val_x = 1.0 - 2*padding_x;
+    float val_y = result - padding_y;
+
+    if (val_y < 0.0) {
+        val_y = 0.0;
+        result = 0.0;
+    }
+    if (val_y >= (1.0 - 2*padding_y)) {
+        result = 1.0;
+        val_y = 1.0 - 2*padding_y;
+    }
+    float fill = 0.5;
+    Vec4 col = newVec4(fill, fill, fill, 1.0);
+    ui_padding(ui_manager, newVec2(padding_x, padding_y), 1);
+    ui_push_child_(ui_manager, val_x, val_y, 0, 0, 1, col, col, col, col);
+    ui_pop_parent(ui_manager);
+    return result;
+}
+
 void ui_test_button(UIManager *ui_manager) {
     static int toggle;
+    static float slider;
+    static float v_slider;
     UIWidget *first = ui_push_child_h(
         ui_manager, 0.5, 1.0, 1, newVec4(0.3, 0.3, 0.3, 0.5));
     ui_push_parent(ui_manager, first);
@@ -1074,7 +1214,9 @@ void ui_test_button(UIManager *ui_manager) {
         ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
         ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
         toggle = ui_toggle_v(ui_manager, 0.1, 0.1, toggle);
-        ui_push_child_v(ui_manager, 0.8, 0.1, 1, newVec4(1.0, 1.0, 1.0, 1.0));
+        slider = ui_slider_h(ui_manager, 0.8, 0.1, slider);
+        ui_padding(ui_manager, newVec2(0.0, 0.12), 1);
+        v_slider = ui_slider_v(ui_manager, 0.08, 0.2, v_slider);
     ui_pop_parent(ui_manager);
     ui_padding(ui_manager, newVec2(0.1, 0.0), 1);
     ui_push_child_h(ui_manager, 0.25, 0.25, 1, newVec4(1.0, 1.0, 0.0, 1.0));

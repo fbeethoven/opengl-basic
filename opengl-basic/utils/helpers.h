@@ -103,12 +103,11 @@ struct UIWidget {
     Entity *entity;
 };
 
-
 enum UIFlags {
     UIFlags_Visible = 1,
     UIFlags_Square = 1<<2,
+    UIFlags_Clickable = 1<<3,
 };
-
 
 typedef struct UIManager {
     UIWidget *root_widget;
