@@ -5,3 +5,4 @@ external/include/
 external/lib-vc2022/
 *.user
 scripts/
+*.scene

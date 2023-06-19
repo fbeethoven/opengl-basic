@@ -173,16 +173,13 @@ int game_run() {
 
 
 void handle_debug_info(
-    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
-    double second_per_frame
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera
 ) {
     char msg[500];
-    sprintf(
-        msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
-    );
+    sprintf(msg, "FPS: %.3f | %.3f ms", 1.0/ctx->dtime, ctx->dtime);
     font_buffer_push(renderer->font, msg);
 
-    sprintf(msg, "Current Time: %f", game_ctx->current_time);
+    sprintf(msg, "Current Time: %f", ctx->current_time);
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
 
     font_buffer_push_color(renderer->font, "Camera:", newVec3(1.0, 1.0, 0.0));
@@ -290,6 +287,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     double time = glfwGetTime();
     double second_per_frame = time - ctx->current_time;
+    ctx->dtime = second_per_frame;
     ctx->current_time = time;
     game_ctx->current_time = time;
 
@@ -437,6 +435,5 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     ui_reset(ui_manager);
     ui_test_button(ui_manager, renderer);
-
 }
 

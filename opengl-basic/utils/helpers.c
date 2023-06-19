@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "file_handler.h"
 
 
 void quad_in_pos(
@@ -1147,45 +1148,87 @@ void scene_write_entity(char *buffer, int *cursor, Entity *entity) {
 
     *cursor += sprintf(buffer + *cursor, "}\n");
 }
-char *TypeNames2[] = {
-    "Token_Unknown",
-    "Token_StrLiteral",
-    "Token_Declaration",
-    "Token_Colon",
-    "Token_Coma",
-    "Token_Int",
-    "Token_Float",
-    "Token_Bool",
-    "Token_OpenCurl",
-    "Token_CloseCurl",
-    "Token_OpenBra",
-    "Token_CloseBra",
-    "Token_EOF"
-};
+
+Entity *get_entity(Renderer *renderer) {
+    Entity *entity = 0;
+    int found = 0;
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i); 
+        if (entity->active == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        entity = list_push(renderer->entities, Entity); 
+    }
+
+    return entity;
+}
+
+Vec3 load_vec3(Tokenizer *tokenizer) {
+    Vec3 answer = {
+        .x = atof(token_next(tokenizer).info),
+        .y = atof(token_next(tokenizer).info),
+        .z = atof(token_next(tokenizer).info)
+    };
+    return answer;
+}
 
 void scene_load(Renderer *renderer) {
+    Entity *entity = 0;
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i);
+        entity->active = 0;
+    }
+
     char *data = read_file("tmp_save.scene");
 
     Tokenizer tokenizer = {0};
     tokenizer.data = data;
 
+    int loading_entity = 0;
     for (
         Token token = token_next(&tokenizer);
         tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
         token = token_next(&tokenizer)
     ) {
-        printf("Token (%s, %s)\n", TypeNames2[token.kind], token.info);
+        switch(token.kind) {
+            case Token_Declaration: 
+                if(strcmp(token.info, "Entity") == 0) {
+                    entity = get_entity(renderer);
+                    loading_entity = 1;
+                }
+                else if(strcmp(token.info, "model") == 0) {
+                    int model = atoi(token_next(&tokenizer).info);
+                    entity->model = renderer->models[model];
+                }
+                else if(strcmp(token.info, "position") == 0) {
+                    entity->position = load_vec3(&tokenizer);
+                }
+                else if(strcmp(token.info, "color") == 0) {
+                    entity->color = load_vec3(&tokenizer);
+                }
+                else if(strcmp(token.info, "rotation") == 0) {
+                    entity->rotation = load_vec3(&tokenizer);
+                }
+                else if(strcmp(token.info, "scale") == 0) {
+                    entity->scale = load_vec3(&tokenizer);
+                }
+                else if(strcmp(token.info, "wiremesh") == 0) {
+                    int fill = atoi(token_next(&tokenizer).info);
+                    entity->fill = fill;
+                }
+            break;
+            case Token_CloseCurl:
+                assert(loading_entity == 1 && "[ERROR LOADING]");
+                entity->active = 1;
+                loading_entity = 0;
+            break;
+            default: 
+            break;
+        }
     }
-
-    // entity = list_push(renderer->entities, Entity);
-    // entity->model = &game_ctx->models[selection];
-    // entity->model_name = selection;
-    // float scale = 1.0;
-    // entity->scale = newVec3(scale, scale, scale);
-    // entity->active = 1;
-    // entity->position =  mouse_to_plane(
-    //     ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
-    // );
     free(data);
 }
 
@@ -1208,15 +1251,22 @@ void scene_save(Renderer *renderer) {
 void ui_test_button(UIManager *ui_manager, Renderer *renderer) {
     printf("NUMBER OF ENTITIES: %lu\n", renderer->entities->counter);
 
+    _font_buffer_push(renderer->font, "SAVE", newVec2(
+        0.1 * (float)ui_manager->ctx->width,
+        0.08 * (float)ui_manager->ctx->height), newVec3(1.0, 1.0, 0.0)
+    );
     ui_padding(ui_manager, newVec2(0.05, 0.05), 1);
     if (ui_button_v(ui_manager, 0.15, 0.05)) {
         scene_save(renderer);
     }
 
+    _font_buffer_push(renderer->font, "LOAD", newVec2(
+        0.1 * (float)ui_manager->ctx->width,
+        0.14 * (float)ui_manager->ctx->height), newVec3(1.0, 1.0, 0.0)
+    );
     ui_padding(ui_manager, newVec2(0.0, 0.01), 1);
     if (ui_button_v(ui_manager, 0.15, 0.05)) {
         scene_load(renderer);
-        exit(0);
     }
 }
 

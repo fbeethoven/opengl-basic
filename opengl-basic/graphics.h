@@ -88,7 +88,7 @@ typedef struct Renderer {
     Light *light;
 
     BaseModel skybox;
-
+    BaseModel *models[10];
 } Renderer;
 
 
