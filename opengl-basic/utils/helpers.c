@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "file_handler.h"
 
 
 void quad_in_pos(
@@ -398,27 +399,30 @@ void camera_reset(Camera *camera) {
     camera->yaw = 1.57;
 }
 
-Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
+RayToPlaneHit ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
     Vec3 dir = newVec3(
         toward.x - origin.x, toward.y - origin.y, toward.z - origin.z
     );
     return ray_to_plane(origin, dir, normal, distance);
 }
 
-Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance) {
+RayToPlaneHit ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance) {
     Vec3 normalize_dir = dir;
     vec3_normalize(&normalize_dir);
+    RayToPlaneHit result = {0};
 
     float t = vec3_dot(&normalize_dir, &normal);
-    if (t == 0) { 
-        return newVec3(0.0, 0.0, 0.0); 
+    if (t >= 0) { 
+        return result;
     }
     t = (distance - vec3_dot(&origin, &normal)) / t;
 
     normalize_dir.x *= t;
     normalize_dir.y *= t;
     normalize_dir.z *= t;
-    return vec3_add(&origin, &normalize_dir);
+    result.hit = vec3_add(&origin, &normalize_dir);
+    result.is_hit = 1;
+    return result;
 }
 
 int ray_to_sphere(Vec3 origin, Vec3 dir, Vec3 center, float radius) {
@@ -500,7 +504,7 @@ Vec3 mouse_to_world(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     return  result;
 }
 
-Vec3 mouse_to_plane(
+RayToPlaneHit mouse_to_plane(
     GraphicsContext *ctx, Renderer *renderer, Camera *camera,
     Vec3 normal, float distance
 ) {
@@ -512,7 +516,6 @@ Vec3 mouse_to_plane(
 int ui_button(
     GraphicsContext *ctx, Renderer *renderer, Vec2 position, char *text
 ) {
-    Vec3 button_color = newVec3(0.55, 0.55, 0.40);
     Vec3 font_color = newVec3(0.88, 0.88, 0.88);
     Vec2 padding = newVec2(10.0, 5.0);
 
@@ -533,7 +536,6 @@ int ui_button(
         (y_min <= ctx->mouse_position[1]) &&
         (y_max >= ctx->mouse_position[1])
     ) {
-        button_color = newVec3(0.66, 0.66, 0.6);
         font_color = newVec3(0.88, 0.88, 0.5);
         is_hot = 1;
     }
@@ -1122,7 +1124,193 @@ float ui_slider_v(
     return result;
 }
 
-void ui_test_button(UIManager *ui_manager) {
+
+void scene_write_entity(char *buffer, int *cursor, Entity *entity) {
+    *cursor += sprintf(buffer + *cursor, "Entity {\n");
+
+    *cursor += sprintf(buffer + *cursor, "model %d\n", entity->model_name);
+    *cursor += sprintf(
+        buffer + *cursor, "position %f %f %f\n",
+        entity->position.x, entity->position.y, entity->position.z
+    );
+
+    *cursor += sprintf(
+        buffer + *cursor, "color %f %f %f\n",
+        entity->color.x, entity->color.y, entity->color.z
+    );
+
+    *cursor += sprintf(
+        buffer + *cursor, "rotation %f %f %f\n",
+        entity->rotation.x, entity->rotation.y, entity->rotation.z
+    );
+    *cursor += sprintf(
+        buffer + *cursor, "scale %f %f %f\n",
+        entity->scale.x, entity->scale.y, entity->scale.z
+    );
+    *cursor += sprintf(buffer + *cursor, "wiremesh %d\n", entity->fill);
+
+    *cursor += sprintf(buffer + *cursor, "}\n");
+}
+
+Vec3 load_vec3(Tokenizer *tokenizer) {
+    Vec3 answer = {
+        .x = atof(token_next(tokenizer).info),
+        .y = atof(token_next(tokenizer).info),
+        .z = atof(token_next(tokenizer).info)
+    };
+    return answer;
+}
+
+void scene_load(Renderer *renderer, Camera *camera) {
+    Entity *entity = 0;
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i);
+        entity->active = 0;
+    }
+
+    char *data = read_file("tmp_save.scene");
+
+    Tokenizer tokenizer = {0};
+    tokenizer.data = data;
+
+    int loading_entity = 0;
+    int loading_camera = 0;
+    for (
+        Token token = token_next(&tokenizer);
+        tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
+        token = token_next(&tokenizer)
+    ) {
+        switch(token.kind) {
+            case Token_Declaration: 
+                if(strcmp(token.info, "Entity") == 0) {
+                    assert(loading_entity == 0 && loading_camera == 0);
+                    entity = get_entity(renderer);
+                    loading_entity = 1;
+                }
+                if(strcmp(token.info, "Camera") == 0) {
+                    assert(loading_entity == 0 && loading_camera == 0);
+                    entity = get_entity(renderer);
+                    loading_camera = 1;
+                }
+                if(strcmp(token.info, "Entity") == 0) {
+                    entity = get_entity(renderer);
+                    loading_entity = 1;
+                }
+                else if(strcmp(token.info, "model") == 0) {
+                    int model = atoi(token_next(&tokenizer).info);
+                    entity->model = renderer->models[model];
+                }
+                else if(strcmp(token.info, "position") == 0) {
+                    Vec3 position = load_vec3(&tokenizer);
+
+                    if (loading_entity) {
+                        entity->position = position;
+                    }
+                    else if (loading_camera) {
+                        camera->position = position;
+                    }
+                }
+                else if(strcmp(token.info, "color") == 0) {
+                    entity->color = load_vec3(&tokenizer);
+                }
+                else if(strcmp(token.info, "rotation") == 0) {
+                    entity->rotation = load_vec3(&tokenizer);
+                }
+                else if(strcmp(token.info, "scale") == 0) {
+                    entity->scale = load_vec3(&tokenizer);
+                }
+                else if(strcmp(token.info, "wiremesh") == 0) {
+                    int fill = atoi(token_next(&tokenizer).info);
+                    entity->fill = fill;
+                }
+                else if(strcmp(token.info, "pitch") == 0) {
+                    assert(
+                        loading_camera == 1 && "[ERROR LOADING] camera info"
+                    );
+                    camera->pitch = atof(token_next(&tokenizer).info);
+                }
+                else if(strcmp(token.info, "yaw") == 0) {
+                    assert(
+                        loading_camera == 1 && "[ERROR LOADING] camera info"
+                    );
+                    camera->yaw = atof(token_next(&tokenizer).info);
+                }
+            break;
+            case Token_CloseCurl:
+                assert( 
+                    (loading_entity == 1 || loading_camera == 1) &&
+                    "[ERROR LOADING] Scene info is corrupted"
+                );
+                if (loading_entity == 1) {
+                    entity->active = 1;
+                    loading_entity = 0;
+                }
+                else if (loading_camera == 1) {
+                    loading_camera = 0;
+                }
+            break;
+            default: 
+            break;
+        }
+    }
+    free(data);
+}
+
+void scene_save(Renderer *renderer, Camera *camera) {
+    Entity *entity;
+
+    char *save_buffer = malloc(10000 * sizeof(char));
+    int cursor = 0;
+
+    cursor += sprintf(save_buffer + cursor, "Camera {\n");
+    cursor += sprintf(save_buffer + cursor, "pitch %f\n", camera->pitch);
+    cursor += sprintf(save_buffer + cursor, "yaw %f\n", camera->yaw);
+    cursor += sprintf(
+        save_buffer + cursor, "position %f %f %f\n",
+        camera->position.x, camera->position.y, camera->position.z
+    );
+    cursor += sprintf(
+        save_buffer + cursor, "centre %f %f %f\n",
+        camera->centre.x, camera->centre.y, camera->centre.z
+    );
+
+    cursor += sprintf(save_buffer + cursor, "}\n");
+
+    for(int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i);
+        scene_write_entity(save_buffer, &cursor, entity);
+    }
+
+    FILE *file = fopen("tmp_save.scene", "wb");
+    fprintf(file, "%s", save_buffer);
+    fclose(file);
+}
+
+void ui_test_button(
+    UIManager *ui_manager, Renderer *renderer, Camera *camera
+) {
+    printf("NUMBER OF ENTITIES: %lu\n", renderer->entities->counter);
+
+    _font_buffer_push(renderer->font, "SAVE", newVec2(
+        0.1 * (float)ui_manager->ctx->width,
+        0.08 * (float)ui_manager->ctx->height), newVec3(1.0, 1.0, 0.0)
+    );
+    ui_padding(ui_manager, newVec2(0.05, 0.05), 1);
+    if (ui_button_v(ui_manager, 0.15, 0.05)) {
+        scene_save(renderer, camera);
+    }
+
+    _font_buffer_push(renderer->font, "LOAD", newVec2(
+        0.1 * (float)ui_manager->ctx->width,
+        0.14 * (float)ui_manager->ctx->height), newVec3(1.0, 1.0, 0.0)
+    );
+    ui_padding(ui_manager, newVec2(0.0, 0.01), 1);
+    if (ui_button_v(ui_manager, 0.15, 0.05)) {
+        scene_load(renderer, camera);
+    }
+}
+
+void ui_test_button_1(UIManager *ui_manager) {
     static int toggle;
     static float slider;
     static float slider_r;

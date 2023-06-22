@@ -32,6 +32,28 @@ UIManager *ui_manager;
 
 int game_run() {
     // TODO(CLEAN UP):
+    // [ ] Improve Font rendereing
+    // [ ] Input System
+    // [ ] GUI Editor for entities
+    //
+    // -----------------------------
+    // [ ] Implement New Experiment
+    // -----------------------------
+    //
+    // [ ] Add Layers and scenes.
+    //      Each Scene will have:
+    //          - a hierarchy of entities.
+    //          - a stack of layers.
+    //      Each layer will have:
+    //          - a list of components.
+    //          - a callback on_render_layer(Renderer, Layer).
+    //      The main loop will call render(*renderer, *scene) and this
+    //      function will be:
+    //          scene->on_render_begin(renderer);
+    //          FOR_ALL_PTR(layer, scene->layers) {
+    //              layer->on_render_layer(renderer, layer);
+    //          }
+    //          scene->on_render_end(renderer);
     // [X] Lists with types
     // [X] Clean warnings
     // [ ] Remove experiment helper
@@ -54,22 +76,7 @@ int game_run() {
     //      [ ] Use list for models. Maybe hashmap?
     //      [ ] Have renderer to render a scene.
     // [ ] Clean up memory at the end of the program.
-    // [ ] Add Layers and scenes.
-    //      Each Scene will have:
-    //          - a hierarchy of entities.
-    //          - a stack of layers.
-    //      Each layer will have:
-    //          - a list of components.
-    //          - a callback on_render_layer(Renderer, Layer).
-    //      The main loop will call render(*renderer, *scene) and this
-    //      function will be:
-    //          scene->on_render_begin(renderer);
-    //          FOR_ALL_PTR(layer, scene->layers) {
-    //              layer->on_render_layer(renderer, layer);
-    //          }
-    //          scene->on_render_end(renderer);
-    // [ ] Improve Font rendereing
-    // [ ] Improve UI (double buffering vs full ImGui)
+    // [X] Improve UI
     // [ ] Event System (Maybe we just want a toggle?)
     // [ ] Remove all debug printing
 
@@ -166,16 +173,13 @@ int game_run() {
 
 
 void handle_debug_info(
-    GraphicsContext *ctx, Renderer *renderer, Camera *camera,
-    double second_per_frame
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera
 ) {
     char msg[500];
-    sprintf(
-        msg, "FPS: %.3f | %.3f ms", 1.0/second_per_frame, second_per_frame
-    );
+    sprintf(msg, "FPS: %.3f | %.3f ms", 1.0/ctx->dtime, ctx->dtime);
     font_buffer_push(renderer->font, msg);
 
-    sprintf(msg, "Current Time: %f", game_ctx->current_time);
+    sprintf(msg, "Current Time: %f", ctx->current_time);
     font_buffer_push_color(renderer->font, msg, newVec3(1.0, 1.0, 0.0));
 
     font_buffer_push_color(renderer->font, "Camera:", newVec3(1.0, 1.0, 0.0));
@@ -283,6 +287,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 
     double time = glfwGetTime();
     double second_per_frame = time - ctx->current_time;
+    ctx->dtime = second_per_frame;
     ctx->current_time = time;
     game_ctx->current_time = time;
 
@@ -292,9 +297,16 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // mouse picking
     entity = LIST_GET_PTR(renderer->entities, 1);
     entity->model = &game_ctx->models[selection];
-    entity->position = mouse_to_plane(
+    RayToPlaneHit mouse_position = mouse_to_plane(
         ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
     );
+    if (mouse_position.is_hit) {
+        entity->position = mouse_position.hit;
+        entity->scale = newVec3(1.0, 1.0, 1.0);
+    }
+    else {
+        entity->scale = newVec3(0.0, 0.0, 0.0);
+    }
 
     Vec3 mouse_dir = mouse_to_world(ctx, renderer, camera);
 #if BOX_COLLITION
@@ -400,15 +412,19 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
         if (mouse_press == 0) {
             mouse_press = 1;
-            entity = list_push(renderer->entities, Entity);
-            entity->model = &game_ctx->models[selection];
-            float scale = 1.0;
-            entity->scale = newVec3(scale, scale, scale);
-            entity->active = 1;
-            entity->position =  mouse_to_plane(
-                ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
-            );
 
+            RayToPlaneHit mouse_pos = mouse_to_plane(
+                ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
+
+            if (mouse_pos.is_hit) {
+                entity = get_entity(renderer);
+                entity->model = &game_ctx->models[selection];
+                entity->model_name = selection;
+                float scale = 1.0;
+                entity->scale = newVec3(scale, scale, scale);
+                entity->active = 1;
+                entity->position = mouse_pos.hit;
+            }
         }
     }
     else if (mouse_press == 1) {
@@ -428,6 +444,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     ui_reset(ui_manager);
-    ui_test_button(ui_manager);
+    ui_test_button(ui_manager, renderer, camera);
 }
 

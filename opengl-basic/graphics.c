@@ -364,6 +364,13 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     );
     shader_pop();
 
+    RenderLayer *layers = calloc(1, sizeof(RenderLayer));
+    layers->entities = NEW_LIST(Entity);
+    layers->gui_entities = NEW_LIST(Entity);
+    layers->font_entities = NEW_LIST(Entity);
+
+    rh->layers = layers;
+
     rh->entities = NEW_LIST(Entity);
     rh->gui_entities = NEW_LIST(Entity);
     rh->font_entities = NEW_LIST(Entity);
@@ -390,10 +397,10 @@ void prepare(Renderer *rh) {
     log_if_err("There was an issue Preparing\n");
 }
 
-void render_entities(Renderer *rh) {
+void render_entities(Renderer *rh, List(Entity) *entities) {
     Vec3 light_color = rh->light->color;
     Entity entity;
-    FOR_ALL(entity, rh->entities) {
+    FOR_ALL(entity, entities) {
         if (entity.active == 0) {
             continue;
         }
@@ -447,9 +454,9 @@ void render_entities(Renderer *rh) {
 }
 
 
-void render_font_entities(Renderer *rh) {
+void render_font_entities(Renderer *rh, List(Entity) *entities) {
     Entity entity;
-    FOR_ALL(entity, rh->font_entities) {
+    FOR_ALL(entity, entities) {
 
         if (entity.active == 0) {
             continue;
@@ -498,9 +505,9 @@ void render_font_entities(Renderer *rh) {
 }
 
 
-void render_gui_entities(Renderer *rh) {
+void render_gui_entities(Renderer *rh, List(Entity) *entities) {
     Entity entity;
-    FOR_ALL(entity, rh->gui_entities) {
+    FOR_ALL(entity, entities) {
         if (entity.active == 0) {
             continue;
         }
@@ -605,14 +612,25 @@ void render(Renderer *rh, Camera *camera) {
     shader_load_light(rh->anim_shader, rh->light);
     log_if_err("Renderer found problem loading lights");
 
-    render_entities(rh);
-
+    render_entities(rh, rh->entities);
     glDisable(GL_DEPTH_TEST);
 
     shader_push(rh->gui_shader);
 
-    render_gui_entities(rh);
-    render_font_entities(rh);
+    render_gui_entities(rh, rh->gui_entities);
+    render_font_entities(rh, rh->font_entities);
+
+    for(RenderLayer *layer=rh->layers; layer; layer=layer->next) {
+        shader_push(rh->shader);
+        render_entities(rh, layer->entities);
+        glDisable(GL_DEPTH_TEST);
+
+        shader_push(rh->gui_shader);
+
+        render_gui_entities(rh, layer->gui_entities);
+        render_font_entities(rh, layer->font_entities);
+    }
+
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
@@ -734,5 +752,22 @@ void load_model_from_gltf(
     log_if_err("Issue after loading normals\n");
     model->vertex_count = tmp.indices_count;
     intermediate_model_free(&tmp);
+}
+
+Entity *get_entity(Renderer *renderer) {
+    Entity *entity = 0;
+    int found = 0;
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i); 
+        if (entity->active == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        entity = list_push(renderer->entities, Entity); 
+    }
+
+    return entity;
 }
 

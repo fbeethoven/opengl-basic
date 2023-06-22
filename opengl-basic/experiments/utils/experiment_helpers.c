@@ -79,6 +79,10 @@ void load_assets(
         "assets/textures/Stormtroopermat_baseColor.png"
     );
 
+    for (int i=0; i<10; i++) {
+        renderer->models[i] = &game_ctx->models[i];
+    }
+
 
     Entity *entity;
     entity = list_push(renderer->font_entities, Entity);
