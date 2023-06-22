@@ -147,6 +147,7 @@ void load_model_from_obj(BaseModel *model, char *obj_file, char *texture_file);
 void load_model_from_gltf(
     BaseModel *model, char *gltf_file, char *bin_file, char *texture_file
 );
+Entity *get_entity(Renderer *renderer);
 
 
 #endif  // GRAPHICS_H

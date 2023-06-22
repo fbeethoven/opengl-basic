@@ -399,27 +399,30 @@ void camera_reset(Camera *camera) {
     camera->yaw = 1.57;
 }
 
-Vec3 ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
+RayToPlaneHit ray_to_plane_from(Vec3 origin, Vec3 toward, Vec3 normal, float distance) {
     Vec3 dir = newVec3(
         toward.x - origin.x, toward.y - origin.y, toward.z - origin.z
     );
     return ray_to_plane(origin, dir, normal, distance);
 }
 
-Vec3 ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance) {
+RayToPlaneHit ray_to_plane(Vec3 origin, Vec3 dir, Vec3 normal, float distance) {
     Vec3 normalize_dir = dir;
     vec3_normalize(&normalize_dir);
+    RayToPlaneHit result = {0};
 
     float t = vec3_dot(&normalize_dir, &normal);
-    if (t == 0) { 
-        return newVec3(0.0, 0.0, 0.0); 
+    if (t >= 0) { 
+        return result;
     }
     t = (distance - vec3_dot(&origin, &normal)) / t;
 
     normalize_dir.x *= t;
     normalize_dir.y *= t;
     normalize_dir.z *= t;
-    return vec3_add(&origin, &normalize_dir);
+    result.hit = vec3_add(&origin, &normalize_dir);
+    result.is_hit = 1;
+    return result;
 }
 
 int ray_to_sphere(Vec3 origin, Vec3 dir, Vec3 center, float radius) {
@@ -501,7 +504,7 @@ Vec3 mouse_to_world(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     return  result;
 }
 
-Vec3 mouse_to_plane(
+RayToPlaneHit mouse_to_plane(
     GraphicsContext *ctx, Renderer *renderer, Camera *camera,
     Vec3 normal, float distance
 ) {
@@ -1147,23 +1150,6 @@ void scene_write_entity(char *buffer, int *cursor, Entity *entity) {
     *cursor += sprintf(buffer + *cursor, "wiremesh %d\n", entity->fill);
 
     *cursor += sprintf(buffer + *cursor, "}\n");
-}
-
-Entity *get_entity(Renderer *renderer) {
-    Entity *entity = 0;
-    int found = 0;
-    for (int i=2; i<renderer->entities->counter; i++) {
-        entity = LIST_GET_PTR(renderer->entities, i); 
-        if (entity->active == 0) {
-            found = 1;
-            break;
-        }
-    }
-    if (!found) {
-        entity = list_push(renderer->entities, Entity); 
-    }
-
-    return entity;
 }
 
 Vec3 load_vec3(Tokenizer *tokenizer) {

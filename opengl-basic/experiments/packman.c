@@ -297,9 +297,16 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     // mouse picking
     entity = LIST_GET_PTR(renderer->entities, 1);
     entity->model = &game_ctx->models[selection];
-    entity->position = mouse_to_plane(
+    RayToPlaneHit mouse_position = mouse_to_plane(
         ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
     );
+    if (mouse_position.is_hit) {
+        entity->position = mouse_position.hit;
+        entity->scale = newVec3(1.0, 1.0, 1.0);
+    }
+    else {
+        entity->scale = newVec3(0.0, 0.0, 0.0);
+    }
 
     Vec3 mouse_dir = mouse_to_world(ctx, renderer, camera);
 #if BOX_COLLITION
@@ -405,16 +412,19 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
         if (mouse_press == 0) {
             mouse_press = 1;
-            entity = list_push(renderer->entities, Entity);
-            entity->model = &game_ctx->models[selection];
-            entity->model_name = selection;
-            float scale = 1.0;
-            entity->scale = newVec3(scale, scale, scale);
-            entity->active = 1;
-            entity->position =  mouse_to_plane(
-                ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
-            );
 
+            RayToPlaneHit mouse_pos = mouse_to_plane(
+                ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0);
+
+            if (mouse_pos.is_hit) {
+                entity = get_entity(renderer);
+                entity->model = &game_ctx->models[selection];
+                entity->model_name = selection;
+                float scale = 1.0;
+                entity->scale = newVec3(scale, scale, scale);
+                entity->active = 1;
+                entity->position = mouse_pos.hit;
+            }
         }
     }
     else if (mouse_press == 1) {

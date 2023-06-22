@@ -754,3 +754,20 @@ void load_model_from_gltf(
     intermediate_model_free(&tmp);
 }
 
+Entity *get_entity(Renderer *renderer) {
+    Entity *entity = 0;
+    int found = 0;
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i); 
+        if (entity->active == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        entity = list_push(renderer->entities, Entity); 
+    }
+
+    return entity;
+}
+
