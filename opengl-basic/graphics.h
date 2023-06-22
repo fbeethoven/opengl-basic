@@ -54,6 +54,14 @@ LIST_ADD(BaseModel);
 LIST_ADD(Entity);
 
 
+typedef struct RenderLayer RenderLayer;
+struct RenderLayer {
+    RenderLayer *next;
+    List(Entity) *entities;
+    List(Entity) *gui_entities;
+    List(Entity) *font_entities;
+};
+
 typedef struct Renderer {
     float FOV;
 	float NEAR_PLANE;
@@ -71,12 +79,7 @@ typedef struct Renderer {
 	int gui_shader;
 	int sky_shader;
 
-#if 0
-    Entity entities[20];
-    Entity debug_entities[100];
-    Entity gui_entities[10];
-    Entity font_entities[10];
-#endif
+    RenderLayer *layers;
 
     List(Entity) *entities;
     List(Entity) *debug_entities;

@@ -434,6 +434,6 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     ui_reset(ui_manager);
-    ui_test_button(ui_manager, renderer);
+    ui_test_button(ui_manager, renderer, camera);
 }
 

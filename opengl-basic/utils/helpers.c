@@ -1175,7 +1175,7 @@ Vec3 load_vec3(Tokenizer *tokenizer) {
     return answer;
 }
 
-void scene_load(Renderer *renderer) {
+void scene_load(Renderer *renderer, Camera *camera) {
     Entity *entity = 0;
     for (int i=2; i<renderer->entities->counter; i++) {
         entity = LIST_GET_PTR(renderer->entities, i);
@@ -1188,6 +1188,7 @@ void scene_load(Renderer *renderer) {
     tokenizer.data = data;
 
     int loading_entity = 0;
+    int loading_camera = 0;
     for (
         Token token = token_next(&tokenizer);
         tokenizer.data[tokenizer.cursor] && token_is_valid(&token);
@@ -1195,6 +1196,16 @@ void scene_load(Renderer *renderer) {
     ) {
         switch(token.kind) {
             case Token_Declaration: 
+                if(strcmp(token.info, "Entity") == 0) {
+                    assert(loading_entity == 0 && loading_camera == 0);
+                    entity = get_entity(renderer);
+                    loading_entity = 1;
+                }
+                if(strcmp(token.info, "Camera") == 0) {
+                    assert(loading_entity == 0 && loading_camera == 0);
+                    entity = get_entity(renderer);
+                    loading_camera = 1;
+                }
                 if(strcmp(token.info, "Entity") == 0) {
                     entity = get_entity(renderer);
                     loading_entity = 1;
@@ -1204,7 +1215,14 @@ void scene_load(Renderer *renderer) {
                     entity->model = renderer->models[model];
                 }
                 else if(strcmp(token.info, "position") == 0) {
-                    entity->position = load_vec3(&tokenizer);
+                    Vec3 position = load_vec3(&tokenizer);
+
+                    if (loading_entity) {
+                        entity->position = position;
+                    }
+                    else if (loading_camera) {
+                        camera->position = position;
+                    }
                 }
                 else if(strcmp(token.info, "color") == 0) {
                     entity->color = load_vec3(&tokenizer);
@@ -1219,11 +1237,31 @@ void scene_load(Renderer *renderer) {
                     int fill = atoi(token_next(&tokenizer).info);
                     entity->fill = fill;
                 }
+                else if(strcmp(token.info, "pitch") == 0) {
+                    assert(
+                        loading_camera == 1 && "[ERROR LOADING] camera info"
+                    );
+                    camera->pitch = atof(token_next(&tokenizer).info);
+                }
+                else if(strcmp(token.info, "yaw") == 0) {
+                    assert(
+                        loading_camera == 1 && "[ERROR LOADING] camera info"
+                    );
+                    camera->yaw = atof(token_next(&tokenizer).info);
+                }
             break;
             case Token_CloseCurl:
-                assert(loading_entity == 1 && "[ERROR LOADING]");
-                entity->active = 1;
-                loading_entity = 0;
+                assert( 
+                    (loading_entity == 1 || loading_camera == 1) &&
+                    "[ERROR LOADING] Scene info is corrupted"
+                );
+                if (loading_entity == 1) {
+                    entity->active = 1;
+                    loading_entity = 0;
+                }
+                else if (loading_camera == 1) {
+                    loading_camera = 0;
+                }
             break;
             default: 
             break;
@@ -1232,11 +1270,25 @@ void scene_load(Renderer *renderer) {
     free(data);
 }
 
-void scene_save(Renderer *renderer) {
+void scene_save(Renderer *renderer, Camera *camera) {
     Entity *entity;
 
     char *save_buffer = malloc(10000 * sizeof(char));
     int cursor = 0;
+
+    cursor += sprintf(save_buffer + cursor, "Camera {\n");
+    cursor += sprintf(save_buffer + cursor, "pitch %f\n", camera->pitch);
+    cursor += sprintf(save_buffer + cursor, "yaw %f\n", camera->yaw);
+    cursor += sprintf(
+        save_buffer + cursor, "position %f %f %f\n",
+        camera->position.x, camera->position.y, camera->position.z
+    );
+    cursor += sprintf(
+        save_buffer + cursor, "centre %f %f %f\n",
+        camera->centre.x, camera->centre.y, camera->centre.z
+    );
+
+    cursor += sprintf(save_buffer + cursor, "}\n");
 
     for(int i=2; i<renderer->entities->counter; i++) {
         entity = LIST_GET_PTR(renderer->entities, i);
@@ -1248,7 +1300,9 @@ void scene_save(Renderer *renderer) {
     fclose(file);
 }
 
-void ui_test_button(UIManager *ui_manager, Renderer *renderer) {
+void ui_test_button(
+    UIManager *ui_manager, Renderer *renderer, Camera *camera
+) {
     printf("NUMBER OF ENTITIES: %lu\n", renderer->entities->counter);
 
     _font_buffer_push(renderer->font, "SAVE", newVec2(
@@ -1257,7 +1311,7 @@ void ui_test_button(UIManager *ui_manager, Renderer *renderer) {
     );
     ui_padding(ui_manager, newVec2(0.05, 0.05), 1);
     if (ui_button_v(ui_manager, 0.15, 0.05)) {
-        scene_save(renderer);
+        scene_save(renderer, camera);
     }
 
     _font_buffer_push(renderer->font, "LOAD", newVec2(
@@ -1266,7 +1320,7 @@ void ui_test_button(UIManager *ui_manager, Renderer *renderer) {
     );
     ui_padding(ui_manager, newVec2(0.0, 0.01), 1);
     if (ui_button_v(ui_manager, 0.15, 0.05)) {
-        scene_load(renderer);
+        scene_load(renderer, camera);
     }
 }
 

@@ -121,7 +121,7 @@ typedef struct UIManager {
 
 UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer);
 void ui_reset(UIManager *ui_manager);
-void ui_test_button(UIManager *ui_manager, Renderer *renderer);
+void ui_test_button(UIManager *ui_manager, Renderer *renderer, Camera *camera);
 
 
 #endif  // HELPERS_H
