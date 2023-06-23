@@ -143,6 +143,7 @@ void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh);
 
 void init_floor_model(BaseModel *world_model);
 void init_font(GraphicsContext *ctx, Renderer *renderer, Font *font);
+void load_model_obj_color(BaseModel *model, char *obj, unsigned int col);
 void load_model_from_obj(BaseModel *model, char *obj_file, char *texture_file);
 void load_model_from_gltf(
     BaseModel *model, char *gltf_file, char *bin_file, char *texture_file
