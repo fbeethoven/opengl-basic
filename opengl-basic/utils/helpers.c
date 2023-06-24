@@ -1577,6 +1577,149 @@ void ui_pick_entity(UIManager *ui_manager, UI_InputParams *input) {
 
 }
 
+
+UIWidget *ui_layout_h(
+    UIManager *ui_manager, float height, float padding, int n
+) {
+    Vec4 zero = newVec4(0.0, 0.0, 0.0, 0.0);
+    UIWidget *panel = ui_push_child_(
+        ui_manager, 1.0, height, 0, 1, 0,
+        zero, zero, zero, zero, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, panel);
+    float size = (1.0 - padding)/n;
+    float pad = padding/(n + 1);
+    for (int i=0; i<n; i++) {
+        ui_padding(ui_manager, newVec2(pad, 0.0), 1);
+        ui_push_child_(
+            ui_manager, size, 1.0, 1, 0, 0,
+            zero, zero, zero, zero, 0, newVec3(0.0, 0.0, 0.0)
+        );
+    }
+    ui_padding(ui_manager, newVec2(pad, 0.0), 1);
+    return panel->first;
+}
+
+UIWidget *ui_layout_v(
+    UIManager *ui_manager, float width, float padding, int n
+) {
+    Vec4 zero = newVec4(0.0, 0.0, 0.0, 0.0);
+    UIWidget *panel = ui_push_child_(
+        ui_manager, width, 1.0, 1, 0, 0,
+        zero, zero, zero, zero, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, panel);
+    float size = (1.0 - padding)/n;
+    float pad = padding/(n + 1);
+    for (int i=0; i<n; i++) {
+        ui_padding(ui_manager, newVec2(0.0, pad), 1);
+        ui_push_child_(
+            ui_manager, 1.0, size, 0, 1, 0,
+            zero, zero, zero, zero, 0, newVec3(0.0, 0.0, 0.0)
+        );
+    }
+    ui_padding(ui_manager, newVec2(0.0, pad), 1);
+    return panel->first;
+}
+
+void ui_pop_layout(UIManager *ui_manager) {
+    ui_pop_parent(ui_manager);
+}
+
+void ui_label(UIManager *ui_manager, UIWidget *child, char *text, Vec3 col) {
+    ui_push_parent(ui_manager, child);
+    Vec4 color = newVec4(0.0, 0.0, 0.0, 0.0);
+    ui_push_child_(
+        ui_manager, 1.0, 1.0, 0, 0, 0, color, color, color, color, text, col);
+    ui_pop_parent(ui_manager);
+}
+
+int UIButtonV(UIManager *ui_manager, UIWidget *child, char *text, Vec3 col) {
+    ui_push_parent(ui_manager, child);
+    int result = ui_button_v(ui_manager, 1.0, 1.0, text, col);
+    ui_pop_parent(ui_manager);
+    return result;
+}
+
+
+void sliders_for_scale(UIManager *ui_manager, Entity *entity, Vec3 col) {
+    Vec4 zero = newVec4(1.0, 1.0, 0.0, 1.0);
+
+    static float slider_x;
+    static float slider_y;
+    static float slider_z;
+
+    char label_x[32];
+    char label_y[32];
+    char label_z[32];
+
+    sprintf(label_x, "X: %0.3f", slider_x);
+    sprintf(label_y, "Y: %0.3f", slider_y);
+    sprintf(label_z, "Z: %0.3f", slider_z);
+
+
+    float max_rot = 2 * 3.1415;
+    if (entity) {
+        slider_x = entity->rotation.x / max_rot;
+        slider_y = entity->rotation.y / max_rot;
+        slider_z = entity->rotation.z / max_rot;
+    }
+
+    float padding = 0.01;
+    UIWidget *text = ui_layout_h(ui_manager, 0.08, 0.0, 1);
+    ui_push_parent(ui_manager, text);
+
+    ui_padding(ui_manager, newVec2(0.025, 0.0), 1);
+    ui_push_child_(
+        ui_manager, 0.25, 1.0, 1, 0, 0,
+        zero, zero, zero, zero, label_x, col
+    );
+    ui_padding(ui_manager, newVec2(0.035, 0.0), 1);
+    slider_x = ui_slider_h(ui_manager, 0.63, 1.0, slider_x);
+
+    ui_pop_parent(ui_manager);
+    ui_pop_layout(ui_manager);
+
+
+    ui_padding(ui_manager, newVec2(0, padding), 1);
+    text = ui_layout_h(ui_manager, 0.08, 0.0, 1);
+    ui_push_parent(ui_manager, text);
+
+    ui_padding(ui_manager, newVec2(0.025, 0.0), 1);
+    ui_push_child_(
+        ui_manager, 0.25, 1.0, 1, 0, 0,
+        zero, zero, zero, zero, label_y, col
+    );
+    ui_padding(ui_manager, newVec2(0.035, 0.0), 1);
+    slider_y = ui_slider_h(ui_manager, 0.63, 1.0, slider_y);
+
+    ui_pop_parent(ui_manager);
+    ui_pop_layout(ui_manager);
+    ui_padding(ui_manager, newVec2(0, padding), 1);
+    text = ui_layout_h(ui_manager, 0.08, 0.0, 1);
+    ui_push_parent(ui_manager, text);
+
+    ui_padding(ui_manager, newVec2(0.025, 0.0), 1);
+    ui_push_child_(
+        ui_manager, 0.25, 1.0, 1, 0, 0,
+        zero, zero, zero, zero, label_z, col
+    );
+    ui_padding(ui_manager, newVec2(0.035, 0.0), 1);
+    slider_z = ui_slider_h(ui_manager, 0.63, 1.0, slider_z);
+
+    ui_pop_parent(ui_manager);
+    ui_pop_layout(ui_manager);
+
+
+    if (entity) {
+        entity->rotation.x = slider_x * max_rot;
+        entity->rotation.y = slider_y * max_rot;
+        entity->rotation.z = slider_z * max_rot;
+    }
+}
+
+
+
 void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
     Vec4 color = newVec4(0.4, 0.4, 0.4, 1.0);
     ui_manager->current_parent_widget->child_position = newVec2(0.0, 0.0);
@@ -1594,21 +1737,57 @@ void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
     }
 
 
+    float padding = 0.05;
+
     Vec3 yellow = newVec3(1.0, 1.0, 0.0);
-    ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
+    Vec4 zero = newVec4(1.0, 1.0, 0.0, 1.0);
+    ui_padding(ui_manager, newVec2(0, padding), 1);
+    UIWidget *text = ui_layout_h(ui_manager, 0.08, 0.05, 1);
     Entity *entity = input->state->selected_entity;
-    Vec3 delete_col = entity ? newVec3(1.0, 1.0, 0.0) : newVec3(0.4, 0.4, 0.4);
-    if(ui_button_h(ui_manager, 0.45, 0.1, "Delete", delete_col)) {
+    Vec3 col = entity ? newVec3(1.0, 1.0, 0.0) : newVec3(0.4, 0.4, 0.4);
+
+    if(UIButtonV(ui_manager, text, "Delete", col)) {
         if(entity) {
             entity->active = 0;
             input->state->selected_entity = 0;
 
         }
     }
+    ui_pop_layout(ui_manager);
 
-    ui_padding(ui_manager, newVec2(0.5, 0.85), 1);
+    ui_padding(ui_manager, newVec2(0, padding), 1);
+    text = ui_layout_h(ui_manager, 0.08, 0.05, 3);
+    static int sel_transform;
+
+    Vec3 t_color;
+
+    t_color = (entity && (sel_transform == 0)) ?
+        newVec3(1.0, 1.0, 0.0) : newVec3(0.4, 0.4, 0.4);
+    if(UIButtonV(ui_manager, text, "Position", t_color)) {
+        sel_transform = 0;
+    }
+    text = text->next;
+    t_color = (entity && (sel_transform == 1)) ?
+        newVec3(1.0, 1.0, 0.0) : newVec3(0.4, 0.4, 0.4);
+    if(UIButtonV(ui_manager, text, "Rotation", t_color)) {
+        sel_transform = 1;
+    }
+    text = text->next;
+    t_color = (entity && (sel_transform == 2)) ?
+        newVec3(1.0, 1.0, 0.0) : newVec3(0.4, 0.4, 0.4);
+    if(UIButtonV(ui_manager, text, "Scale", t_color)) {
+        sel_transform = 2;
+    }
+    ui_pop_layout(ui_manager);
+
+    ui_padding(ui_manager, newVec2(0, padding), 1);
+    sliders_for_scale(ui_manager, input->state->selected_entity, col);
+
+
+    padding = 0.05;
+    ui_padding(ui_manager, newVec2(0.0, padding), 1);
     int create_mode = ui_button_h(
-        ui_manager, 0.45, 0.1, "Create Mode", yellow);
+        ui_manager, 0.4, 0.08, "Create Mode", yellow);
     if (create_mode) {
         input->state->default_state = EditorMode_CreateEntity;
         input->state->state = EditorMode_CreateEntity;
