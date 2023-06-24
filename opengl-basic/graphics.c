@@ -621,6 +621,7 @@ void render(Renderer *rh, Camera *camera) {
     render_font_entities(rh, rh->font_entities);
 
     for(RenderLayer *layer=rh->layers; layer; layer=layer->next) {
+        glEnable(GL_DEPTH_TEST);
         shader_push(rh->shader);
         render_entities(rh, layer->entities);
         glDisable(GL_DEPTH_TEST);

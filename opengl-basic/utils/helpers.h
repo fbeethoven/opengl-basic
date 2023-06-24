@@ -25,8 +25,10 @@ typedef enum EditorMode {
 
 typedef struct EditorState {
     EditorMode state;
+    EditorMode default_state;
     EditorMode prev_state;
     int ui_active;
+    Entity *selected_entity;
 } EditorState;
 
 typedef struct CameraMovementParams {
@@ -147,6 +149,7 @@ typedef struct UI_InputParams {
     Renderer *renderer;
     Camera *camera;
     EditorState *state;
+    int *selection;
 } UI_InputParams;
 
 
@@ -156,6 +159,8 @@ void ui_reset(UIManager *ui_manager);
 void ui_test_button(UIManager *ui_manager, UI_InputParams *input);
 void editor_enter_mode(EditorState *state, EditorMode new_mode);
 void editor_exit_mode(EditorState *state, EditorMode exit_mode);
+void ui_pick_entity(UIManager *ui_manager, UI_InputParams *input);
+void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input);
 
 
 #endif  // HELPERS_H

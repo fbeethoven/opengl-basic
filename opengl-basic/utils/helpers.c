@@ -484,6 +484,34 @@ int ray_to_aabb(Vec3 origin, Vec3 dir, Vec3 box_min, Vec3 box_max) {
 }
 
 
+Vec3 screen_to_world(
+    GraphicsContext *ctx, Renderer *renderer, Camera *camera, Vec2 position
+) {
+    float x = 2 * position.x/ctx->width - 1.0;
+    float y = 1.0 - 2 * position.y/ctx->height;
+
+    Vec4 rel_pos = newVec4(x, y, -1.0, 1.0);
+
+    Mat4 projection_inverse = mat4_inverse(&renderer->projection_matrix);
+
+
+    Mat4 view_matrix = mat4_look_at(
+        camera->position, 
+        camera->centre,
+        newVec3(0.0, 1.0, 0.0)
+    );
+
+    rel_pos = vec4_multiply(&projection_inverse, &rel_pos);
+    rel_pos.z = -1.0;
+    rel_pos.w = 0.0;
+    rel_pos = vec4_multiply(&view_matrix, &rel_pos);
+
+    Vec3 result = newVec3(rel_pos.x, rel_pos.y, rel_pos.z);
+    vec3_normalize(&result);
+    return  result;
+}
+
+
 Vec3 mouse_to_world(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     float x = 2 * (float)ctx->mouse_position[0]/ctx->width - 1.0;
     float y = 1.0 - 2 * (float)ctx->mouse_position[1]/ctx->height;
@@ -1415,4 +1443,167 @@ void editor_exit_mode(EditorState *state, EditorMode exit_mode) {
         state->state = state->prev_state;
     }
 }
+
+Entity *get_layer_entity(List(Entity) *entity_list, int i) {
+    while(entity_list->counter < 10) {
+        list_push(entity_list, Entity);
+    }
+    return LIST_GET_PTR(entity_list, i);
+}
+
+float get_layer_entity_scale(int i) {
+    float options[] = {
+        0.1, 0.04, 0.015, 0.04,
+        0.02, 0.005, 0.02, 0.02,
+        0.015,
+    };
+    return options[i];
+}
+
+float get_layer_entity_offset(int i) {
+    float options[] = {
+        0.75, 0.75, 0.75, 0.5,
+        0.5, 0.75, 0.5, 0.5,
+        0.95
+    };
+    return options[i];
+}
+void add_selection_entity(UIManager *ui_manager, Camera *camera, int i) {
+    Entity *entity = get_layer_entity(
+        ui_manager->renderer->layers->entities, i);
+    entity->model = ui_manager->renderer->models[i+1];
+    float scale = get_layer_entity_scale(i);
+    entity->scale = newVec3(scale, scale, scale);
+    entity->active = 1;
+    UIWidget *button = ui_manager->current_child_widget;
+    Vec3 pos = screen_to_world(
+        ui_manager->ctx, ui_manager->renderer, camera,
+        newVec2(
+            button->rect.x + 0.5 * button->rect.z,
+            button->rect.y + get_layer_entity_offset(i) * button->rect.w
+        ));
+    pos = vec3_add(&camera->position, &pos);
+    entity->position = pos;
+}
+
+
+void ui_pick_entity(UIManager *ui_manager, UI_InputParams *input) {
+    Camera *camera = input->camera;
+
+    Vec4 color = newVec4(0.4, 0.4, 0.4, 1.0);
+    ui_manager->current_parent_widget->child_position = newVec2(0.0, 0.0);
+    ui_padding(ui_manager, newVec2(0.0, 0.6), 1);
+    UIWidget *panel = ui_push_child_(
+        ui_manager, 0.3, 0.4, 1, 1, UIFlags_Clickable|UIFlags_Visible,
+        color, color, color, color, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, panel);
+    if (panel->hot_t) {
+        editor_enter_mode(input->state, EditorMode_UI);
+    }
+    else {
+        editor_exit_mode(input->state, EditorMode_UI);
+    }
+
+    color = newVec4(1.0, 0.0, 0.0, 1.0);
+    ui_padding(ui_manager, newVec2(0.00, 0.02), 1);
+    UIWidget *layout = ui_push_child_(
+        ui_manager, 1.0, 0.3, 0, 1, 0,
+        color, color, color, color, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, layout);
+
+    Vec3 yellow = newVec3(1.0, 1.0, 0.0);
+    for(int i=0; i<4; i++) {
+        ui_padding(ui_manager, newVec2(0.04, 0.01), 1);
+        int selection = ui_button_h(ui_manager, 0.2, 0.9, 0, yellow);
+        add_selection_entity(ui_manager, camera, i);
+        if (selection) {
+            *input->selection = i+1;
+        }
+    }
+
+    ui_pop_parent(ui_manager);
+    ui_padding(ui_manager, newVec2(0.00, 0.02), 1);
+    layout = ui_push_child_(
+        ui_manager, 1.0, 0.30, 0, 1, 0,
+        color, color, color, color, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, layout);
+    for(int i=0; i<4; i++) {
+        ui_padding(ui_manager, newVec2(0.04, 0.00), 1);
+        int selection = ui_button_h(ui_manager, 0.2, 0.9, 0, yellow);
+        add_selection_entity(ui_manager, camera, i+4);
+        if (selection) {
+            *input->selection = i+1+4;
+        }
+    }
+
+    ui_pop_parent(ui_manager);
+    ui_padding(ui_manager, newVec2(0.00, 0.01), 1);
+    layout = ui_push_child_(
+        ui_manager, 1.0, 0.3, 0, 1, 0,
+        color, color, color, color, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, layout);
+    ui_padding(ui_manager, newVec2(0.04, 0.00), 1);
+    int selection = ui_button_h(ui_manager, 0.2, 0.9, 0, yellow);
+    add_selection_entity(ui_manager, camera, 8);
+    if (selection) {
+        *input->selection = 9;
+    }
+
+    layout = ui_push_child_(
+        ui_manager, 0.7, 1.0, 0, 1, 0,
+        color, color, color, color, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, layout);
+    ui_padding(ui_manager, newVec2(0.2, 0.5), 1);
+    int edit_mode = ui_button_h(ui_manager, 0.8, 0.5, "Edit Mode", yellow);
+    if (edit_mode) {
+        input->state->default_state = EditorMode_EditEntity;
+        input->state->state = EditorMode_EditEntity;
+        RenderLayer *layer = ui_manager->renderer->layers;
+        for(int i=0; i<layer->entities->counter; i++) {
+            Entity *entity = LIST_GET_PTR(layer->entities, i);
+            entity->active = 0;
+        }
+    }
+
+    ui_pop_parent(ui_manager);
+
+    ui_pop_parent(ui_manager);
+    ui_pop_parent(ui_manager);
+
+}
+
+void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
+    Vec4 color = newVec4(0.4, 0.4, 0.4, 1.0);
+    ui_manager->current_parent_widget->child_position = newVec2(0.0, 0.0);
+    ui_padding(ui_manager, newVec2(0.0, 0.5), 1);
+    UIWidget *panel = ui_push_child_(
+        ui_manager, 0.3, 0.5, 1, 1, UIFlags_Clickable|UIFlags_Visible,
+        color, color, color, color, 0, newVec3(0, 0, 0)
+    );
+    ui_push_parent(ui_manager, panel);
+    if (panel->hot_t) {
+        editor_enter_mode(input->state, EditorMode_UI);
+    }
+    else {
+        editor_exit_mode(input->state, EditorMode_UI);
+    }
+
+
+    Vec3 yellow = newVec3(1.0, 1.0, 0.0);
+    ui_padding(ui_manager, newVec2(0.5, 0.85), 1);
+    int create_mode = ui_button_h(
+        ui_manager, 0.45, 0.1, "Create Mode", yellow);
+    if (create_mode) {
+        input->state->default_state = EditorMode_CreateEntity;
+        input->state->state = EditorMode_CreateEntity;
+    }
+    ui_pop_parent(ui_manager);
+
+}
+
 

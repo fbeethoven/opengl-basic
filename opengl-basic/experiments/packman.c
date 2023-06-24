@@ -121,11 +121,12 @@ int game_run() {
     pulse_p = 0;
     pulse_r = 0;
     
-    // Collision Test
+    // Editor Experiment
     mouse_press = 0;
     selection = 1;
     selection_press = 0;
     memset(&editor_state, 0, sizeof(EditorState));
+    editor_state.default_state = EditorMode_CreateEntity;
 
     stage = -1;
     distance_from_player = 5.0;
@@ -300,7 +301,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         "EditorMode_UI",
         "EditorMode_Rotate",
         "EditorMode_CreateEntity",
-        "EditorMode_PickEntity"
+        "EditorMode_PickEntity",
+        "EditorMode_EditEntity"
     };
     printf("EDITOR STATE BEFORE: %s\n", editor_names[editor_state.state]);
 
@@ -309,7 +311,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
         (editor_state.state != EditorMode_UI) &&
         (editor_state.state != EditorMode_Rotate)
     ) {
-        editor_state.state = EditorMode_CreateEntity;
+        editor_state.state = editor_state.default_state;
     }
     printf("EDITOR STATE AFTER: %s\n", editor_names[editor_state.state]);
 
@@ -469,13 +471,20 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     ui_reset(ui_manager);
+    UI_InputParams input;
+    input.renderer = renderer;
+    input.camera = camera;
+    input.state = &editor_state;
+    input.selection = &selection;
 
     if (editor_state.ui_active) {
-        UI_InputParams input;
-        input.renderer = renderer;
-        input.camera = camera;
-        input.state = &editor_state;
         ui_test_button(ui_manager, &input);
+    }
+    if (editor_state.default_state == EditorMode_CreateEntity) {
+        ui_pick_entity(ui_manager, &input);
+    }
+    if (editor_state.default_state == EditorMode_EditEntity) {
+        ui_edit_entity(ui_manager, &input);
     }
 }
 
