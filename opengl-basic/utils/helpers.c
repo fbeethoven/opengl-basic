@@ -1642,7 +1642,7 @@ int UIButtonV(UIManager *ui_manager, UIWidget *child, char *text, Vec3 col) {
 }
 
 
-void sliders_for_scale(UIManager *ui_manager, Entity *entity, Vec3 col) {
+Vec3 sliders_for_entity(UIManager *ui_manager, Vec3 input, Vec3 col) {
     Vec4 zero = newVec4(1.0, 1.0, 0.0, 1.0);
 
     static float slider_x;
@@ -1657,13 +1657,9 @@ void sliders_for_scale(UIManager *ui_manager, Entity *entity, Vec3 col) {
     sprintf(label_y, "Y: %0.3f", slider_y);
     sprintf(label_z, "Z: %0.3f", slider_z);
 
-
-    float max_rot = 2 * 3.1415;
-    if (entity) {
-        slider_x = entity->rotation.x / max_rot;
-        slider_y = entity->rotation.y / max_rot;
-        slider_z = entity->rotation.z / max_rot;
-    }
+    slider_x = input.x;
+    slider_y = input.y;
+    slider_z = input.z;
 
     float padding = 0.01;
     UIWidget *text = ui_layout_h(ui_manager, 0.08, 0.0, 1);
@@ -1711,14 +1707,64 @@ void sliders_for_scale(UIManager *ui_manager, Entity *entity, Vec3 col) {
     ui_pop_layout(ui_manager);
 
 
+    return newVec3(slider_x, slider_y, slider_z);
+}
+
+void sliders_for_scale(UIManager *ui_manager, Entity *entity, Vec3 col) {
+
+    Vec3 input = newVec3(0.0, 0.0, 0.0);
+
     if (entity) {
-        entity->rotation.x = slider_x * max_rot;
-        entity->rotation.y = slider_y * max_rot;
-        entity->rotation.z = slider_z * max_rot;
+        input.x = entity->scale.x / 10.0;
+        input.y = entity->scale.y / 10.0;
+        input.z = entity->scale.z / 10.0;
+    }
+
+    Vec3 output = sliders_for_entity(ui_manager, input, col);
+
+    if (entity) {
+        entity->scale.x = output.x * 10.0;
+        entity->scale.y = output.y * 10.0;
+        entity->scale.z = output.z * 10.0;
     }
 }
 
+void sliders_for_rotation(UIManager *ui_manager, Entity *entity, Vec3 col) {
+    Vec3 input = newVec3(0.0, 0.0, 0.0);
 
+    float max_rot = 2 * 3.1415;
+    if (entity) {
+        input.x = entity->rotation.x / max_rot;
+        input.y = entity->rotation.y / max_rot;
+        input.z = entity->rotation.z / max_rot;
+    }
+
+    Vec3 output = sliders_for_entity(ui_manager, input, col);
+
+    if (entity) {
+        entity->rotation.x = output.x * max_rot;
+        entity->rotation.y = output.y * max_rot;
+        entity->rotation.z = output.z * max_rot;
+    }
+}
+
+void sliders_for_position(UIManager *ui_manager, Entity *entity, Vec3 col) {
+    Vec3 input = newVec3(0.0, 0.0, 0.0);
+
+    if (entity) {
+        input.x = (entity->position.x + 100.0) /200.0;
+        input.y = (entity->position.y + 100.0) /200.0;
+        input.z = (entity->position.z + 100.0) /200.0;
+    }
+
+    Vec3 output = sliders_for_entity(ui_manager, input, col);
+
+    if (entity) {
+        entity->position.x = (output.x * 200.0) - 100.0;
+        entity->position.y = (output.y * 200.0) - 100.0;
+        entity->position.z = (output.z * 200.0) - 100.0;
+    }
+}
 
 void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
     Vec4 color = newVec4(0.4, 0.4, 0.4, 1.0);
@@ -1740,7 +1786,6 @@ void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
     float padding = 0.05;
 
     Vec3 yellow = newVec3(1.0, 1.0, 0.0);
-    Vec4 zero = newVec4(1.0, 1.0, 0.0, 1.0);
     ui_padding(ui_manager, newVec2(0, padding), 1);
     UIWidget *text = ui_layout_h(ui_manager, 0.08, 0.05, 1);
     Entity *entity = input->state->selected_entity;
@@ -1781,7 +1826,15 @@ void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
     ui_pop_layout(ui_manager);
 
     ui_padding(ui_manager, newVec2(0, padding), 1);
-    sliders_for_scale(ui_manager, input->state->selected_entity, col);
+    if (sel_transform == 0) {
+        sliders_for_position(ui_manager, input->state->selected_entity, col);
+    }
+    else if (sel_transform == 1) {
+        sliders_for_rotation(ui_manager, input->state->selected_entity, col);
+    }
+    else if (sel_transform == 2) {
+        sliders_for_scale(ui_manager, input->state->selected_entity, col);
+    }
 
 
     padding = 0.05;
