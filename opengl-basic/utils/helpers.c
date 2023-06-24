@@ -244,9 +244,14 @@ void free_rts_camera_movement(
         camera->pitch += 0.0005 * (float)ctx->dmouse[1];
         ctx->dmouse[0] = 0.0;
         ctx->dmouse[1] = 0.0;
+
+        editor_enter_mode(params->editor_state, EditorMode_Rotate);
+
     }
     else {
         glfwSetInputMode(ctx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        editor_exit_mode(params->editor_state, EditorMode_Rotate);
+        // editor_enter_mode(params->editor_state, EditorMode_None);
     }
 
     camera->centre.x = (
@@ -657,6 +662,7 @@ UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer) {
     ui_manager->root_widget = root;
     ui_manager->current_parent_widget = root;
     ui_manager->gui_entities = renderer->gui_entities;
+    ui_manager->renderer = renderer;
     return ui_manager;
 }
 
@@ -798,7 +804,8 @@ void ui_entity_update(
 
 UIWidget *ui_push_child_(
     UIManager *ui_manager, float width, float height, int add_x, int add_y,
-    int flags, Vec4 color_a, Vec4 color_b, Vec4 color_c, Vec4 color_d
+    int flags, Vec4 color_a, Vec4 color_b, Vec4 color_c, Vec4 color_d,
+    char *text, Vec3 font_color
 ) {
     UIWidget *parent = ui_manager->current_parent_widget;
     UIWidget *result;
@@ -880,6 +887,16 @@ UIWidget *ui_push_child_(
             result->active_t = 0.0;
         }
     }
+    if (text) {
+        _font_buffer_push(
+            ui_manager->renderer->font, text,
+            newVec2(
+                result->rect.x + 0.1*result->rect.z,
+                result->rect.y + 0.9*result->rect.w
+            ),
+            font_color
+        );
+    }
 
     return result;
 }
@@ -888,14 +905,16 @@ UIWidget *ui_push_child_v(
     UIManager *ui_manager, float width, float height, int visible, Vec4 color
 ) {
     return ui_push_child_(
-        ui_manager, width, height, 0, 1, visible, color, color, color, color);
+        ui_manager, width, height, 0, 1, visible, color, color, color, color,
+        0, newVec3(0, 0, 0));
 }
 
 UIWidget *ui_push_child_h(
     UIManager *ui_manager, float width, float height, int visible, Vec4 color
 ) {
     return ui_push_child_(
-        ui_manager, width, height, 1, 0, visible, color, color, color, color);
+        ui_manager, width, height, 1, 0, visible, color, color, color, color,
+        0, newVec3(0, 0, 0));
 }
 
 
@@ -950,7 +969,8 @@ UIWidget *ui_pop_parent(UIManager *ui_manager) {
 UIWidget *ui_push_child_null(UIManager *manager, float width, float height) {
     return ui_push_child_(manager, width, height, 0, 0, UIFlags_Clickable,
         newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0),
-        newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0));
+        newVec4(1.0, 1.0, 1.0, 1.0), newVec4(1.0, 1.0, 1.0, 1.0),
+        0, newVec3(0, 0, 0));
 }
 
 typedef struct UIButtonColor {
@@ -982,7 +1002,9 @@ UIButtonColor ui_button_get_colors(UIWidget *button, int pulse) {
     return result;
 }
 
-int ui_button_widget(UIManager *ui_manager, float width, float height) {
+int ui_button_widget(
+    UIManager *ui_manager, float width, float height, char *text, Vec3 b_col
+) {
     int result = 0;
     UIWidget *container = ui_push_child_null(ui_manager, width, height);
     ui_push_parent(ui_manager, container);
@@ -991,19 +1013,24 @@ int ui_button_widget(UIManager *ui_manager, float width, float height) {
     }
     UIButtonColor color = ui_button_get_colors(container, result);
     ui_push_child_(ui_manager, 1.0, 1.0,
-        0, 0, 1, color.color_a, color.color_b, color.color_c, color.color_d);
+        0, 0, 1, color.color_a, color.color_b, color.color_c, color.color_d,
+        text, b_col);
     ui_pop_parent(ui_manager);
     return result;
 }
 
-int ui_button_v(UIManager *ui_manager, float width, float height) {
-    int result = ui_button_widget(ui_manager, width, height);
+int ui_button_v(
+    UIManager *ui_manager, float width, float height, char *text, Vec3 b_col
+) {
+    int result = ui_button_widget(ui_manager, width, height, text, b_col);
     ui_padding(ui_manager, newVec2(0.0, height), 1);
     return result;
 }
 
-int ui_button_h(UIManager *ui_manager, float width, float height) {
-    int result = ui_button_widget(ui_manager, width, height);
+int ui_button_h(
+    UIManager *ui_manager, float width, float height, char *text, Vec3 b_col
+) {
+    int result = ui_button_widget(ui_manager, width, height, text, b_col);
     ui_padding(ui_manager, newVec2(width, 0.0), 1);
     return result;
 }
@@ -1017,7 +1044,7 @@ int ui_toggle_widget(
     UIWidget *container = ui_push_child_(
         ui_manager, width, height, 0, 0,
         UIFlags_Visible|UIFlags_Square|UIFlags_Clickable,
-        color, color, color, color
+        color, color, color, color, 0, newVec3(0, 0, 0)
     );
     ui_push_parent(ui_manager, container);
     if (container->hit){
@@ -1029,7 +1056,8 @@ int ui_toggle_widget(
         float fill = 0.5;
         Vec4 col = newVec4(fill, fill, fill, 1.0);
         ui_padding(ui_manager, newVec2(padding, padding), 1);
-        ui_push_child_(ui_manager, val, val, 0, 0, 1, col, col, col, col);
+        ui_push_child_(ui_manager, val, val, 0, 0, 1, col, col, col, col,
+            0, newVec3(0, 0, 0));
     }
     ui_pop_parent(ui_manager);
     return result;
@@ -1055,7 +1083,7 @@ float ui_slider_h(
     Vec4 color = newVec4(shade, shade, shade, 1.0);
     UIWidget *container = ui_push_child_(
         ui_manager, width, height, 0, 0, UIFlags_Visible|UIFlags_Clickable,
-        color, color, color, color);
+        color, color, color, color, 0, newVec3(0, 0, 0));
     ui_push_parent(ui_manager, container);
     float mouse[2] = {
         (float) ui_manager->ctx->mouse_position[0],
@@ -1081,7 +1109,9 @@ float ui_slider_h(
     float fill = 0.5;
     Vec4 col = newVec4(fill, fill, fill, 1.0);
     ui_padding(ui_manager, newVec2(padding_x, padding_y), 1);
-    ui_push_child_(ui_manager, val_x, val_y, 0, 0, 1, col, col, col, col);
+    ui_push_child_(
+        ui_manager, val_x, val_y, 0, 0, 1, col, col, col, col,
+        0, newVec3(0, 0, 0));
     ui_pop_parent(ui_manager);
     return result;
 }
@@ -1094,7 +1124,7 @@ float ui_slider_v(
     Vec4 color = newVec4(shade, shade, shade, 1.0);
     UIWidget *container = ui_push_child_(
         ui_manager, width, height, 0, 0, UIFlags_Visible|UIFlags_Clickable,
-        color, color, color, color);
+        color, color, color, color, 0, newVec3(0, 0, 0));
     ui_push_parent(ui_manager, container);
     float mouse[2] = {
         (float) ui_manager->ctx->mouse_position[0],
@@ -1119,7 +1149,8 @@ float ui_slider_v(
     float fill = 0.5;
     Vec4 col = newVec4(fill, fill, fill, 1.0);
     ui_padding(ui_manager, newVec2(padding_x, padding_y), 1);
-    ui_push_child_(ui_manager, val_x, val_y, 0, 0, 1, col, col, col, col);
+    ui_push_child_(ui_manager, val_x, val_y, 0, 0, 1, col, col, col, col,
+        0, newVec3(0, 0, 0));
     ui_pop_parent(ui_manager);
     return result;
 }
@@ -1199,6 +1230,7 @@ void scene_load(Renderer *renderer, Camera *camera) {
                 else if(strcmp(token.info, "model") == 0) {
                     int model = atoi(token_next(&tokenizer).info);
                     entity->model = renderer->models[model];
+                    entity->model_name = model;
                 }
                 else if(strcmp(token.info, "position") == 0) {
                     Vec3 position = load_vec3(&tokenizer);
@@ -1286,28 +1318,34 @@ void scene_save(Renderer *renderer, Camera *camera) {
     fclose(file);
 }
 
-void ui_test_button(
-    UIManager *ui_manager, Renderer *renderer, Camera *camera
-) {
-    printf("NUMBER OF ENTITIES: %lu\n", renderer->entities->counter);
+void ui_test_button(UIManager *ui_manager, UI_InputParams *input) {
+    Renderer *renderer = input->renderer;
+    Camera *camera = input->camera;
 
-    _font_buffer_push(renderer->font, "SAVE", newVec2(
-        0.1 * (float)ui_manager->ctx->width,
-        0.08 * (float)ui_manager->ctx->height), newVec3(1.0, 1.0, 0.0)
+
+    Vec4 color = newVec4(0.4, 0.4, 0.4, 0.65);
+    UIWidget *panel = ui_push_child_(
+        ui_manager, 0.3, 0.3, 1, 1, UIFlags_Clickable|UIFlags_Visible,
+        color, color, color, color, 0, newVec3(0, 0, 0)
     );
+    ui_push_parent(ui_manager, panel);
+    if (panel->hot_t) {
+        editor_enter_mode(input->state, EditorMode_UI);
+    }
+    else {
+        editor_exit_mode(input->state, EditorMode_UI);
+    }
     ui_padding(ui_manager, newVec2(0.05, 0.05), 1);
-    if (ui_button_v(ui_manager, 0.15, 0.05)) {
+    Vec3 yellow = newVec3(1.0, 1.0, 0.0);
+    if (ui_button_v(ui_manager, 0.7, 0.2, "SAVE", yellow)) {
         scene_save(renderer, camera);
     }
 
-    _font_buffer_push(renderer->font, "LOAD", newVec2(
-        0.1 * (float)ui_manager->ctx->width,
-        0.14 * (float)ui_manager->ctx->height), newVec3(1.0, 1.0, 0.0)
-    );
-    ui_padding(ui_manager, newVec2(0.0, 0.01), 1);
-    if (ui_button_v(ui_manager, 0.15, 0.05)) {
+    ui_padding(ui_manager, newVec2(0.0, 0.05), 1);
+    if (ui_button_v(ui_manager, 0.7, 0.2, "LOAD", yellow)) {
         scene_load(renderer, camera);
     }
+    ui_pop_parent(ui_manager);
 }
 
 void ui_test_button_1(UIManager *ui_manager) {
@@ -1353,12 +1391,28 @@ void ui_test_button_1(UIManager *ui_manager) {
         newVec4(0.6, 0.6, 0.6, 1.0)
     );
     ui_padding(ui_manager, newVec2(0.0, 0.1), 1);
-    if (ui_button_v(ui_manager, 0.8, 0.2)) {
+    if (ui_button_v(ui_manager, 0.8, 0.2, 0, newVec3(1.0, 1.0, 0.0))) {
         ui_push_child_v(ui_manager, 0.8, 0.2, 1, 
             newVec4(0.6, 0.6, 0.6, 1.0)
         );
     }
 
     printf("We have %lu gui entities\n", ui_manager->gui_entities->counter);
+}
+
+void editor_enter_mode(EditorState *state, EditorMode new_mode) {
+    if (state->state != new_mode) {
+        state->prev_state = state->state;
+    }
+    state->state = new_mode;
+}
+
+void editor_exit_mode(EditorState *state, EditorMode exit_mode) {
+    if (state->prev_state == exit_mode) {
+        state->prev_state = EditorMode_None;
+    }
+    if (state->state == exit_mode) {
+        state->state = state->prev_state;
+    }
 }
 

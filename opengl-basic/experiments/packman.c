@@ -28,6 +28,7 @@ int selection_press;
 
 UIManager *ui_manager;
 
+EditorState editor_state;
 
 
 int game_run() {
@@ -124,6 +125,7 @@ int game_run() {
     mouse_press = 0;
     selection = 1;
     selection_press = 0;
+    memset(&editor_state, 0, sizeof(EditorState));
 
     stage = -1;
     distance_from_player = 5.0;
@@ -204,6 +206,7 @@ void handle_debug_info(
 void camera_focus_movement(
     GraphicsContext *ctx, Camera *camera, float spf, float dist_from_p
 ) {
+
     CameraMovementParams camera_params = {0};
     camera_params.camera = camera;
     camera_params.speed = 0.0;
@@ -212,11 +215,11 @@ void camera_focus_movement(
     camera_params.dt = spf;
     camera_params.player_rotation = player_rotation;
     camera_params.player_is_grounded = player_is_grounded;
+    camera_params.editor_state = &editor_state;
 
     free_rts_camera_movement(ctx, &camera_params);
     player_rotation = camera_params.player_rotation;
     player_is_grounded = camera_params.player_is_grounded;
-
 }
 
 void player_focus_movement(
@@ -292,7 +295,23 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     game_ctx->current_time = time;
 
 
+    char *editor_names[] = {
+        "EditorMode_None",
+        "EditorMode_UI",
+        "EditorMode_Rotate",
+        "EditorMode_CreateEntity",
+        "EditorMode_PickEntity"
+    };
+    printf("EDITOR STATE BEFORE: %s\n", editor_names[editor_state.state]);
+
     Entity *entity;
+    if (
+        (editor_state.state != EditorMode_UI) &&
+        (editor_state.state != EditorMode_Rotate)
+    ) {
+        editor_state.state = EditorMode_CreateEntity;
+    }
+    printf("EDITOR STATE AFTER: %s\n", editor_names[editor_state.state]);
 
     // mouse picking
     entity = LIST_GET_PTR(renderer->entities, 1);
@@ -300,7 +319,9 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     RayToPlaneHit mouse_position = mouse_to_plane(
         ctx, renderer, camera, newVec3(0.0, 1.0, 0.0), 0.0
     );
-    if (mouse_position.is_hit) {
+    if ((editor_state.state == EditorMode_CreateEntity) &&
+        (mouse_position.is_hit)) {
+
         entity->position = mouse_position.hit;
         entity->scale = newVec3(1.0, 1.0, 1.0);
     }
@@ -351,7 +372,8 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     if (toggle_button_press(ctx, GLFW_KEY_E, &pulse_e)){
-        show_debug_info = 1 - show_debug_info;
+        editor_state.ui_active = 1 - editor_state.ui_active;
+        // show_debug_info = 1 - show_debug_info;
     }
     if (toggle_button_press(ctx, GLFW_KEY_R, &pulse_r)){
         game_ctx->start_time = time;
@@ -409,7 +431,10 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     
-    if (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+    if (
+        (editor_state.state == EditorMode_CreateEntity) &&
+        (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+    ) {
         if (mouse_press == 0) {
             mouse_press = 1;
 
@@ -444,6 +469,13 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     }
 
     ui_reset(ui_manager);
-    ui_test_button(ui_manager, renderer, camera);
+
+    if (editor_state.ui_active) {
+        UI_InputParams input;
+        input.renderer = renderer;
+        input.camera = camera;
+        input.state = &editor_state;
+        ui_test_button(ui_manager, &input);
+    }
 }
 

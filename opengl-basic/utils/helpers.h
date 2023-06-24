@@ -14,6 +14,21 @@ typedef struct PlayerMovementParams {
 } PlayerMovementParams;
 
 
+typedef enum EditorMode {
+    EditorMode_None,
+    EditorMode_UI,
+    EditorMode_Rotate,
+    EditorMode_CreateEntity,
+    EditorMode_PickEntity,
+    EditorMode_EditEntity
+} EditorMode;
+
+typedef struct EditorState {
+    EditorMode state;
+    EditorMode prev_state;
+    int ui_active;
+} EditorState;
+
 typedef struct CameraMovementParams {
     Camera *camera;
     float speed;
@@ -22,6 +37,7 @@ typedef struct CameraMovementParams {
     double dt;
     float player_rotation;
     int player_is_grounded;
+    EditorState *editor_state;
 } CameraMovementParams;
 
 void quad_in_pos(
@@ -123,11 +139,23 @@ typedef struct UIManager {
     List(Entity) *gui_entities;
     UIWidget *free_widget;
     GraphicsContext *ctx;
+    Renderer *renderer;
 } UIManager;
+
+
+typedef struct UI_InputParams {
+    Renderer *renderer;
+    Camera *camera;
+    EditorState *state;
+} UI_InputParams;
+
+
 
 UIManager *ui_init(GraphicsContext *ctx, Renderer *renderer);
 void ui_reset(UIManager *ui_manager);
-void ui_test_button(UIManager *ui_manager, Renderer *renderer, Camera *camera);
+void ui_test_button(UIManager *ui_manager, UI_InputParams *input);
+void editor_enter_mode(EditorState *state, EditorMode new_mode);
+void editor_exit_mode(EditorState *state, EditorMode exit_mode);
 
 
 #endif  // HELPERS_H
