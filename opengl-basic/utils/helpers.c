@@ -1595,6 +1595,17 @@ void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
 
 
     Vec3 yellow = newVec3(1.0, 1.0, 0.0);
+    ui_padding(ui_manager, newVec2(0.1, 0.1), 1);
+    Entity *entity = input->state->selected_entity;
+    Vec3 delete_col = entity ? newVec3(1.0, 1.0, 0.0) : newVec3(0.4, 0.4, 0.4);
+    if(ui_button_h(ui_manager, 0.45, 0.1, "Delete", delete_col)) {
+        if(entity) {
+            entity->active = 0;
+            input->state->selected_entity = 0;
+
+        }
+    }
+
     ui_padding(ui_manager, newVec2(0.5, 0.85), 1);
     int create_mode = ui_button_h(
         ui_manager, 0.45, 0.1, "Create Mode", yellow);

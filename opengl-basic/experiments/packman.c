@@ -341,7 +341,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 #endif
     for (int i=2; i<renderer->entities->counter; i++) {
         entity = LIST_GET_PTR(renderer->entities, i);
-        if (entity == editor_state.selected_entity) {
+        if ( !entity->active || ( entity == editor_state.selected_entity)) {
             continue;
         }
 
@@ -495,9 +495,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     ) {
         if (mouse_press == 0) {
             mouse_press = 1;
-            if (editor_state.hot_entity) {
-                editor_state.selected_entity = editor_state.hot_entity;
-            }
+            editor_state.selected_entity = editor_state.hot_entity;
         }
     }
     else if (mouse_press == 1) {
