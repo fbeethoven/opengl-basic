@@ -28,6 +28,7 @@ typedef struct EditorState {
     EditorMode default_state;
     EditorMode prev_state;
     int ui_active;
+    Entity *hot_entity;
     Entity *selected_entity;
 } EditorState;
 

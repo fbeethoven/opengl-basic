@@ -582,6 +582,7 @@ void render(Renderer *rh, Camera *camera) {
     glEnableVertexAttribArray(0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, rh->skybox.texture_id);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawArrays(GL_TRIANGLES, 0, rh->skybox.vertex_count);
     glDepthMask(GL_TRUE);
     log_if_err("Renderer found a problem with skybox shader\n");

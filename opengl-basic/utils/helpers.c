@@ -1601,6 +1601,7 @@ void ui_edit_entity(UIManager *ui_manager, UI_InputParams *input) {
     if (create_mode) {
         input->state->default_state = EditorMode_CreateEntity;
         input->state->state = EditorMode_CreateEntity;
+        input->state->selected_entity = 0;
     }
     ui_pop_parent(ui_manager);
 

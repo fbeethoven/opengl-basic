@@ -143,6 +143,9 @@ int game_run() {
 
     Renderer renderer = {0};
     init_render_handler(&ctx, &renderer);
+    while (renderer.layers->entities->counter < 12) {
+        list_push(renderer.layers->entities, Entity);
+    }
 
     ui_manager = ui_init(&ctx, &renderer);
 
@@ -316,6 +319,7 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
     printf("EDITOR STATE AFTER: %s\n", editor_names[editor_state.state]);
 
     // mouse picking
+    int found_entity_collition = 0;
     entity = LIST_GET_PTR(renderer->entities, 1);
     entity->model = &game_ctx->models[selection];
     RayToPlaneHit mouse_position = mouse_to_plane(
@@ -337,6 +341,9 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
 #endif
     for (int i=2; i<renderer->entities->counter; i++) {
         entity = LIST_GET_PTR(renderer->entities, i);
+        if (entity == editor_state.selected_entity) {
+            continue;
+        }
 
 #if BOX_COLLITION
         box_min = newVec3(
@@ -355,11 +362,39 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
             ray_to_sphere(camera->position, mouse_dir, entity->position, 1.0)
         ) {
 #endif
-            entity->color = newVec3(1.0, 0.0, 0.0);
+            Entity *helper_e = LIST_GET_PTR(renderer->layers->entities, 10);
+            int model = entity->model_name;
+            helper_e->model = &game_ctx->models[model];
+            helper_e->model_name = model;
+            helper_e->scale = entity->scale;
+            helper_e->active = 1;
+            helper_e->position = entity->position;
+            helper_e->color = newVec3(0.0, 0.0, 1.0);
+            helper_e->fill = 1;
+            found_entity_collition = 1;
+            editor_state.hot_entity = entity;
         }
-        else {
-            entity->color = newVec3(0.0, 0.0, 0.0);
-        }
+    }
+    if (!found_entity_collition) {
+        Entity *helper_e = LIST_GET_PTR(renderer->layers->entities, 10);
+        helper_e->active = 0;
+        editor_state.hot_entity = 0;
+    }
+    if (editor_state.selected_entity) {
+        Entity *helper_e = LIST_GET_PTR(renderer->layers->entities, 11);
+        entity = editor_state.selected_entity;
+        int model = entity->model_name;
+        helper_e->model = &game_ctx->models[model];
+        helper_e->model_name = model;
+        helper_e->scale = entity->scale;
+        helper_e->active = 1;
+        helper_e->position = entity->position;
+        helper_e->color = newVec3(0.0, 1.0, 0.0);
+        helper_e->fill = 1;
+    }
+    else {
+        Entity *helper_e = LIST_GET_PTR(renderer->layers->entities, 11);
+        helper_e->active = 0;
     }
 
     if(
@@ -451,6 +486,17 @@ void handle_input(GraphicsContext *ctx, Renderer *renderer, Camera *camera) {
                 entity->scale = newVec3(scale, scale, scale);
                 entity->active = 1;
                 entity->position = mouse_pos.hit;
+            }
+        }
+    }
+    else if (
+        (editor_state.state == EditorMode_EditEntity) &&
+        (glfwGetMouseButton(ctx->window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+    ) {
+        if (mouse_press == 0) {
+            mouse_press = 1;
+            if (editor_state.hot_entity) {
+                editor_state.selected_entity = editor_state.hot_entity;
             }
         }
     }
