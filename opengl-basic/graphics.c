@@ -364,6 +364,13 @@ void init_render_handler(GraphicsContext *ctx, Renderer *rh) {
     );
     shader_pop();
 
+    RenderLayer *layers = calloc(1, sizeof(RenderLayer));
+    layers->entities = NEW_LIST(Entity);
+    layers->gui_entities = NEW_LIST(Entity);
+    layers->font_entities = NEW_LIST(Entity);
+
+    rh->layers = layers;
+
     rh->entities = NEW_LIST(Entity);
     rh->gui_entities = NEW_LIST(Entity);
     rh->font_entities = NEW_LIST(Entity);
@@ -390,10 +397,10 @@ void prepare(Renderer *rh) {
     log_if_err("There was an issue Preparing\n");
 }
 
-void render_entities(Renderer *rh) {
+void render_entities(Renderer *rh, List(Entity) *entities) {
     Vec3 light_color = rh->light->color;
     Entity entity;
-    FOR_ALL(entity, rh->entities) {
+    FOR_ALL(entity, entities) {
         if (entity.active == 0) {
             continue;
         }
@@ -447,9 +454,9 @@ void render_entities(Renderer *rh) {
 }
 
 
-void render_font_entities(Renderer *rh) {
+void render_font_entities(Renderer *rh, List(Entity) *entities) {
     Entity entity;
-    FOR_ALL(entity, rh->font_entities) {
+    FOR_ALL(entity, entities) {
 
         if (entity.active == 0) {
             continue;
@@ -498,9 +505,9 @@ void render_font_entities(Renderer *rh) {
 }
 
 
-void render_gui_entities(Renderer *rh) {
+void render_gui_entities(Renderer *rh, List(Entity) *entities) {
     Entity entity;
-    FOR_ALL(entity, rh->gui_entities) {
+    FOR_ALL(entity, entities) {
         if (entity.active == 0) {
             continue;
         }
@@ -575,6 +582,7 @@ void render(Renderer *rh, Camera *camera) {
     glEnableVertexAttribArray(0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, rh->skybox.texture_id);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glDrawArrays(GL_TRIANGLES, 0, rh->skybox.vertex_count);
     glDepthMask(GL_TRUE);
     log_if_err("Renderer found a problem with skybox shader\n");
@@ -605,15 +613,26 @@ void render(Renderer *rh, Camera *camera) {
     shader_load_light(rh->anim_shader, rh->light);
     log_if_err("Renderer found problem loading lights");
 
-    render_entities(rh);
-
-    glDisableVertexAttribArray(2);
+    render_entities(rh, rh->entities);
     glDisable(GL_DEPTH_TEST);
 
     shader_push(rh->gui_shader);
 
-    render_gui_entities(rh);
-    render_font_entities(rh);
+    render_gui_entities(rh, rh->gui_entities);
+    render_font_entities(rh, rh->font_entities);
+
+    for(RenderLayer *layer=rh->layers; layer; layer=layer->next) {
+        glEnable(GL_DEPTH_TEST);
+        shader_push(rh->shader);
+        render_entities(rh, layer->entities);
+        glDisable(GL_DEPTH_TEST);
+
+        shader_push(rh->gui_shader);
+
+        render_gui_entities(rh, layer->gui_entities);
+        render_font_entities(rh, layer->font_entities);
+    }
+
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
@@ -686,6 +705,39 @@ void init_font(GraphicsContext *ctx, Renderer *renderer, Font *font) {
 }
 
 
+void load_model_obj_color(BaseModel *model, char *obj, unsigned int col) {
+    IntermediateModel tmp = {0};
+    parse_obj_file(obj, &tmp);
+    load_data_to_model(
+        model, tmp.vertices, tmp.indices, tmp.vertices_count* sizeof(float),
+        tmp.indices_count * sizeof(unsigned int));
+    glBindVertexArray(model->vao);
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &model->texture_id);
+    glBindTexture(GL_TEXTURE_2D, model->texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(
+        GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, &col);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    store_float_in_attributes(
+        &model->uv, 1, 2, tmp.uvs_count * sizeof(float), tmp.uvs
+    );
+
+    store_float_in_attributes(
+        &model->normal, 2, 3, tmp.normals_count * sizeof(float), tmp.normals
+    );
+    log_if_err("Issue after loading normals\n");
+    model->vertex_count = tmp.indices_count;
+    intermediate_model_free(&tmp);
+}
+
+
 void load_model_from_obj(
     BaseModel *model, char *obj_file, char *texture_file
 ) {
@@ -735,5 +787,22 @@ void load_model_from_gltf(
     log_if_err("Issue after loading normals\n");
     model->vertex_count = tmp.indices_count;
     intermediate_model_free(&tmp);
+}
+
+Entity *get_entity(Renderer *renderer) {
+    Entity *entity = 0;
+    int found = 0;
+    for (int i=2; i<renderer->entities->counter; i++) {
+        entity = LIST_GET_PTR(renderer->entities, i); 
+        if (entity->active == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        entity = list_push(renderer->entities, Entity); 
+    }
+
+    return entity;
 }
 

@@ -11,6 +11,7 @@
 typedef struct GraphicsContext {
     int width;
     int height;
+    int resolution_has_changed;
     double current_time;
     double dtime;
     double game_time;
@@ -44,6 +45,7 @@ typedef struct Entity {
     Vec3 scale;
     int active;
     int fill;
+    int model_name;
     char debug_name[32];
 } Entity;
 
@@ -51,6 +53,14 @@ typedef struct Entity {
 LIST_ADD(BaseModel);
 LIST_ADD(Entity);
 
+
+typedef struct RenderLayer RenderLayer;
+struct RenderLayer {
+    RenderLayer *next;
+    List(Entity) *entities;
+    List(Entity) *gui_entities;
+    List(Entity) *font_entities;
+};
 
 typedef struct Renderer {
     float FOV;
@@ -69,12 +79,7 @@ typedef struct Renderer {
 	int gui_shader;
 	int sky_shader;
 
-#if 0
-    Entity entities[20];
-    Entity debug_entities[100];
-    Entity gui_entities[10];
-    Entity font_entities[10];
-#endif
+    RenderLayer *layers;
 
     List(Entity) *entities;
     List(Entity) *debug_entities;
@@ -86,7 +91,7 @@ typedef struct Renderer {
     Light *light;
 
     BaseModel skybox;
-
+    BaseModel *models[10];
 } Renderer;
 
 
@@ -138,10 +143,12 @@ void reload_projection_matrix(GraphicsContext *ctx, Renderer *rh);
 
 void init_floor_model(BaseModel *world_model);
 void init_font(GraphicsContext *ctx, Renderer *renderer, Font *font);
+void load_model_obj_color(BaseModel *model, char *obj, unsigned int col);
 void load_model_from_obj(BaseModel *model, char *obj_file, char *texture_file);
 void load_model_from_gltf(
     BaseModel *model, char *gltf_file, char *bin_file, char *texture_file
 );
+Entity *get_entity(Renderer *renderer);
 
 
 #endif  // GRAPHICS_H
