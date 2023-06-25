@@ -79,6 +79,10 @@ void load_assets(
         "assets/textures/Stormtroopermat_baseColor.png"
     );
 
+    for (int i=0; i<10; i++) {
+        renderer->models[i] = &game_ctx->models[i];
+    }
+
 
     Entity *entity;
     entity = list_push(renderer->font_entities, Entity);
@@ -103,6 +107,18 @@ void load_assets(
     entity->scale = newVec3(1.0, 1.0, 1.0);
     float col = 0.8;
     entity->color = newVec3(0.0, col, 0.0);
+
+
+    // model = malloc(sizeof(BaseModel));
+    // load_model_obj_color(model, "assets/models/sphere.obj", 0xFF008080);
+
+    // entity = list_push(renderer->entities, Entity);
+    // strcpy(entity->debug_name, "Empty Texture");
+    // entity->model = model;
+    // entity->position = newVec3(0.0, 1.0, 0.0);
+    // entity->active = 1;
+    // entity->scale = newVec3(1, 1, 1);
+
 
     // entity = list_push(renderer->gui_entities, Entity);
     // entity->model = malloc(sizeof(BaseModel));
